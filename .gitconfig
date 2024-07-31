@@ -8,12 +8,21 @@
 	autoSetupRemote = true
 
 [alias]
+	st = status
+
+	d = diff
+	ds = diff --staged
+
+	rs = restore --staged
+
 	co = checkout
 	cob = checkout --branch
+
 	a = add
 	au = add -u
+
 	cm = commit -m
 	ca = commit --amend
-	st = status
+
 	p = push
 
