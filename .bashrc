@@ -9,8 +9,9 @@ alias ls='ls --color=auto'
 alias grep='grep --color=auto'
 PS1='[\u@\h \W]\$ '
 
-
+export REPOS="${HOME}/repos"
 export EDITOR=vim
+export BROWSER=firefox
 
 alias config='git --git-dir=$HOME/.cfg/ --work-tree=$HOME'
 alias c=config
