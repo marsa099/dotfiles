@@ -8,8 +8,12 @@
 	autoSetupRemote = true
 
 [alias]
+	co = checkout
+	cob = checkout --branch
 	a = add
+	au = add -u
 	cm = commit -m
 	ca = commit --amend
 	st = status
 	p = push
+
