@@ -19,6 +19,7 @@
 	cob = checkout --branch
 
 	a = add
+	ap = add -p
 	au = add -u
 
 	cm = commit -m
