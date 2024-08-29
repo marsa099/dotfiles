@@ -1,6 +1,7 @@
 #
 # ~/.bashrc
 #
+echo "Reading bashrc"
 
 # If not running interactively, don't do anything
 [[ $- != *i* ]] && return
@@ -33,3 +34,5 @@ alias ebc='$EDITOR ~/.bashrc'
 
 # i3/.config
 alias i3conf='$EDITOR ~/.config/i3/config'
+
+echo "Reading bashrc done"
