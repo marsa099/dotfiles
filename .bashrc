@@ -21,6 +21,7 @@ alias g=git
 
 # Wifi
 alias wifi='iwctl'
+alias connect-mobile='~/.scripts/connect-wifi.sh martin'
 
 alias ll='ls -la'
 alias n='nvim'
