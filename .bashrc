@@ -15,7 +15,7 @@ export EDITOR=nvim
 export BROWSER=firefox
 
 # Git
-alias config='git --git-dir=$HOME/.cfg/ --work-tree=$HOME'
+alias config='git --git-dir=$HOME/.git/ --work-tree=$HOME'
 alias c=config
 alias g=git
 
