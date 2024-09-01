@@ -16,7 +16,8 @@ echo 'set completion-ignore-case On' >> ~/.inputrc
 
 alias ls='ls --color=auto'
 alias grep='grep --color=auto'
-PS1='[\e[1m\W]\$ \e(B\e[m'
+#PS1='[\e[1m\W]\$ \e(B\e[m'
+PS1='\[\e[32m\][\e[1m\W]\$ \e(B\e[m'
 
 export REPOS="${HOME}/repos"
 export EDITOR=nvim
