@@ -22,6 +22,13 @@ PS1='\[\e[32m\][\e[1m\W]\$ \e(B\e[m'
 export REPOS="${HOME}/repos"
 export EDITOR=nvim
 export BROWSER=firefox
+export DOTNETTOOLS='~/.dotnet/tools'
+export PATH="$PATH:$DOTNETTOOLS"
+
+# Pacman
+alias install='sudo pacman -Syu'
+
+set -o vi               # replace readline with vi mode
 
 # Git
 alias config='git --git-dir=$HOME/.git/ --work-tree=$HOME'
