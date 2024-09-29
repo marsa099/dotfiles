@@ -39,10 +39,29 @@ parser.add_argument(
     action="store_true",
     help="Show the full message without truncating",
 )
+parser.add_argument(
+    "-s",
+    "--status",
+    type=str,
+    choices=["inProgress", "completed", "failed", "partiallySucceeded", "cancelling"],
+    default="completed",
+    help="Filter pipeline runs by status",
+)
 args = parser.parse_args()
 
 # Run the command and get JSON output
-cmd = ["az", "pipelines", "runs", "list", "--top", str(args.num), "--output", "json"]
+cmd = [
+    "az",
+    "pipelines",
+    "runs",
+    "list",
+    "--top",
+    str(args.num),
+    "--output",
+    "json",
+    "--status",
+    args.status,
+]
 process = subprocess.run(cmd, capture_output=True, text=True)
 
 if process.returncode != 0:
