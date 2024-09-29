@@ -26,6 +26,8 @@
 	ca = commit --amend
 
 	p = push
+	pr = "!f() { exec az repos pr \"$@\"; }; f"
+	repo = "!f() { exec az repos \"$@\"; }; f"
 
 [user]
 	email = martin@koderiet.dev
