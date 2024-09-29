@@ -5,6 +5,7 @@ import subprocess
 import json
 from datetime import datetime
 import sys
+import re
 
 
 # Function to check if the current directory is a Git repository
@@ -28,7 +29,7 @@ if not is_git_repo():
 
 # Set up argument parser
 parser = argparse.ArgumentParser(
-    description="Display the latest Azure DevOps pipeline runs."
+    description="Display the latest Azure DevOps pipeline runs (builds or releases)."
 )
 parser.add_argument(
     "-n", "--num", type=int, default=1, help="Number of latest runs to display"
@@ -47,21 +48,48 @@ parser.add_argument(
     default="completed",
     help="Filter pipeline runs by status",
 )
+parser.add_argument(
+    "-t",
+    "--type",
+    type=str,
+    choices=["b", "build", "builds", "r", "release", "releases"],
+    default="builds",
+    help="Specify whether to show builds or releases",
+)
 args = parser.parse_args()
 
-# Run the command and get JSON output
-cmd = [
-    "az",
-    "pipelines",
-    "runs",
-    "list",
-    "--top",
-    str(args.num),
-    "--output",
-    "json",
-    "--status",
-    args.status,
-]
+# Determine if we're listing builds or releases
+if args.type in ["b", "build", "builds"]:
+    pipeline_type = "pipelines"
+elif args.type in ["r", "release", "releases"]:
+    pipeline_type = "release"
+
+# Run the command and get JSON output based on the pipeline type
+if pipeline_type == "pipelines":
+    cmd = [
+        "az",
+        "pipelines",
+        "runs",
+        "list",
+        "--top",
+        str(args.num),
+        "--output",
+        "json",
+        "--status",
+        args.status,
+    ]
+elif pipeline_type == "release":
+    cmd = [
+        "az",
+        "pipelines",
+        "release",
+        "list",
+        "--top",
+        str(args.num),
+        "--output",
+        "json",
+    ]
+
 process = subprocess.run(cmd, capture_output=True, text=True)
 
 if process.returncode != 0:
@@ -75,7 +103,7 @@ if not data:
     sys.exit(1)
 
 # Define column headers
-headers = ["ID", "Number", "Status", "Result", "Branch", "QueuedTime", "Message"]
+headers = ["ID", "Release Name", "Status", "Branch", "QueuedTime", "Description"]
 rows = []
 
 # Define the maximum length for the truncated message
@@ -83,14 +111,15 @@ MAX_MESSAGE_LENGTH = 100
 
 for run in data:
     id = str(run.get("id", ""))
-    number = run.get("buildNumber", "")
-    status = run.get("status", "")
-    result = run.get("result", "")
-    branch = run.get("sourceBranch", "").replace("refs/heads/", "")
-    queued_time = run.get("queueTime", "")
-    message = run.get("triggerInfo", {}).get("ci.message", "")
+    release_name = run.get("name", "")  # Release name (e.g., Release-127)
+    status = run.get("status", "active")  # Status (e.g., active)
 
-    # Format the time
+    # Try to extract the branch name from the description if available
+    description = run.get("description", "")
+    branch_match = re.search(r"by\s+(\S+)", description)
+    branch = branch_match.group(1) if branch_match else "N/A"
+
+    queued_time = run.get("createdOn", "")  # Use createdOn for release pipelines
     if queued_time:
         try:
             dt = datetime.fromisoformat(queued_time)
@@ -99,10 +128,10 @@ for run in data:
             pass  # Keep the original if conversion fails
 
     # Truncate message if the flag for full message is not set
-    if not args.full_message and len(message) > MAX_MESSAGE_LENGTH:
-        message = message[:MAX_MESSAGE_LENGTH] + "..."
+    if not args.full_message and len(description) > MAX_MESSAGE_LENGTH:
+        description = description[:MAX_MESSAGE_LENGTH] + "..."
 
-    rows.append([id, number, status, result, branch, queued_time, message])
+    rows.append([id, release_name, status, branch, queued_time, description])
 
 # Calculate column widths
 column_widths = [len(header) for header in headers]
