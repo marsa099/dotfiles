@@ -25,6 +25,9 @@
 	cm = commit -m
 	ca = commit --amend
 
+	l = log --all --decorate --oneline --graph
+	lo = log
+
 	p = push
 	pr = "!f() { exec az repos pr \"$@\"; }; f"
 	repo = "!f() { exec az repos \"$@\"; }; f"
