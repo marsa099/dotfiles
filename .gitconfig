@@ -17,6 +17,7 @@
 
 	co = checkout
 	cob = checkout --branch
+	com = checkout main
 
 	a = add
 	ap = add -p
@@ -31,6 +32,8 @@
 	p = push
 	pr = "!f() { exec az repos pr \"$@\"; }; f"
 	repo = "!f() { exec az repos \"$@\"; }; f"
+	
+	pu = pull
 
 [user]
 	email = martin@koderiet.dev
