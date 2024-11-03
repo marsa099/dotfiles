@@ -29,17 +29,16 @@ PS1='\[\e[32m\][\e[1m\W]\$ \e(B\e[m'
 
 # Environment variables
 export REPOS="${HOME}/repos"
-export SCRIPTS="${HOME}/.scripts"
-export XDG_CONFIG_HOME="${HOME}/.config"
-
 export EDITOR=nvim
 export BROWSER=firefox
-export DOTNETTOOLS='~/.dotnet/tools'
 
 # Path
-export PATH="$PATH:$DOTNETTOOLS"
-export PATH="$PATH:$SCRIPTS"
-export PATH="$PATH:$XDG_CONFIG_HOME"
+export DOTNETTOOLS='~/.dotnet/tools'
+export SCRIPTS="${HOME}/.scripts"
+export XDG_CONFIG_HOME="${HOME}/.config"
+export NPM_PATH='~/.npm-global/bin'
+
+export PATH="$PATH:$DOTNETTOOLS:$SCRIPTS:$XDG_CONFIG_HOME:$NPM_PATH"
 
 # Pacman
 alias installu='sudo pacman -Syu'
