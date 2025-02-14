@@ -62,7 +62,7 @@ alias ll='ls -la'
 alias n='nvim'
 
 # Scripts
-alias azkv='python3 ~/.scripts/az-keyvault.py'
+alias dp='delete-prompt'
 
 # .bashrc
 alias rbc='source ~/.bashrc'
@@ -71,4 +71,3 @@ alias ebc='$EDITOR ~/.bashrc'
 # i3/.config
 alias i3conf='$EDITOR ~/.config/i3/config'
 
-echo "Reading bashrc done"
