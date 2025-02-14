@@ -1,7 +1,6 @@
 #
 # ~/.bashrc
 #
-echo "Reading bashrc"
 
 # If not running interactively, don't do anything
 [[ $- != *i* ]] && return
