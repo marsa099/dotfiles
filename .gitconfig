@@ -16,7 +16,7 @@
 	rs = restore --staged
 
 	co = checkout
-	cob = checkout --branch
+	cob = checkout -b
 	com = checkout main
 
 	a = add
