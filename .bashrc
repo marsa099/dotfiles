@@ -29,6 +29,7 @@ export PS1="\e[32m\e[1m\W $ \e(B\e[m"
 export REPOS="${HOME}/repos"
 export EDITOR=nvim
 export BROWSER=firefox
+export NOTES="${HOME}/notes"
 
 # Path
 export DOTNETTOOLS='~/.dotnet/tools'
