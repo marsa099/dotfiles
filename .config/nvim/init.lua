@@ -216,6 +216,39 @@ if not vim.uv.fs_stat(lazypath) then
 end ---@diagnostic disable-next-line: undefined-field
 vim.opt.rtp:prepend(lazypath)
 
+-- NETRW config
+-- Enable/disable the banner
+vim.g.netrw_banner = 1
+
+-- Use "tree-style" listing
+vim.g.netrw_liststyle = 3
+
+-- Open files in a new horizontal window
+vim.g.netrw_browse_split = 0
+
+-- Use vertical split instead of horizontal for alternate window
+vim.g.netrw_altv = 1
+
+-- Set the default size of the NetRW window
+vim.g.netrw_winsize = 20
+
+-- Quit netrw after file open
+--vim.g.netrw_quit_on_open = 1
+
+-- Should help to move aroud files from a folder to another
+vim.g.netrw_keepdir = 0
+
+-- Create an autocmd group to open NetRW on startup
+--vim.api.nvim_create_augroup("ProjectDrawer", {})
+--vim.api.nvim_create_autocmd("VimEnter", {
+--	group = "ProjectDrawer",
+--	command = "Vexplore",
+--})
+
+require("templates.csharpclass")
+
+-- END NETRW config --
+
 -- [[ Configure and install plugins ]]
 --
 --  To check the current status of your plugins, run
@@ -230,6 +263,7 @@ vim.opt.rtp:prepend(lazypath)
 require("lazy").setup({
 	-- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
 	--
+	{ "prichrd/netrw.nvim", opts = {} }, -- Nerd font icons in netrw
 	{ "mg979/vim-visual-multi", branch = "master" }, -- VS code ctrl+D functionality in nvim
 	"tpope/vim-sleuth", -- Detect tabstop and shiftwidth automatically
 
