@@ -9,7 +9,8 @@
 bind 'set enable-bracketed-paste off'
 
 # Sets az devops PAT to env var
-export AZURE_DEVOPS_EXT_PAT=$(pass sis/devops/pat)
+# Need to move. This requires auth which is very annoying as soon as you open a terminal
+#export AZURE_DEVOPS_EXT_PAT=$(pass sis/devops/pat)
 
 alias PAGER=less
 
