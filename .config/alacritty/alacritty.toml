@@ -151,7 +151,7 @@ mods = "Shift"
 [scrolling]
 history = 5000
 
-[shell]
+[terminal.shell]
 args = ["--login"]
 program = "/bin/bash"
 
@@ -166,3 +166,5 @@ instance = "Alacritty"
 [window.padding]
 x = 6
 y = 6
+
+[terminal]
