@@ -5,15 +5,8 @@
 # If not running interactively, don't do anything
 [[ $- != *i* ]] && return
 
-# If ~/.inputrc doesn't exist yet: First include the original /etc/inputrc
-# so it won't get overriden
-if [ ! -a ~/.inputrc ]; then echo '$include /etc/inputrc' > ~/.inputrc; fi
-
 # Make sure ^[[200~ is not a part of the paste output from the clipboard
 bind 'set enable-bracketed-paste off'
-
-# Add shell-option to ~/.inputrc to enable case-insensitive tab completion
-echo 'set completion-ignore-case On' >> ~/.inputrc
 
 # Sets az devops PAT to env var
 export AZURE_DEVOPS_EXT_PAT=$(pass sis/devops/pat)
