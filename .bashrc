@@ -18,7 +18,12 @@ alias cl=clear
 alias ls='ls --color=auto'
 alias grep='grep --color=auto'
 #PS1='[\e[1m\W]\$ \e(B\e[m'
-PS1='\[\e[32m\][\e[1m\W]\$ \e(B\e[m'
+#PS1='\[\e[32m\][\e[1m\W]\$ \e(B\e[m'
+# \e[3#1m	Start color scheme (replace #1 with a digit 0-7 repreenting a 
+# 		color)
+# \e[1m		Bold text on
+# \e(B\e[m	Reset text attributes
+export PS1="\e[32m\e[1m\W $ \e(B\e[m"
 
 # Environment variables
 export REPOS="${HOME}/repos"
