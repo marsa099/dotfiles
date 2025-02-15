@@ -159,6 +159,12 @@ vim.opt.scrolloff = 10
 
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
+-- Toggle neotree (probably no use after I learn telescope)
+vim.keymap.set("n", "<C-A-l>", "<cmd>Neotree toggle<CR>", { noremap = true, silent = true })
+
+-- Buffer prev/next
+vim.keymap.set("n", "<leader>bn", ":bnext<CR>", { noremap = true, silent = true })
+vim.keymap.set("n", "<leader>bp", ":bprevious<CR>", { noremap = true, silent = true })
 
 -- Clear highlights on search when pressing <Esc> in normal mode
 --  See `:help hlsearch`
@@ -216,35 +222,6 @@ if not vim.uv.fs_stat(lazypath) then
 end ---@diagnostic disable-next-line: undefined-field
 vim.opt.rtp:prepend(lazypath)
 
--- NETRW config
--- Enable/disable the banner
-vim.g.netrw_banner = 1
-
--- Use "tree-style" listing
-vim.g.netrw_liststyle = 3
-
--- Open files in a new horizontal window
-vim.g.netrw_browse_split = 0
-
--- Use vertical split instead of horizontal for alternate window
-vim.g.netrw_altv = 1
-
--- Set the default size of the NetRW window
-vim.g.netrw_winsize = 20
-
--- Quit netrw after file open
---vim.g.netrw_quit_on_open = 1
-
--- Should help to move aroud files from a folder to another
-vim.g.netrw_keepdir = 0
-
--- Create an autocmd group to open NetRW on startup
---vim.api.nvim_create_augroup("ProjectDrawer", {})
---vim.api.nvim_create_autocmd("VimEnter", {
---	group = "ProjectDrawer",
---	command = "Vexplore",
---})
-
 require("templates.csharpclass")
 
 -- END NETRW config --
@@ -263,7 +240,6 @@ require("templates.csharpclass")
 require("lazy").setup({
 	-- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
 	--
-	{ "prichrd/netrw.nvim", opts = {} }, -- Nerd font icons in netrw
 	{ "mg979/vim-visual-multi", branch = "master" }, -- VS code ctrl+D functionality in nvim
 	"tpope/vim-sleuth", -- Detect tabstop and shiftwidth automatically
 
@@ -273,7 +249,16 @@ require("lazy").setup({
 	--
 	-- Use `opts = {}` to force a plugin to be loaded.
 	--
-
+	{
+		"nvim-neo-tree/neo-tree.nvim",
+		branch = "v3.x",
+		dependencies = {
+			"nvim-lua/plenary.nvim",
+			"nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
+			"MunifTanjim/nui.nvim",
+			-- {"3rd/image.nvim", opts = {}}, -- Optional image support in preview window: See `# Preview Mode` for more information
+		},
+	},
 	-- Here is a more advanced example where we pass configuration
 	-- options to `gitsigns.nvim`. This is equivalent to the following Lua:
 	--    require('gitsigns').setup({ ... })
