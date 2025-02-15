@@ -368,11 +368,13 @@ require("lazy").setup({
 				-- You can put your default mappings / updates / etc. in here
 				--  All the info you're looking for is in `:help telescope.setup()`
 				--
-				-- defaults = {
-				--   mappings = {
-				--     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
-				--   },
-				-- },
+				defaults = {
+					winblend = 30, -- Transparency to be able to see the file behind the popup
+					file_ignore_patterns = { "bin/", "obj/" },
+					--mappings = {
+					--     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
+					--   },
+				},
 				-- pickers = {}
 				extensions = {
 					["ui-select"] = {
