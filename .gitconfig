@@ -22,7 +22,7 @@
 	a = add
 	ap = add -p
 	au = add -u
-
+	addnew = "!git ls-files --others --exclude-standard | xargs git add"
 	cm = commit -m
 	ca = commit --amend
 
