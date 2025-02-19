@@ -12,6 +12,7 @@
 
 	d = diff
 	ds = diff --staged
+	do = !"git diff origin/$(git rev-parse --abbrev-ref HEAD)..$(git rev-parse --abbrev-ref HEAD)"
 
 	rs = restore --staged
 
@@ -34,6 +35,7 @@
 	repo = "!f() { exec az repos \"$@\"; }; f"
 	
 	pu = pull
+	pull-prev = "!sh -c 'git pull origin $(git rev-parse --abbrev-ref @{-1})'"
 
 [user]
 	email = martin@koderiet.dev
