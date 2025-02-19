@@ -38,3 +38,5 @@
 [user]
 	email = martin@koderiet.dev
 	name = Martin Sandberg
+[pull]
+	rebase = false
