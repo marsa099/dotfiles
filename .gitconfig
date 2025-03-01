@@ -42,3 +42,5 @@
 	name = Martin Sandberg
 [pull]
 	rebase = false
+[init]
+	defaultBranch = main
