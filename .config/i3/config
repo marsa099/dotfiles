@@ -54,7 +54,7 @@ bindsym XF86MonBrightnessDown exec --no-startup-id brightnessctl set 10%-
 # Move whole workspace to left/right monitor
 bindsym $mod+Control+Shift+h move workspace to output left
 bindsym $mod+Control+Shift+l move workspace to output right
-
+bindsym $mod+Control+Shift+p move workspace to output primary
 
 # Use Mouse+$mod to drag floating windows to their wanted position
 floating_modifier $mod
