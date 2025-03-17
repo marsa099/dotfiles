@@ -62,9 +62,12 @@ input * {
     xkb_options "grp:alt_shift_toggle"
 }
 
-
 # No borders
 default_border none
+
+# Set key repeat rate
+input * repeat_delay 160
+input * repeat_rate 120
 
 ### Key bindings
 #
