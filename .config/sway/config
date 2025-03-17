@@ -56,6 +56,12 @@ output * bg /usr/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
 # You can get the names of your inputs by running: swaymsg -t get_inputs
 # Read `man 5 sway-input` for more information about this section.
 
+# Set keyboard layout
+input * {
+    xkb_layout "se"
+}
+
+
 # No borders
 default_border none
 
