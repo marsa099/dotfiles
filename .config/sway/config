@@ -70,6 +70,9 @@ default_border none
 input * repeat_delay 190
 input * repeat_rate 120
 
+# Print screen (part of screen)
+bindsym $mod+Shift+s exec grim -g "$(slurp)" - | wl-copy
+
 ### Key bindings
 #
 # Basics:
