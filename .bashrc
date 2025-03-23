@@ -43,7 +43,7 @@ export NPM_PATH='~/.npm-global/bin'
 export PATH="$PATH:$DOTNETTOOLS:$SCRIPTS:$XDG_CONFIG_HOME:$NPM_PATH"
 
 # Clipboard
-alias cb='xclip -sel clip'
+alias cb='wl-copy'
 
 # Pacman
 alias installu='sudo pacman -Syu'
