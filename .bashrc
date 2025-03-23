@@ -23,10 +23,7 @@ alias grep='grep --color=auto'
 # 		color)
 # \e[1m		Bold text on
 # \e(B\e[m	Reset text attributes
-#export PS1="\e[32m\e[1m\W $ \e(B\e[m"
-#export PS1='\e[32m\e[1m\W $(git branch --show-current 2>/dev/null | sed "s/\(.*\)/(\\1) /")$ \e(B\e[m'
-
-export PS1='\e[32m\e[1m\W \[\e[94m\]$(git branch --show-current 2>/dev/null | sed "s/\(.*\)/(\\1)/")\[\e[m\] $ '
+export PS1="\e[32m\e[1m\W $ \e(B\e[m"
 
 # Environment variables
 export REPOS="${HOME}/repos"
