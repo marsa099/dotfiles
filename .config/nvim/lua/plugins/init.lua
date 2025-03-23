@@ -1,7 +1,7 @@
 return {
   {
     "stevearc/conform.nvim",
-    event = 'BufWritePre', -- uncomment for format on save
+    -- event = 'BufWritePre', -- uncomment for format on save
     opts = require "configs.conform",
   },
 
@@ -13,18 +13,13 @@ return {
     end,
   },
 
-   {
-   	"nvim-treesitter/nvim-treesitter",
-   	opts = {
-   		ensure_installed = {
-   			"vim", "lua", "vimdoc",
-        "html", "css", "c_sharp"
-   		},
-   	},
-   },
-  {
-    "Hoffs/omnisharp-extended-lsp.nvim",
-    lazy = true,
-    ft = { "cs" },
-  },
+  -- {
+  -- 	"nvim-treesitter/nvim-treesitter",
+  -- 	opts = {
+  -- 		ensure_installed = {
+  -- 			"vim", "lua", "vimdoc",
+  --      "html", "css"
+  -- 		},
+  -- 	},
+  -- },
 }
