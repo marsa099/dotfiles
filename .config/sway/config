@@ -67,7 +67,7 @@ input * {
 default_border none
 
 # Set key repeat rate
-input * repeat_delay 190
+input * repeat_delay 220
 input * repeat_rate 120
 
 # Print screen (part of screen)
