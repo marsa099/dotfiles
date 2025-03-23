@@ -1,6 +1,15 @@
 require "nvchad.mappings"
 
 -- add yours here
+-- require "custom.mappings"
+
+-- :thelp <topic> öppnar help i ny tab
+vim.api.nvim_create_user_command("Thelp", function(opts)
+  vim.cmd("tab help " .. opts.args)
+end, {
+    nargs = 1,
+    complete = "help"
+  })
 
 local map = vim.keymap.set
 
