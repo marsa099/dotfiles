@@ -46,7 +46,7 @@ lspconfig.omnisharp.setup {
     FormattingOptions = {
           -- Enables support for reading code style, naming convention and analyzer
           -- settings from .editorconfig.
-          EnableEditorConfigSupport = true,
+          EnableEditorConfigSupport = nil,
           -- Specifies whether 'using' directives should be grouped and sorted during
           -- document formatting.
           OrganizeImports = true,
@@ -62,7 +62,7 @@ lspconfig.omnisharp.setup {
         },
         RoslynExtensionsOptions = {
           -- Enables support for roslyn analyzers, code fixes and rulesets.
-          EnableAnalyzersSupport = true,
+          EnableAnalyzersSupport = nil,
           -- Enables support for showing unimported types and unimported extension
           -- methods in completion lists. When committed, the appropriate using
           -- directive will be added at the top of the current file. This option can
