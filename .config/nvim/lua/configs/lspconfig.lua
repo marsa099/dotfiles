@@ -25,14 +25,14 @@ end
 -- }
 
 lspconfig.omnisharp.setup {
-  --cmd = { "omnisharp", "--languageserver", "--hostPID", tostring(vim.fn.getpid()) },
+  cmd = { "omnisharp", "--languageserver", "--hostPID", tostring(vim.fn.getpid()) },
   -- cmd = {
   --   vim.fn.stdpath("data") .. "/mason/bin/omnisharp",
   --   "--languageserver",
   --   "--hostPID",
   --   tostring(vim.fn.getpid()),
   -- },
-  cmd = { "dotnet", "/home/martin/.local/share/nvim/mason/packages/omnisharp/omnisharp" },
+  -- cmd = { "dotnet", "/home/martin/.local/share/nvim/mason/packages/omnisharp/omnisharp" },
   on_attach = function(client, bufnr)
     nvlsp.on_attach(client, bufnr)
     -- Patcha handlers
