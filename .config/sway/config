@@ -73,6 +73,8 @@ input * repeat_rate 120
 # Print screen (part of screen)
 bindsym $mod+Shift+s exec grim -g "$(slurp)" - | wl-copy
 
+focus_follows_mouse no
+
 ### Key bindings
 #
 # Basics:
