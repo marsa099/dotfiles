@@ -42,6 +42,9 @@ export PATH="$PATH:$DOTNETTOOLS:$SCRIPTS:$XDG_CONFIG_HOME:$NPM_PATH"
 # Clipboard
 alias cb='wl-copy'
 
+# Stay green on teams script to clipboard
+alias staygreen="cat ${SCRIPTS}/stayGreenOnTeams.js | cb"
+
 # Pacman
 alias installu='sudo pacman -Syu'
 alias install='sudo pacman -Sy'
