@@ -9,6 +9,8 @@
 
 [alias]
 	st = status
+  stu = status -u -- .
+  stus = status -s -u -- .
 
 	d = diff
 	ds = diff --staged
