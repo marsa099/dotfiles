@@ -29,6 +29,19 @@ output * bg /home/martin/wallpapers/linux_arch1.png fill
 #   output HDMI-A-1 resolution 1920x1080 position 1920,0
 #
 # You can get the names of your outputs by running: swaymsg -t get_outputs
+# Place external monitors in right order when connecting laptop to docking station with 2 monitors
+output eDP-1 pos 0 0
+output DP-5 pos 1920 0
+output DP-6 pos 4480 0
+
+# Assign workspaces to each monitor
+workspace 1 output eDP-1
+workspace 2 output eDP-1
+workspace 3 output DP-5
+workspace 4 output DP-5 
+workspace 5 output DP-6
+workspace 6 output DP-6
+
 
 ### Idle configuration
 #
@@ -124,6 +137,10 @@ focus_follows_mouse no
     bindsym $mod+Shift+Down move down
     bindsym $mod+Shift+Up move up
     bindsym $mod+Shift+Right move right
+
+    # Move focused workspace to left/right output
+    bindsym $mod+Shift+Ctrl+$left move workspace to output left
+    bindsym $mod+Shift+Ctrl+$right move workspace to output right
 #
 # Workspaces:
 #
