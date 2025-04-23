@@ -14,6 +14,8 @@ bind 'set enable-bracketed-paste off'
 
 alias PAGER=less
 
+alias gbc=find-and-copy-branch
+alias ts='tmux-session-creator'
 alias cl=clear
 alias ls='ls --color=auto'
 alias grep='grep --color=auto'
@@ -30,6 +32,13 @@ export REPOS="${HOME}/repos"
 export EDITOR=nvim
 export BROWSER=firefox
 export NOTES="${HOME}/notes"
+
+# Repo paths
+export REPO_SIS="$HOME/repos/sis/new.sis.se/"
+export REPO_SDAPI="$HOME/repos/sis/sis.subscriptiondelivery.api/"
+export REPO_SDIAC="$HOME/repos/sis/sis.subscriptiondelivery.iac/"
+export REPO_MOL="$HOME/repos/sis/SIS.Materialnyckeln.Api/"
+export REPO_CONF="$XDG_CONFIG_HOME"
 
 # Path
 export DOTNETTOOLS='~/.dotnet/tools'
