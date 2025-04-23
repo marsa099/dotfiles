@@ -1,0 +1,86 @@
+#!/bin/bash
+
+# Check if the $NOTES environment variable is set
+if [[ -z "$NOTES" ]]; then
+  echo "Error: Environment variable \$NOTES is not set." >&2
+  exit 1
+fi
+
+# Check if the $EDITOR environment variable is set
+if [[ -z "$EDITOR" ]]; then
+  echo "Error: Environment variable \$EDITOR is not set." >&2
+  exit 1
+fi
+
+# Get the current date in the format yyyy-MM-dd
+DATE=$(date +%Y-%m-%d)
+
+# If an argument is provided
+if [[ $# -eq 1 ]]; then
+  ARGUMENT=$1
+
+  # Validate the argument for invalid characters
+  if [[ "$ARGUMENT" =~ [^a-zA-Z0-9_-] ]]; then
+    echo "Error: Argument contains invalid characters. Use only letters, numbers, underscores, and hyphens." >&2
+    exit 1
+  fi
+
+  # Set base filename with argument
+  BASE_FILENAME="$DATE-$ARGUMENT"
+else
+  # Set default base filename
+  BASE_FILENAME="$DATE-todo"
+fi
+
+# Search for matching files
+MATCHING_FILES=($(find "$NOTES" -type f -name "$DATE*.md"))
+FILE_COUNT=${#MATCHING_FILES[@]}
+
+# If matching files exist
+if [[ $FILE_COUNT -gt 0 ]]; then
+  echo "File(s) matching '$BASE_FILENAME' already exist:"
+  for i in "${!MATCHING_FILES[@]}"; do
+    # Print only the filename, not the full path
+    echo "$((i + 1)). $(basename "${MATCHING_FILES[$i]}")"
+  done
+
+  echo "Do you want to:"
+  echo "1. Open an existing file"
+  echo "2. Create a new file"
+  read -p "Enter your choice (1 or 2): " CHOICE
+
+  if [[ $CHOICE == "1" ]]; then
+    # If there's more than one matching file, let the user choose
+    if [[ $FILE_COUNT -gt 1 ]]; then
+      read -p "Enter the number of the file to open: " FILE_NUMBER
+      if [[ $FILE_NUMBER -ge 1 && $FILE_NUMBER -le $FILE_COUNT ]]; then
+        SELECTED_FILE="${MATCHING_FILES[$((FILE_NUMBER - 1))]}"
+        "$EDITOR" "$SELECTED_FILE"
+      else
+        echo "Invalid selection." >&2
+        exit 1
+      fi
+    else
+      # Open the only matching file
+      "$EDITOR" "${MATCHING_FILES[0]}"
+    fi
+    exit 0
+  elif [[ $CHOICE != "2" ]]; then
+    echo "Invalid choice." >&2
+    exit 1
+  fi
+fi
+
+# Create a new file with a unique number
+NEW_FILE="$NOTES/$BASE_FILENAME.md"
+COUNTER=2
+while [[ -e "$NEW_FILE" ]]; do
+  NEW_FILE="$NOTES/$BASE_FILENAME-$COUNTER.md"
+  ((COUNTER++))
+done
+
+# Create the new file and open it
+touch "$NEW_FILE"
+echo "Created new file: $(basename "$NEW_FILE")"
+"$EDITOR" "$NEW_FILE"
+
