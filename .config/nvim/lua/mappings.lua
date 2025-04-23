@@ -13,6 +13,10 @@ end, {
 
 local map = vim.keymap.set
 
+map({ "n", "t" }, "<A-j>", function()
+  require("nvchad.term").toggle { pos = "sp", id = "htoggleTerm2" }
+end, { desc = "terminal toggleable horizontal term 2" })
+
 map("n", ";", ":", { desc = "CMD enter command mode" })
 map("i", "jk", "<ESC>")
 
