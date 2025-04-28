@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Requires 'jq' to parse JSON: install via 'sudo pacman -S jq'
+
+# Query sway for the focused workspace and extract its output name
+output=$(swaymsg -t get_workspaces -r \
+  | jq -r '.[] | select(.focused) | .output')
+
+# Fallback to eDP-1 if no output was found
+if [[ -z "$output" ]]; then
+  output="eDP-1"
+fi
+
+# Capture a screenshot of the specified output and save to /tmp/lockscreen.png
+grim -o "$output" /tmp/lockscreen.png
+
+# Blur the image
+convert -filter Gaussian -blur 0x2.5 /tmp/lockscreen.png /tmp/lockscreen.png
+
+# Lock the screen
+swaylock -i /tmp/lockscreen.png
