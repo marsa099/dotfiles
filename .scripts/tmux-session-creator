@@ -1,12 +1,19 @@
 #!/bin/bash
 
+force_new=false
+if [ "$1" = "-n" ]; then
+    force_new=true
+    shift
+fi
+
 if [ -z "$1" ]; then
-    echo "Usage: $0 <session name: sis | sdapi>"
+    echo "Usage: $0 [-n] <session name: sis | sdapi>"
     exit 1
 fi
 
-SESSION_NAME=$(echo "$1" | tr '[:upper:]' '[:lower:]')
-VAR_NAME="REPO_$(echo "$SESSION_NAME" | tr '[:lower:]' '[:upper:]')"
+BASE_NAME=$(echo "$1" | tr '[:upper:]' '[:lower:]')
+SESSION_NAME=$BASE_NAME
+VAR_NAME="REPO_$(echo "$BASE_NAME" | tr '[:lower:]' '[:upper:]')"
 REPO_PATH="${!VAR_NAME}"
 
 if [ -z "$NOTES" ]; then
@@ -24,21 +31,33 @@ if [ ! -d "$REPO_PATH" ]; then
     exit 1
 fi
 
+if $force_new; then
+    # find existing sessions matching base name
+    sessions=$(tmux list-sessions -F "#{session_name}" 2>/dev/null | grep -E "^${BASE_NAME}[0-9]*$")
+    max=1
+    for s in $sessions; do
+        if [[ $s =~ ^${BASE_NAME}([0-9]+)$ ]]; then
+            num=${BASH_REMATCH[1]}
+            (( num > max )) && max=$num
+        elif [ "$s" = "$BASE_NAME" ]; then
+            max=1
+        fi
+    done
+    new_num=$((max+1))
+    SESSION_NAME="${BASE_NAME}${new_num}"
+fi
+
 tmux has-session -t "$SESSION_NAME" 2>/dev/null
 if [ $? != 0 ]; then
     echo "🟢 Creating new tmux session: $SESSION_NAME"
     tmux new-session -d -s "$SESSION_NAME" -n notes -c "$NOTES"
-    echo "🎯 Starting nvim in window 1 (notes)"
     tmux send-keys -t "$SESSION_NAME":1 "nvim _${SESSION_NAME}.md" C-m
 
-    echo "➕ Creating window 2 (nvim)"
     tmux new-window -t "$SESSION_NAME":2 -n nvim -c "$REPO_PATH"
     tmux send-keys -t "$SESSION_NAME":2 'nvim .' C-m
 
-    echo "➕ Creating window 3 (shell)"
     tmux new-window -t "$SESSION_NAME":3 -n shell -c "$REPO_PATH"
 
-    echo "🎯 Selecting window 2 as focused window"
     tmux select-window -t "$SESSION_NAME":2
 else
     echo "ℹ️  Session '$SESSION_NAME' already exists – skipping setup"
@@ -46,5 +65,5 @@ fi
 
 echo "🔗 Attaching to session $SESSION_NAME"
 tmux attach-session -t "$SESSION_NAME"
-
 tmux select-window -t "$SESSION_NAME":2
+
