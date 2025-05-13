@@ -18,7 +18,7 @@
 
 	rs = restore --staged
 
-  co = "!f() { git checkout \"$(git branch --all | grep -v '/HEAD' | sed 's/remotes\\/origin\\///' | sed 's/^..//' | sed 's/^ *//' | sort -u | fzf)\"; }; f"
+  co = checkout
 	cob = checkout -b
 	com = checkout main
 
