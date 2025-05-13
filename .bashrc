@@ -41,7 +41,9 @@ export REPO_SDAPI="$HOME/repos/sis/sis.subscriptiondelivery.api/"
 export REPO_SDIAC="$HOME/repos/sis/sis.subscriptiondelivery.iac/"
 export REPO_IDP="$HOME/repos/sis/sis.identityserver4/"
 export REPO_MOL="$HOME/repos/sis/SIS.Materialnyckeln.Api/"
+export REPO_MONO="$HOME/repos/sis/sis-frontend/"
 export REPO_CONF="$XDG_CONFIG_HOME"
+export REPO_DPMYPAGE="$HOME/repos/sis/SIS.CommitteePortal.WebParts.Personalized"
 
 # Path
 export DOTNETTOOLS='~/.dotnet/tools'
