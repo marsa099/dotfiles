@@ -35,7 +35,8 @@ export NOTES="${HOME}/notes"
 
 # Repo paths
 export REPO_SIS="$HOME/repos/sis/new.sis.se/"
-export REPO_SDFE="$HOME/repos/sis/sis-frontend/"
+export REPO_FE="$HOME/repos/sis/sis-frontend/"
+export REPO_FEIAC="$HOME/repos/sis/sis-frontend-iac/"
 export REPO_SDBFF="$HOME/repos/sis/sis.subscriptiondelivery.frontend/"
 export REPO_SDAPI="$HOME/repos/sis/sis.subscriptiondelivery.api/"
 export REPO_SDIAC="$HOME/repos/sis/sis.subscriptiondelivery.iac/"
