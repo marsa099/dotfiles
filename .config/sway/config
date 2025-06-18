@@ -81,6 +81,10 @@ input * {
     xkb_options "grp:alt_shift_toggle"
 }
 
+input * {
+    # Map Caps Lock to Escape
+    xkb_options caps:escape
+}
 # No borders
 default_border none
 
