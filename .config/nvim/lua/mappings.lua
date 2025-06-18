@@ -79,3 +79,9 @@ map("n", "<leader>ga", "<cmd>CopilotChatAgents<CR>", {
   silent = true,
   desc = "Select Copilot chat agent",
 })
+
+map("n", "<leader>po", "o<Esc>p", {
+  noremap = true,
+  silent = true,
+  desc = "Open line below, return to normal and paste",
+})
