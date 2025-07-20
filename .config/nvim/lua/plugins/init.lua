@@ -1,4 +1,6 @@
 return {
+  -- Disable NvChad defaults for plugins we want full control over
+  { "stevearc/conform.nvim", enabled = false },
   {
     "github/copilot.vim",
     lazy = false,
@@ -18,8 +20,33 @@ return {
   },
   {
     "stevearc/conform.nvim",
-    event = "BufWritePre", -- uncomment for format on save
-    opts = require "configs.conform",
+    event = "BufWritePre",
+    opts = {
+      -- NvChad base config: formatters_by_ft = { lua = { "stylua" } }
+      -- Extended with user formatters
+      formatters_by_ft = {
+        lua = { "stylua" },
+        csharp = { "csharpier" },
+        javascript = { "prettier" },
+        typescript = { "prettier" },
+        javascriptreact = { "prettier" },
+        typescriptreact = { "prettier" },
+        svelte = { "prettier" },
+        vue = { "prettier" },
+        css = { "prettier" },
+        html = { "prettier" },
+        less = { "prettier" },
+        scss = { "prettier" },
+        markdown = { "prettier" },
+        json = { "prettier" },
+        yaml = { "prettier" },
+      },
+      
+      format_after_save = {
+        timeout_ms = 500,
+        lsp_fallback = true,
+      },
+    },
   },
   {
     "williamboman/mason.nvim",
