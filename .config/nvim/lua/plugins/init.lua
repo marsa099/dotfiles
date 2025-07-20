@@ -50,12 +50,17 @@ return {
   },
   {
     "williamboman/mason-lspconfig.nvim",
-    after = "mason.nvim",
-    config = function()
-      require("mason-lspconfig").setup {
-        ensure_installed = { "jsonls" },
-      }
-    end,
+    dependencies = { "mason.nvim" },
+    opts = {
+      ensure_installed = { 
+        "html", 
+        "cssls", 
+        "ts_ls", 
+        "jsonls", 
+        "tailwindcss" 
+        -- Note: bicep and omnisharp require manual installation
+      },
+    },
   },
   -- These are some examples, uncomment them if you want to see them work!
   {
