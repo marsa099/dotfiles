@@ -39,6 +39,8 @@ lspconfig.tailwindcss.setup {
 }
 
 -- OmniSharp setup with custom settings (mason manages installation)
+-- NOTE: For .NET Framework projects, you may need to override cmd with:
+-- cmd = { "/opt/omnisharp-mono/run", "--languageserver", "--hostPID", tostring(vim.fn.getpid()) }
 lspconfig.omnisharp.setup {
   on_attach = nvlsp.on_attach,
   on_init = nvlsp.on_init,
