@@ -124,6 +124,3 @@ else
   }
 end
 
-lspconfig.bicep.setup {
-  cmd = { "dotnet", "/usr/local/bin/bicep-langserver/Bicep.LangServer.dll" },
-}

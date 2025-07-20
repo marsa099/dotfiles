@@ -57,8 +57,9 @@ return {
         "cssls", 
         "ts_ls", 
         "jsonls", 
-        "tailwindcss" 
-        -- Note: bicep and omnisharp require manual installation
+        "tailwindcss",
+        "bicep"
+        -- Note: omnisharp requires manual installation
       },
     },
   },
