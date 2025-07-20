@@ -58,8 +58,9 @@ return {
         "ts_ls", 
         "jsonls", 
         "tailwindcss",
-        "bicep"
-        -- Note: omnisharp requires manual installation
+        "bicep",
+        "omnisharp"
+        -- Note: all LSPs now managed by mason
       },
     },
   },
