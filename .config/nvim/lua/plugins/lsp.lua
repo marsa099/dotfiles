@@ -9,7 +9,7 @@ return {
       local nvlsp = require "nvchad.configs.lspconfig"
 
       -- LSP servers with default config
-      local servers = { "html", "cssls", "bicep", "ts_ls", "jsonls", "tailwindcss", "omnisharp" }
+      local servers = { "html", "cssls", "bicep", "jsonls", "omnisharp" }
       
       for _, lsp in ipairs(servers) do
         lspconfig[lsp].setup {
@@ -19,7 +19,7 @@ return {
         }
       end
 
-      -- TypeScript server (duplicate setup - consider removing)
+      -- TypeScript server with default config
       lspconfig.ts_ls.setup {
         on_attach = nvlsp.on_attach,
         on_init = nvlsp.on_init,
@@ -46,9 +46,14 @@ return {
       -- NOTE: For .NET Framework projects, you may need to override cmd with:
       -- cmd = { "/opt/omnisharp-mono/run", "--languageserver", "--hostPID", tostring(vim.fn.getpid()) }
       lspconfig.omnisharp.setup {
+        cmd = { vim.fn.exepath("omnisharp"), "--languageserver", "--hostPID", tostring(vim.fn.getpid()) },
         on_attach = nvlsp.on_attach,
         on_init = nvlsp.on_init,
         capabilities = nvlsp.capabilities,
+        root_dir = function(fname)
+          return lspconfig.util.root_pattern("*.sln", "*.csproj", "omnisharp.json", "function.json")(fname)
+            or lspconfig.util.find_git_ancestor(fname)
+        end,
         settings = {
           FormattingOptions = {
             -- Enables support for reading code style, naming convention and analyzer
