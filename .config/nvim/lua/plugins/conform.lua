@@ -1,7 +1,4 @@
 return {
-  -- Disable NvChad's default conform
-  { "stevearc/conform.nvim", enabled = false },
-  
   {
     "stevearc/conform.nvim",
     event = "BufWritePre",
@@ -25,7 +22,6 @@ return {
         json = { "prettier" },
         yaml = { "prettier" },
       },
-      
       format_after_save = {
         timeout_ms = 500,
         lsp_fallback = true,
