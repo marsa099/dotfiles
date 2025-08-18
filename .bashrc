@@ -8,6 +8,11 @@
 # Make sure ^[[200~ is not a part of the paste output from the clipboard
 bind 'set enable-bracketed-paste off'
 
+# History settings
+export HISTCONTROL=ignoreboth:erasedups
+export HISTSIZE=10000
+export HISTFILESIZE=20000
+shopt -s histappend
 # Sets az devops PAT to env var
 # Need to move. This requires auth which is very annoying as soon as you open a terminal
 #export AZURE_DEVOPS_EXT_PAT=$(pass sis/devops/pat)
@@ -25,7 +30,7 @@ alias grep='grep --color=auto'
 # 		color)
 # \e[1m		Bold text on
 # \e(B\e[m	Reset text attributes
-export PS1="\e[32m\e[1m\W $ \e(B\e[m"
+export PS1="\[\e[32m\e[1m\]\W $ \[\e[0m\]"
 
 # Environment variables
 export REPOS="${HOME}/repos"
