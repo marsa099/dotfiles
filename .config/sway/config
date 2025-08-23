@@ -78,12 +78,8 @@ exec_always --no-startup-id /usr/bin/dunst
 # Set keyboard layout
 input * {
     xkb_layout "se,us"
-    xkb_options "grp:alt_shift_toggle"
-}
-
-input * {
-    # Map Caps Lock to Escape
-    xkb_options caps:escape
+    # Alt+Shift to switch between se/us layouts, Caps Lock acts as Escape
+    xkb_options "grp:alt_shift_toggle,caps:escape"
 }
 # No borders
 default_border none
