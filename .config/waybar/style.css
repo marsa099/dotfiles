@@ -78,6 +78,7 @@ button:hover {
 }
 
 #clock,
+#custom-date,
 #battery,
 #cpu,
 #memory,
@@ -113,8 +114,13 @@ button:hover {
   margin-right: 0;
 }
 
+#custom-date {
+  /* background-color: #64727D; */
+}
+
+
 #clock {
-  background-color: #64727D;
+  /* background-color: #64727D; */
 }
 
 #battery {
