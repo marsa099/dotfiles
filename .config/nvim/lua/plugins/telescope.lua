@@ -4,7 +4,20 @@ return {
     opts = function()
       -- Get NvChad's base telescope config
       local base_config = require "nvchad.configs.telescope"
-      
+
+      if not base_config.defaults then
+        base_config.defaults = {}
+      end
+      if not base_config.defaults.mappings then
+        base_config.defaults.mappings = {}
+      end
+      if not base_config.defaults.mappings.i then
+        base_config.defaults.mappings.i = {}
+      end
+      local actions = require "telescope.actions"
+      base_config.defaults.mappings.i["<C-j>"] = actions.move_selection_next
+      base_config.defaults.mappings.i["<C-k>"] = actions.move_selection_previous
+
       -- Add ui-select extension to NvChad's extensions
       if not base_config.extensions then
         base_config.extensions = {}
@@ -12,7 +25,7 @@ return {
       base_config.extensions["ui-select"] = {
         require("telescope.themes").get_dropdown {},
       }
-      
+
       return base_config
     end,
   },
