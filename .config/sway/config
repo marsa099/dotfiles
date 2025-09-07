@@ -253,6 +253,8 @@ bindsym $mod+r mode "resize"
 # Status Bar:
 #
 # Waybar
-exec_always killall waybar; waybar
+bar {
+  swaybar_command waybar
+}
 
 include /etc/sway/config.d/*
