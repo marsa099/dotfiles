@@ -167,6 +167,19 @@ seat * hide_cursor 3000
     bindsym $mod+8 workspace number 8
     bindsym $mod+9 workspace number 9
     bindsym $mod+0 workspace number 10
+
+    # Workspace 1-10 on qwertyuiop
+    bindsym $mod+q workspace number 1
+    bindsym $mod+w workspace number 2
+    bindsym $mod+e workspace number 3
+    bindsym $mod+r workspace number 4
+    bindsym $mod+t workspace number 5
+    bindsym $mod+y workspace number 6
+    bindsym $mod+u workspace number 7
+    bindsym $mod+i workspace number 8
+    bindsym $mod+o workspace number 9
+    bindsym $mod+p workspace number 10
+
     # Move focused container to workspace
     bindsym $mod+Shift+1 move container to workspace number 1
     bindsym $mod+Shift+2 move container to workspace number 2
@@ -191,8 +204,8 @@ seat * hide_cursor 3000
 
     # Switch the current container between different layout styles
     bindsym $mod+s layout stacking
-    bindsym $mod+w layout tabbed
-    bindsym $mod+e layout toggle split
+    # bindsym $mod+w layout tabbed
+    # bindsym $mod+e layout toggle split
 
     # Make the current focus fullscreen
     bindsym $mod+f fullscreen
@@ -240,7 +253,8 @@ mode "resize" {
     bindsym Return mode "default"
     bindsym Escape mode "default"
 }
-bindsym $mod+r mode "resize"
+# bindsym $mod+r mode "resize"
+bindsym $mod+Shift+r mode "resize"
 #
 # Utilities:
 #
