@@ -97,6 +97,9 @@ bindsym $mod+Shift+d exec COORDS=$(slurp) && sleep 3 && grim -g "$COORDS" - | wl
 
 focus_follows_mouse no
 
+# Hide cursor after 3000 ms
+seat * hide_cursor 3000
+
 ### Key bindings
 #
 # Basics:
