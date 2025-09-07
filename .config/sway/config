@@ -90,7 +90,10 @@ input * repeat_delay 220
 input * repeat_rate 120
 
 # Print screen (part of screen)
-bindsym $mod+Shift+s exec grim -g "$(slurp)" - | wl-copy
+bindsym $mod+Shift+s exec grim -g "$(slurp)" - | wl-copy && notify-send "Screenshot captured" -t 500
+
+# Print screen with delay (select area first, then wait 3 seconds before capturing)
+bindsym $mod+Shift+d exec COORDS=$(slurp) && sleep 3 && grim -g "$COORDS" - | wl-copy && notify-send "Screenshot captured" -t 500
 
 focus_follows_mouse no
 
