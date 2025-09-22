@@ -168,7 +168,7 @@
     },
     "format": "{capacity}% {icon}",
     "format-full": "{capacity}% {icon}",
-    "format-charging": "{capacity}% ",
+    "format-charging": "{capacity}% 󰢝",
     "format-plugged": "{capacity}% ",
     "format-alt": "{time} {icon}",
     // "format-good": "", // An empty format will hide the module
@@ -203,7 +203,8 @@
     "tooltip-format": "{essid}\n{ifname} via {gwaddr} ",
     "format-linked": "{ifname} (No IP) ",
     "format-disconnected": "Disconnected ⚠",
-    "format-alt": "{ifname}: {ipaddr}/{cidr}"
+    "format-alt": "{ifname}: {ipaddr}/{cidr}",
+    "interval": 1
   },
   "pulseaudio": {
     // "scroll-step": 1, // %, can be a float
