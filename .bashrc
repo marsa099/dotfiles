@@ -84,6 +84,11 @@ alias connect-mobile='connect-wifi martin'
 alias ll='ls -la'
 alias n='nvim'
 
+# Function to create directory and cd into it
+mkcd () {
+    mkdir -p "$1" && cd "$1"
+}
+
 # Scripts
 alias dp='delete-prompt'
 
