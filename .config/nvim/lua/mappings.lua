@@ -64,20 +64,32 @@ end
 
 map("n", "<leader>cd", yank_diagnostics, { desc = "Yank diagnostics to clipboard", noremap = true, silent = true })
 
-map("n", "<leader>gc", "<cmd>CopilotChatToggle<CR>", {
-  noremap = true,
-  silent = true,
-  desc = "Toggle Copilot Chat",
-})
-
-map("n", "<leader>ga", "<cmd>CopilotChatAgents<CR>", {
-  noremap = true,
-  silent = true,
-  desc = "Select Copilot chat agent",
-})
-
 map("n", "<leader>po", "o<Esc>p", {
   noremap = true,
   silent = true,
   desc = "Open line below, return to normal and paste",
+})
+
+-- Override NvChad's default <leader>fw (Telescope live_grep) with live-grep-args
+-- This allows passing ripgrep arguments (auto_quoting is disabled for proper arg parsing):
+--   pattern --hidden (include hidden files)
+--   "exact match with spaces" (search for exact phrase - use quotes)
+--   pattern -g *.lua (only search in lua files)
+--   pattern --no-ignore (include gitignored files)
+--   pattern -t lua (search in lua files by type)
+--   pattern -g *controller* (search in files with "controller" in the name)
+--   pattern -g *.{js,ts,tsx} (search in multiple extensions)
+--   pattern -i (case insensitive search)
+--   pattern -s (case sensitive search)
+--   pattern src/ (search only in src/ directory)
+--   pattern -g !node_modules (exclude node_modules directory)
+--   pattern -g !*.min.js (exclude minified js files)
+-- Note: Ripgrep is "case-smart" by default - case insensitive if pattern is all lowercase,
+--       case sensitive if pattern contains uppercase letters
+map("n", "<leader>fw", function()
+  require("telescope").extensions.live_grep_args.live_grep_args()
+end, {
+  noremap = true,
+  silent = true,
+  desc = "Live grep with args",
 })

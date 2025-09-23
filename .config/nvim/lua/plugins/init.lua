@@ -1,7 +1,6 @@
 return {
   -- Import all plugin configurations
   { import = "plugins.conform" },
-  { import = "plugins.copilot" },
   { import = "plugins.mason" },
   { import = "plugins.lsp" },
   { import = "plugins.tree" },

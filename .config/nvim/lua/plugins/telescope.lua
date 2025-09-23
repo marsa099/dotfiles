@@ -37,4 +37,19 @@ return {
       require("telescope").load_extension "ui-select"
     end,
   },
+  {
+    "nvim-telescope/telescope-live-grep-args.nvim",
+    dependencies = { "nvim-telescope/telescope.nvim" },
+    config = function()
+      local telescope = require("telescope")
+      telescope.setup {
+        extensions = {
+          live_grep_args = {
+            auto_quoting = false, -- Disable auto-quoting to allow ripgrep flags
+          }
+        }
+      }
+      telescope.load_extension "live_grep_args"
+    end,
+  },
 }
