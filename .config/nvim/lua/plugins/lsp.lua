@@ -9,8 +9,8 @@ return {
       local nvlsp = require "nvchad.configs.lspconfig"
 
       -- LSP servers with default config
-      local servers = { "html", "cssls", "bicep", "jsonls", "omnisharp" }
-      
+      local servers = { "html", "cssls", "bicep", "jsonls" }
+
       for _, lsp in ipairs(servers) do
         lspconfig[lsp].setup {
           on_attach = nvlsp.on_attach,
@@ -45,8 +45,15 @@ return {
       -- OmniSharp setup with custom settings (mason manages installation)
       -- NOTE: For .NET Framework projects, you may need to override cmd with:
       -- cmd = { "/opt/omnisharp-mono/run", "--languageserver", "--hostPID", tostring(vim.fn.getpid()) }
-      lspconfig.omnisharp.setup {
-        cmd = { vim.fn.exepath("omnisharp"), "--languageserver", "--hostPID", tostring(vim.fn.getpid()) },
+      -- Mason installs OmniSharp with capital letters
+      local omnisharp_path = vim.fn.exepath "OmniSharp"
+      if omnisharp_path == "" then
+        omnisharp_path = vim.fn.exepath "omnisharp"
+      end
+      if omnisharp_path ~= "" then
+        lspconfig.omnisharp.setup {
+          -- Let lspconfig handle the command arguments to avoid duplicates
+          cmd = { omnisharp_path },
         on_attach = nvlsp.on_attach,
         on_init = nvlsp.on_init,
         capabilities = nvlsp.capabilities,
@@ -93,6 +100,8 @@ return {
           },
         },
       }
+      end
     end,
   },
 }
+

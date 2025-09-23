@@ -22,10 +22,18 @@ return {
         json = { "prettier" },
         yaml = { "prettier" },
       },
-      format_after_save = {
-        timeout_ms = 500,
-        lsp_fallback = true,
-      },
+      format_after_save = function(bufnr)
+        -- Disable autoformat for cshtml files
+        local bufname = vim.api.nvim_buf_get_name(bufnr)
+        if bufname:match("%.cshtml$") then
+          return
+        end
+        -- Return format options for other files
+        return {
+          timeout_ms = 500,
+          lsp_fallback = true,
+        }
+      end,
     },
   },
 }

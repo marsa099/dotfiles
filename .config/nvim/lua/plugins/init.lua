@@ -8,4 +8,6 @@ return {
   { import = "plugins.telescope" },
   { import = "plugins.omnisharp-extended" },
   { import = "plugins.auto-session" },
+  { import = "plugins.mini-nvim" },
+  { import = "plugins.matchup" },
 }
