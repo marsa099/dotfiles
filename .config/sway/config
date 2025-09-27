@@ -124,6 +124,9 @@ seat * hide_cursor 3000
     # Reload the configuration file
     bindsym $mod+Shift+c reload
 
+    # Lock screen
+    bindsym $mod+Ctrl+l exec ~/.scripts/wswaylock
+
     # Exit sway (logs you out of your Wayland session)
     bindsym $mod+Shift+e exec swaynag -t warning -m 'You pressed the exit shortcut. Do you really want to exit sway? This will end your Wayland session.' -B 'Yes, exit sway' 'swaymsg exit'
 #
