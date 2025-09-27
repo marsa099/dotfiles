@@ -11,3 +11,6 @@ IMPORTANT: NEVER add trailing whitespaces after lines or whitespace-only lines. 
 - No trailing whitespaces at the end of lines
 - No lines that contain only whitespace characters
 - Empty lines should be completely empty with no spaces or tabs
+
+# Solution Approach
+IMPORTANT: Always push back when the user has an idea that seems overly complex. Keep solutions as simple and maintainable as possible. If a simpler solution exists, suggest it first before implementing complex workarounds. Question whether the complexity is really needed and propose alternatives that are easier to maintain.
