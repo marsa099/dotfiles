@@ -7,7 +7,7 @@ return {
       -- Extended with user formatters
       formatters_by_ft = {
         lua = { "stylua" },
-        csharp = { "csharpier" },
+        cs = { "csharpier" },
         javascript = { "prettier" },
         typescript = { "prettier" },
         javascriptreact = { "prettier" },
@@ -21,6 +21,12 @@ return {
         markdown = { "prettier" },
         json = { "prettier" },
         yaml = { "prettier" },
+      },
+      formatters = {
+        -- Fix csharpier to use the correct command name
+        csharpier = {
+          command = "dotnet-csharpier",
+        },
       },
       format_after_save = function(bufnr)
         -- Disable autoformat for cshtml files
