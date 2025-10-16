@@ -21,6 +21,8 @@
   co = checkout
 	cob = checkout -b
 	com = checkout main
+	cof = "!branch=$(git branch --format='%(refname:short)' | fzf); [ -n \"$branch\" ] && git checkout \"$branch\""
+	cofd = "!f() { git for-each-ref --sort=-committerdate --format='%(refname:short)|%(committerdate:short)' refs/heads/ | column -t -s '|' | fzf --height=40% --reverse | awk '{print $1}' | xargs -r git checkout; }; f"
 
 	a = add
 	ap = add -p
