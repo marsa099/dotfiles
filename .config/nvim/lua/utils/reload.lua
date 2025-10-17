@@ -58,26 +58,21 @@ end
 
 -- Reload config (called both locally and remotely)
 function M.reload_config()
-  -- Clear Lua modules from cache (except plugins, lazy, and this reload script)
+  -- Clear only config and utils modules (whitelist approach)
   for name, _ in pairs(package.loaded) do
-    if not name:match("^plugins") and not name:match("^lazy") and name ~= "utils.reload" then
+    if name:match("^config%.") or (name:match("^utils%.") and name ~= "utils.reload") then
       package.loaded[name] = nil
     end
   end
 
-  -- Reload only specific config modules (NOT init.lua to avoid re-initializing lazy.nvim)
+  -- Reload config modules only (plugins require restart)
   local ok, err = pcall(function()
     -- Reload config modules
     require("config.options")
     require("config.keymaps")
 
-    -- Add other config modules as you create them
-    -- local modules_to_reload = {"config.autocmds"}
-    -- for _, module in ipairs(modules_to_reload) do
-    --   if package.loaded[module] then
-    --     require(module)
-    --   end
-    -- end
+    -- Add other config modules here as you create them
+    -- require("config.autocmds")
   end)
 
   if not ok then
