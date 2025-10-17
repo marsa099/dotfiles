@@ -69,9 +69,10 @@ function M.reload_config()
   local ok, err = pcall(function()
     -- Reload config modules
     require("config.options")
+    require("config.keymaps")
 
     -- Add other config modules as you create them
-    -- local modules_to_reload = {"config.keymaps", "config.autocmds"}
+    -- local modules_to_reload = {"config.autocmds"}
     -- for _, module in ipairs(modules_to_reload) do
     --   if package.loaded[module] then
     --     require(module)
