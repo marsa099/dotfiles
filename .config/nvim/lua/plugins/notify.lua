@@ -6,7 +6,7 @@ return {
     local notify = require("notify")
 
     notify.setup({
-      timeout = 2000,
+      timeout = 3000,
       render = "compact",
       stages = "fade",
       background_colour = "#000000",
