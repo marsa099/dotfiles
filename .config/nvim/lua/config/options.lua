@@ -15,7 +15,7 @@ vim.opt.smartcase = true
 vim.opt.fillchars = { eob = " " }
 
 -- Every indent is shown as 4 spaces
-vim.opt.tabstop = 4
+vim.opt.tabstop = 2
 
 -- Manual indent by 4 spaces
-vim.opt.shiftwidth = 4
+vim.opt.shiftwidth = 2

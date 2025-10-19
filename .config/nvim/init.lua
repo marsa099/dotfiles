@@ -44,11 +44,3 @@ if not package.loaded["lazy"] then
 		},
 	})
 end
-
--- Setup reload after plugins are loaded
-vim.defer_fn(function()
-	local ok, reload = pcall(require, "utils.reload")
-	if ok then
-		reload.setup()
-	end
-end, 100)
