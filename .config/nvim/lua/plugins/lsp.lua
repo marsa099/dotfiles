@@ -44,8 +44,18 @@ return {
 				},
 			})
 
-			-- Enable lua_ls for Lua files
+			-- Configure omnisharp for C#
+			vim.lsp.config("omnisharp", {})
+
+			-- Configure ts_ls for TypeScript/JavaScript
+			vim.lsp.config("ts_ls", {
+				root_markers = { "package.json", "tsconfig.json", "jsconfig.json", ".git" },
+			})
+
+			-- Enable LSP servers
 			vim.lsp.enable("lua_ls")
+			vim.lsp.enable("omnisharp")
+			vim.lsp.enable("ts_ls")
 		end,
 	},
 }
