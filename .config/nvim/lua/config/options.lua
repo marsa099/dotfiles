@@ -1,3 +1,7 @@
+-- Hide nvim start screen
+vim.opt.shortmess:append("I")
+
+-- Relative + current line number
 vim.opt.number = true
 vim.opt.relativenumber = true
 
@@ -9,3 +13,9 @@ vim.opt.smartcase = true
 
 -- Hide ~ on empty lines
 vim.opt.fillchars = { eob = " " }
+
+-- Every indent is shown as 4 spaces
+vim.opt.tabstop = 4
+
+-- Manual indent by 4 spaces
+vim.opt.shiftwidth = 4
