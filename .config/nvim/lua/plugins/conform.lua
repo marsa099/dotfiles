@@ -7,6 +7,12 @@ return {
 				lua = { "stylua" },
 				cs = { "csharpier" },
 			},
+			formatters = {
+				csharpier = {
+					command = "dotnet-csharpier",
+					args = { "--write-stdout" },
+				},
+			},
 			format_on_save = {
 				timeout_ms = 500,
 				lsp_fallback = true,
