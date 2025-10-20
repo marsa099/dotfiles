@@ -25,9 +25,6 @@ if not package.loaded["lazy"] then
 		defaults = {
 			lazy = true,
 		},
-		install = {
-			colorscheme = { "default" },
-		},
 		checker = {
 			enabled = false,
 		},

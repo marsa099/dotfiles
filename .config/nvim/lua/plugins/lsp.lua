@@ -3,13 +3,23 @@ return {
 		"neovim/nvim-lspconfig",
 		lazy = false,
 		config = function()
-			-- Basic LSP keybindings
+			-- Complete LSP keybindings
 			vim.api.nvim_create_autocmd("LspAttach", {
 				group = vim.api.nvim_create_augroup("UserLspConfig", { clear = true }),
 				callback = function(ev)
 					local opts = { buffer = ev.buf }
+
+					-- Navigation
 					vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
+					vim.keymap.set("n", "gi", vim.lsp.buf.implementation, opts)
+					vim.keymap.set("n", "gr", vim.lsp.buf.references, opts)
+					vim.keymap.set("n", "gD", vim.lsp.buf.declaration, opts)
+
+					-- Information
 					vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
+					vim.keymap.set("i", "<C-k>", vim.lsp.buf.signature_help, opts)
+
+					-- Actions
 					vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts)
 					vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, opts)
 				end,
@@ -45,7 +55,17 @@ return {
 			})
 
 			-- Configure omnisharp for C#
-			vim.lsp.config("omnisharp", {})
+			vim.lsp.config("omnisharp", {
+				root_markers = { "*.sln", "*.csproj", "omnisharp.json", ".git" },
+				settings = {
+					FormattingOptions = {
+						EnableEditorConfigSupport = true,
+					},
+					Sdk = {
+						IncludePrereleases = true,
+					},
+				},
+			})
 
 			-- Configure ts_ls for TypeScript/JavaScript
 			vim.lsp.config("ts_ls", {

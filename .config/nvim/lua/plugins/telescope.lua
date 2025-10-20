@@ -2,11 +2,25 @@ return {
 	{
 		"nvim-telescope/telescope.nvim",
 		dependencies = { "nvim-lua/plenary.nvim" },
-		lazy = false,
+		keys = {
+			{ "<leader>ff", "<cmd>Telescope find_files<cr>", desc = "Find files" },
+			{ "<leader>fw", "<cmd>Telescope live_grep<cr>", desc = "Live grep" },
+			{ "<leader>th", "<cmd>Telescope colorscheme<cr>", desc = "Theme selector" },
+		},
+		cmd = "Telescope",
 		config = function()
-			local builtin = require("telescope.builtin")
-			vim.keymap.set("n", "<leader>ff", builtin.find_files, {})
-			vim.keymap.set("n", "<leader>fw", builtin.live_grep, {})
+			require("telescope").setup({
+				pickers = {
+					colorscheme = {
+						enable_preview = true,
+						previewer = false,
+						layout_config = {
+							height = 0.4,
+							width = 0.2,
+						},
+					},
+				},
+			})
 		end,
 	},
 }
