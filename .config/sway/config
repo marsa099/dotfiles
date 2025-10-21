@@ -75,6 +75,8 @@ output * bg /home/martin/wallpapers/linux_arch1.png fill
 # Start dunst (notification daemon)
 exec_always --no-startup-id /usr/bin/dunst
 
+# Start kanshi (dynamic display configuration)
+exec_always kanshi
 
 # Set keyboard layout
 input * {
