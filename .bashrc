@@ -39,10 +39,10 @@ export BROWSER=firefox
 export NOTES="${HOME}/notes"
 
 # Path
-export DOTNETTOOLS='~/.dotnet/tools'
+export DOTNETTOOLS="${HOME}/.dotnet/tools"
 export SCRIPTS="${HOME}/.scripts"
 export XDG_CONFIG_HOME="${HOME}/.config"
-export NPM_PATH='~/.npm-global/bin'
+export NPM_PATH="${HOME}/.npm-global/bin"
 
 export PATH="$PATH:$DOTNETTOOLS:$SCRIPTS:$XDG_CONFIG_HOME:$NPM_PATH"
 
