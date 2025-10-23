@@ -1,0 +1,15 @@
+# Kanshi dynamic display configuration
+# This file automatically applies monitor configurations based on connected displays
+
+# Home setup 1 - Laptop + LG 4K monitor
+profile home_1 {
+    output "California Institute of Technology" "0x1404" "" mode 1920x1200@60Hz position 0,0
+    output "LG Electronics" "LG TV SSCR2" "0x01010101" mode 3840x2160@60Hz position 1920,0
+}
+
+# Add more profiles below as you connect to different monitor setups
+# Example:
+# profile work_dual {
+#     output "Make" "Model" "Serial" mode WIDTHxHEIGHT@REFRESHHz position X,Y
+#     output "Make" "Model" "Serial" mode WIDTHxHEIGHT@REFRESHHz position X,Y
+# }
