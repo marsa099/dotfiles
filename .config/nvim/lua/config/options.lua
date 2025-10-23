@@ -19,3 +19,12 @@ vim.opt.tabstop = 2
 
 -- Manual indent by 4 spaces
 vim.opt.shiftwidth = 2
+
+-- Enable project-specific configuration files (.nvim.lua, .nvimrc, .exrc)
+-- This allows each project to have its own settings that override global config
+vim.opt.exrc = true
+
+-- Security protection for project-specific configs
+-- Restricts dangerous operations (shell commands, autocmds, etc.) in untrusted project files
+-- Safe operations like setting variables (vim.g.disable_autoformat) are still allowed
+vim.opt.secure = true
