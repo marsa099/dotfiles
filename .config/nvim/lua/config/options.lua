@@ -17,11 +17,14 @@ vim.opt.smartcase = true
 -- Hide ~ on empty lines
 vim.opt.fillchars = { eob = " " }
 
+-- Spaces instead of tabs
+vim.opt.expandtab = true
+
 -- Every indent is shown as 4 spaces
-vim.opt.tabstop = 2
+vim.opt.tabstop = 4
 
 -- Manual indent by 4 spaces
-vim.opt.shiftwidth = 2
+vim.opt.shiftwidth = 4
 
 -- Enable project-specific configuration files (.nvim.lua, .nvimrc, .exrc)
 -- This allows each project to have its own settings that override global config
