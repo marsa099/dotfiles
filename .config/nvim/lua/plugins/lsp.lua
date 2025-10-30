@@ -57,9 +57,26 @@ return {
 			-- Configure omnisharp for C#
 			vim.lsp.config("omnisharp", {
 				root_markers = { "*.sln", "*.csproj", "omnisharp.json", ".git" },
+				cmd = {
+					"OmniSharp",
+					"--languageserver",
+					"--hostPID", tostring(vim.fn.getpid()),
+				},
 				settings = {
 					FormattingOptions = {
 						EnableEditorConfigSupport = true,
+						OrganizeImports = true,
+					},
+					RoslynExtensionsOptions = {
+						EnableAnalyzersSupport = true,
+						EnableImportCompletion = true,
+						EnableDecompilationSupport = true,
+						AnalyzeOpenDocumentsOnly = false,
+						InlayHintsOptions = {
+							EnableForParameters = true,
+							ForLiteralParameters = true,
+							ForIndexerParameters = true,
+						},
 					},
 					Sdk = {
 						IncludePrereleases = true,
