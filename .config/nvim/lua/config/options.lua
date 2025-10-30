@@ -8,6 +8,9 @@ vim.opt.relativenumber = true
 -- Share clipboard between nvim and rest of the system
 vim.opt.clipboard = "unnamedplus"
 
+-- Needed to make smartcase work apparently
+vim.opt.ignorecase = true
+
 -- Smart case for search commands (only case sensitive when uppercase is used)
 vim.opt.smartcase = true
 
