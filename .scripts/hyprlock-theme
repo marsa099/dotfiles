@@ -1,0 +1,125 @@
+#!/bin/bash
+# Hyprlock Theme Switcher
+# Switch between different sci-fi themed hyprlock configurations
+
+HYPR_DIR="$HOME/.config/hypr"
+CURRENT_CONFIG="$HYPR_DIR/hyprlock.conf"
+
+# Color codes for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+PURPLE='\033[0;35m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Function to display available themes
+show_themes() {
+    echo -e "${CYAN}╔════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║      HYPRLOCK SCI-FI THEME SWITCHER       ║${NC}"
+    echo -e "${CYAN}╚════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "${GREEN}Available themes:${NC}"
+    echo -e "  ${BLUE}1) holographic${NC} - Blue Holographic (Minority Report style)"
+    echo -e "  ${GREEN}2) matrix${NC}      - Matrix Green Terminal"
+    echo -e "  ${PURPLE}3) cyberpunk${NC}   - Cyberpunk Neon (Blade Runner style)"
+    echo -e "  ${RED}4) redalert${NC}    - Red Alert Critical System"
+    echo -e "  ${YELLOW}5) backup${NC}      - Restore original configuration"
+    echo ""
+}
+
+# Function to switch theme
+switch_theme() {
+    local theme=$1
+    local theme_file=""
+    local theme_name=""
+
+    case $theme in
+        1|holographic)
+            theme_file="hyprlock-holographic.conf"
+            theme_name="Blue Holographic"
+            ;;
+        2|matrix)
+            theme_file="hyprlock-matrix.conf"
+            theme_name="Matrix Green Terminal"
+            ;;
+        3|cyberpunk)
+            theme_file="hyprlock-cyberpunk.conf"
+            theme_name="Cyberpunk Neon"
+            ;;
+        4|redalert)
+            theme_file="hyprlock-redalert.conf"
+            theme_name="Red Alert Critical"
+            ;;
+        5|backup)
+            theme_file="hyprlock-backup.conf"
+            theme_name="Original Backup"
+            ;;
+        *)
+            echo -e "${RED}Error: Invalid theme selection${NC}"
+            show_themes
+            exit 1
+            ;;
+    esac
+
+    # Check if theme file exists
+    if [ ! -f "$HYPR_DIR/$theme_file" ]; then
+        echo -e "${RED}Error: Theme file $theme_file not found!${NC}"
+        exit 1
+    fi
+
+    # Create symlink to selected theme
+    ln -sf "$HYPR_DIR/$theme_file" "$CURRENT_CONFIG"
+
+    echo -e "${GREEN}✓ Switched to ${theme_name} theme${NC}"
+    echo -e "  Config: $theme_file"
+    echo ""
+    echo -e "Run ${CYAN}hyprlock${NC} to use the new theme"
+}
+
+# Function to show current theme
+show_current() {
+    if [ -L "$CURRENT_CONFIG" ]; then
+        current=$(readlink "$CURRENT_CONFIG" | xargs basename)
+        echo -e "${YELLOW}Current theme:${NC} $current"
+    else
+        echo -e "${YELLOW}Current theme:${NC} Custom/Direct configuration"
+    fi
+    echo ""
+}
+
+# Main script logic
+case "$1" in
+    holographic|1)
+        switch_theme "$1"
+        ;;
+    matrix|2)
+        switch_theme "$1"
+        ;;
+    cyberpunk|3)
+        switch_theme "$1"
+        ;;
+    redalert|4)
+        switch_theme "$1"
+        ;;
+    backup|5)
+        switch_theme "$1"
+        ;;
+    current)
+        show_current
+        ;;
+    *)
+        show_current
+        show_themes
+        echo -e "${YELLOW}Usage:${NC}"
+        echo -e "  $0 <theme>        Switch to a theme"
+        echo -e "  $0 current        Show current theme"
+        echo -e "  $0                Show this help"
+        echo ""
+        echo -e "${YELLOW}Examples:${NC}"
+        echo -e "  $0 matrix         Switch to Matrix theme"
+        echo -e "  $0 1              Switch to theme #1 (holographic)"
+        echo ""
+        ;;
+esac
