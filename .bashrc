@@ -8,11 +8,22 @@
 # Make sure ^[[200~ is not a part of the paste output from the clipboard
 bind 'set enable-bracketed-paste off'
 
+# When resizing a terminal emulator, Bash may not receive the resize signal. 
+# This will cause typed text to not wrap correctly and overlap the prompt. 
+# The checkwinsize shell option checks the window size after each command and, 
+# if necessary, updates the values of LINES and COLUMNS
+shopt -s checkwinsize
+
 # History settings
 export HISTCONTROL=ignoreboth:erasedups
 export HISTSIZE=10000
 export HISTFILESIZE=20000
 shopt -s histappend
+
+# Set env var QT_QPA_PLATFORM=wayland for VLC to use Wayland
+export QT_QPA_PLATFORM=wayland
+
+
 # Sets az devops PAT to env var
 # Need to move. This requires auth which is very annoying as soon as you open a terminal
 #export AZURE_DEVOPS_EXT_PAT=$(pass sis/devops/pat)
@@ -86,3 +97,22 @@ alias ebc='$EDITOR ~/.bashrc'
 # i3/.config
 alias i3conf='$EDITOR ~/.config/i3/config'
 
+
+export NVM_DIR="$HOME/.config/nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+[ -f /usr/share/fzf/key-bindings.bash ] && source /usr/share/fzf/key-bindings.bash
+[ -f /usr/share/fzf/completion.bash ] && source /usr/share/fzf/completion.bash
+
+# Load ble.sh for fish-like auto-suggestions
+#[[ $- == *i* ]] && source ~/.local/share/blesh/ble.sh
+
+
+export MOZ_ENABLE_WAYLAND=1
+
+# Chrome/Chromium Wayland configuration
+# Previously forced XWayland to prevent crashes when moving workspaces between monitors
+# Now controlled via separate desktop entries:
+#   - "Chrome (Xwayland)" for stable monitor switching
+#   - "Chrome" for native Wayland support
