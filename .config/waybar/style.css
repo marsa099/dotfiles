@@ -65,8 +65,17 @@ button:hover {
 }
 
 #workspaces button.focused {
-  background-color: #64727D;
-  box-shadow: inset 0 -3px #ffffff;
+  background-color: #5e81ac;
+  box-shadow: inset 0 -3px #88c0d0;
+  font-weight: bold;
+  color: #eceff4;
+}
+
+#workspaces button.active {
+  background-color: #5e81ac;
+  box-shadow: inset 0 -3px #88c0d0;
+  font-weight: bold;
+  color: #eceff4;
 }
 
 #workspaces button.urgent {
