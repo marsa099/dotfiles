@@ -25,15 +25,15 @@ window#waybar {
   padding-right: 4px;
 }
 
-window#waybar.battery-critical:not(.charging):not(.plugged):not(.full) {
+window#waybar.battery-critical {
   animation: low-battery-blink 0.375s ease-in-out infinite;
 }
 
-window#waybar.battery-warning:not(.charging):not(.plugged):not(.full) {
+window#waybar.battery-warning {
   animation: low-battery-blink 0.75s ease-in-out infinite;
 }
 
-window#waybar.battery-low:not(.charging):not(.plugged):not(.full) {
+window#waybar.battery-low {
   animation: low-battery-blink 3s ease-in-out infinite;
 }
 
@@ -171,7 +171,7 @@ button:hover {
 }
 
 /* Using steps() instead of linear as a timing function to limit cpu usage */
-#battery.critical:not(.charging) {
+#battery.critical:not(.charging):not(.plugged) {
   background-color: #f53c3c;
   color: #ffffff;
   animation-name: blink;

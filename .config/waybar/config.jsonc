@@ -7,14 +7,14 @@
   "spacing": 8, // Gaps between modules (4px)
   // Choose the order of the modules
   "modules-left": [
-    "hyprland/workspaces",
+    "custom/date",
+    // "clock",
     "hyprland/submap",
     "custom/media"
   ],
   "modules-center": [
     // "sway/window"
-    "custom/date",
-    "clock"
+    "hyprland/workspaces",
   ],
   "modules-right": [
     // "mpd",
@@ -106,12 +106,14 @@
   },
   "custom/date": {
     "format": "{}",
-    "exec": "date '+%a %d'",
-    "interval": 60
+    "return-type": "json",
+    "exec": "/home/martin/.config/waybar/clock-custom.sh",
+    "interval": 1,
+    "tooltip": true
   },
   "clock": {
     // "timezone": "America/New_York",
-    "format": "{:%H:%M:%S}",
+    "format": "{:%a %d %H:%M:%S}",
     "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
     "interval": 1
   },
