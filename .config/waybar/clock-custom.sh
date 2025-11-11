@@ -7,8 +7,8 @@ DATE_TEXT=$(date '+%a %-d %H:%M:%S')
 CALENDAR=$(cal -mw | sed ':a;N;$!ba;s/\n/\\n/g')
 YEAR_MONTH=$(date '+%Y %B')
 
-# Create tooltip with year/month header and calendar
-TOOLTIP="<big>$YEAR_MONTH</big>\\n<tt><small>$CALENDAR</small></tt>"
+# Create tooltip with year/month header and calendar (larger sizes)
+TOOLTIP="<span size='xx-large' weight='bold'>$YEAR_MONTH</span>\\n\\n<tt><span size='large'>$CALENDAR</span></tt>"
 
 # Output JSON with both text and tooltip
 printf '{"text":"%s","tooltip":"%s"}\n' "$DATE_TEXT" "$TOOLTIP"
