@@ -5,6 +5,10 @@ vim.opt.shortmess:append("I")
 vim.opt.number = true
 vim.opt.relativenumber = true
 
+-- Make cursor centered while scrolling up/down.
+-- Changing 999 to e.g. 10 would make scrolling keep 10 lines above/below cursor
+vim.opt.scrolloff = 999
+
 -- Share clipboard between nvim and rest of the system
 vim.opt.clipboard = "unnamedplus"
 
