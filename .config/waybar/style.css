@@ -1,3 +1,4 @@
+/* Universal rule set valid for all selectors */
 * {
   /* `otf-font-awesome` is required to be installed for icons */
   font-family: "JetBrainsMono Nerd Font", FontAwesome, Roboto, Helvetica, Arial, sans-serif;
