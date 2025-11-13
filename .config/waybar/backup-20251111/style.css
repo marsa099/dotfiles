@@ -1,4 +1,3 @@
-/* Universal rule set valid for all selectors */
 * {
   /* `otf-font-awesome` is required to be installed for icons */
   font-family: "JetBrainsMono Nerd Font", FontAwesome, Roboto, Helvetica, Arial, sans-serif;
@@ -16,25 +15,15 @@
     background-color: rgba(43, 48, 59, 0.5);
   }
 }
-.modules-left,
-.modules-center,
-.modules-right {
-  /* background-color: rgba(43, 48, 59, 0.9); */
-  background-color: #2B303B; /* Same as rgb value above */
-  background-color: #FAC8A7; /* light mode */
-  opacity: 0.9;
-  border-radius: 8px 8px 8px 8px;
-}
-
-.module {
-}
-
-.module:hover {
-}
 
 window#waybar {
-  background-color: transparent;
-  color: #333333; /* text color */
+  /* background-color: rgba(43, 48, 59, 0.5); */
+    background-color: transparent;
+  /* border-bottom: 3px solid rgba(100, 114, 125, 0.5); */
+  color: #ffffff;
+  transition-property: background-color;
+  transition-duration: .5s;
+  padding-right: 4px;
 }
 
 window#waybar.battery-critical {
@@ -81,8 +70,8 @@ button {
 
 /* https://github.com/Alexays/Waybar/wiki/FAQ#the-workspace-buttons-have-a-strange-hover-effect */
 button:hover {
-  /* background: inherit; */
-  /* box-shadow: inset 0 -3px #ffffff; */
+  background: inherit;
+  box-shadow: inset 0 -3px #ffffff;
 }
 
 /* you can set a style on hover for any module like this */
@@ -93,26 +82,24 @@ button:hover {
 #workspaces button {
   padding: 0 5px;
   background-color: transparent;
-  /* color: #ffffff; */
+  border-radius: 8px;
+  color: #ffffff;
 }
 
 #workspaces button:hover {
   background: rgba(0, 0, 0, 0.2);
-  color: red;
 }
 
 #workspaces button.focused {
   background-color: #5e81ac;
-  box-shadow: inset 0 -3px #88c0d0;
   font-weight: bold;
   color: #eceff4;
 }
 
 #workspaces button.active {
-  background-color: #94c9f2;
+  background-color: #0081ac;
   font-weight: bold;
   color: #eceff4;
-  border-radius: 8px 8px;
 }
 
 #workspaces button.urgent {
@@ -144,11 +131,17 @@ button:hover {
 #power-profiles-daemon,
 #mpd {
   padding: 0 10px;
+  color: #ffffff;
+  background-color: #292929;
+
 }
 
 #window,
 #workspaces {
   margin: 0 4px;
+  padding: 0 0px;
+  border-radius: 8px;
+  background-color: #292929;
 }
 
 /* If workspaces is the leftmost module, omit left margin */
@@ -360,4 +353,22 @@ label:focus {
 
 #privacy-item.audio-out {
   background-color: #0069d4;
+}
+
+/* Tooltip styling for larger size */
+tooltip {
+  font-size: 14px;
+  padding: 12px;
+  border-radius: 10px;
+  background-color: rgba(43, 48, 59, 0.95);
+}
+
+tooltip label {
+  font-size: 14px;
+  padding: 4px;
+}
+
+/* Specific styling for custom-date tooltip */
+#custom-date tooltip {
+  font-size: 15px;
 }
