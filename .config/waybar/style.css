@@ -14,7 +14,7 @@
 .modules-left,
 .modules-center,
 .modules-right {
-  background: red;
+  /* background: red; */ /* Debug line to see space allocated by the modules */
 }
 
 /* rounded corners - left module section - right side */
