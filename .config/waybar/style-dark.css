@@ -17,6 +17,10 @@
   /* background: red; */ /* Debug line to see space allocated by the modules */
 }
 
+.module {
+  background-color: @surface0;
+}
+
 /* rounded corners - left module section - right side */
 .modules-left > widget:last-child > * { 
   border-radius: 0 1rem 1rem 0;
@@ -29,7 +33,6 @@
 
 #workspaces {
   border-radius: 1rem;
-  background-color: @surface0;
 }
 
 #workspaces button {
@@ -58,7 +61,6 @@
 #network,
 #custom-lock,
 #custom-power {
-  background-color: @surface0;
   padding: 0.5rem 1rem;
   margin: 5px 0;
 }
