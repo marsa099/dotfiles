@@ -53,6 +53,7 @@
 #backlight,
 #clock,
 #battery,
+#bluetooth,
 #pulseaudio,
 #network,
 #custom-lock,
@@ -87,6 +88,10 @@
 
 #pulseaudio {
   color: @maroon;
+}
+
+#bluetooth {
+  color: @peach;
 }
 
 #network {
