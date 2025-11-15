@@ -1,0 +1,110 @@
+@import "frappe.css";
+
+* {
+  font-family: JetBrainsMono Nerd Font;
+  font-size: 17px;
+  min-height: 0;
+}
+
+#waybar {
+  background: transparent;
+}
+
+.modules-left,
+.modules-center,
+.modules-right {
+  /* background: red; */ /* Debug line to see space allocated by the modules */
+}
+
+.module {
+  background-color: @rosewater;
+}
+
+/* rounded corners - left module section - right side */
+.modules-left > widget:last-child > * { 
+  border-radius: 0 1rem 1rem 0;
+}
+
+/* rounded corners - right module section - left side */
+.modules-right > widget:first-child > * {
+  border-radius: 1rem 0 0 1rem;
+}
+
+#workspaces {
+  border-radius: 1rem;
+}
+
+#workspaces button {
+  color: @maroon;
+  border-radius: 1rem;
+  padding: 0.4rem;
+}
+
+#workspaces button.active {
+  color: @red;
+  border-radius: 1rem;
+}
+
+#workspaces button:hover {
+  color: @peach;
+  border-radius: 1rem;
+}
+
+#custom-music,
+#tray,
+#backlight,
+#clock,
+#battery,
+#bluetooth,
+#pulseaudio,
+#network,
+#custom-lock,
+#custom-power {
+  padding: 0.5rem 1rem;
+  margin: 5px 0;
+}
+
+#clock {
+  color: @base;
+}
+
+#battery {
+  color: @base;
+}
+
+#battery.charging {
+  color: @base;
+}
+
+#battery.warning:not(.charging) {
+  color: @red;
+}
+
+#backlight {
+  color: @base;
+}
+
+#backlight, #battery {
+}
+
+#pulseaudio {
+  color: @base;
+}
+
+#bluetooth {
+  color: @base;
+}
+
+#network {
+  color: @base;
+}
+
+#network.disconnected {
+  color: @mantle;
+}
+
+#custom-music {
+  color: @mauve;
+  border-radius: 1rem;
+}
+
