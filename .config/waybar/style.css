@@ -54,6 +54,7 @@
 #clock,
 #battery,
 #pulseaudio,
+#network,
 #custom-lock,
 #custom-power {
   background-color: @surface0;
@@ -86,6 +87,14 @@
 
 #pulseaudio {
   color: @maroon;
+}
+
+#network {
+  color: @teal;
+}
+
+#network.disconnected {
+  color: @red;
 }
 
 #custom-music {

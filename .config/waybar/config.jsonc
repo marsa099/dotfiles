@@ -7,7 +7,7 @@
     "margin-bottom": 4,
     "modules-left": ["clock"],
     "modules-center": ["hyprland/workspaces"],
-    "modules-right": ["pulseaudio", "backlight", "battery", "tray"],
+    "modules-right": ["pulseaudio", "network", "backlight", "battery", "tray"],
     "hyprland/workspaces": {
          "disable-scroll": true,
          "sort-by-name": true,
@@ -66,6 +66,20 @@
             "default": ["", "", " "]
         },
         "on-click": "pavucontrol"
+    },
+    "network": {
+        "format-wifi": "{icon}",
+        "format-ethernet": " {ipaddr}/{cidr}",
+        "tooltip-format": "{essid} ({signalStrength}%)\n{ifname} via {gwaddr}",
+        "format-linked": " {ifname} (No IP)",
+        "format-disconnected": "󰤮",
+        "format-alt": "{icon} {signalStrength}%",
+        "format-icons": {
+            "wifi": ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"],
+            "ethernet": "",
+            "disconnected": "󰤮"
+        },
+        "interval": 1
     },
     "custom/lock": {
         "tooltip": false,
