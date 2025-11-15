@@ -81,16 +81,19 @@
         },
         "interval": 5
     },
-    // TODO: Fix this section. We need icons
    "bluetooth": {
-        "format": "<U+F294> {status}",
-        "format-connected": "<U+F294> {device_alias}",
-        "format-connected-battery": "<U+F294> {device_alias} {device_battery_percentage}%",
-        // "format-device-preference": [ "device1", "device2" ], // preference list deciding the displayed device
-        "tooltip-format": "{controller_alias}\t{controller_address}\n\n{num_connections} connected",
+        "format": "󰂯",
+        "format-on": "󰂱",
+        "format-off": "󰂯",
+        "format-disabled": "󰂲",
+        "format-connected": "󰂰",
+        "format-connected-battery": "󰂰",
+        "tooltip-format": "{controller_alias}\t{controller_address} ({status})\n\n{num_connections} connected",
+        "tooltip-format-off": "{controller_alias}\t{controller_address} (off)",
         "tooltip-format-connected": "{controller_alias}\t{controller_address}\n\n{num_connections} connected\n\n{device_enumerate}",
         "tooltip-format-enumerate-connected": "{device_alias}\t{device_address}",
-        "tooltip-format-enumerate-connected-battery": "{device_alias}\t{device_address}\t{device_battery_percentage}%"
+        "tooltip-format-enumerate-connected-battery": "{device_alias}\t{device_address}\t󰥉 {device_battery_percentage}%",
+        "on-click": "blueman-manager"
    },
     "custom/lock": {
         "tooltip": false,
