@@ -7,7 +7,7 @@
     "margin-bottom": 4,
     "modules-left": ["clock"],
     "modules-center": ["hyprland/workspaces"],
-    "modules-right": ["pulseaudio", "network", "backlight", "battery", "tray"],
+    "modules-right": ["pulseaudio", "backlight", "network", "battery", "tray"],
     "hyprland/workspaces": {
          "disable-scroll": true,
          "sort-by-name": true,
@@ -60,7 +60,7 @@
     },
     "pulseaudio": {
         // "scroll-step": 1, // %, can be a float
-        "format": "{icon} {volume}%",
+        "format": "{icon}",
         "format-muted": "",
         "format-icons": {
             "default": ["", "", " "]
