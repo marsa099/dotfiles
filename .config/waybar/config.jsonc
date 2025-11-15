@@ -49,7 +49,7 @@
         "format": "{icon}",
         "format-charging": "",
         "format-plugged": "",
-        "format-alt": "{icon}",
+        "format-alt": "{capacity}%",
         "format-icons": [
           "",
           "",
