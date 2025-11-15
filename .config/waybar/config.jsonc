@@ -75,7 +75,7 @@
         "format-disconnected": "󰤮",
         "format-alt": "{icon} {signalStrength}%",
         "format-icons": {
-            "wifi": ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"],
+            "wifi": ["󰤯", "󰤟", "󰤠", "󰤢", "󰤣", "󰤥", "󰤦", "󰤨"],
             "ethernet": "",
             "disconnected": "󰤮"
         },
