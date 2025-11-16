@@ -47,23 +47,23 @@
             "critical": 15
         },
         "format": "{icon}",
-        "format-charging": "",
-        "format-plugged": "",
+        "format-charging": "󰂅",
+        "format-plugged": "󰂅",
         "format-alt": "{capacity}%",
         "format-icons": [
-          "",
-          "",
-          "",
-          "",
-          ""
+          "󰂎",
+          "󰁿",
+          "󰂀",
+          "󰂁",
+          "󰂂"
         ],
     },
     "pulseaudio": {
         // "scroll-step": 1, // %, can be a float
         "format": "{icon}",
-        "format-muted": "",
+        "format-muted": "󰖁",
         "format-icons": {
-            "default": ["", "", " "]
+            "default": ["󰕿", "󰖀", "󰕾"]
         },
         "on-click": "pavucontrol"
     },
