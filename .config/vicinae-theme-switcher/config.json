@@ -1,0 +1,7 @@
+{
+  "themeMapping": {
+    "prefer-dark": "catppuccin-frappe",
+    "prefer-light": "gruvbox-light",
+    "default": "catppuccin-frappe"
+  }
+}
