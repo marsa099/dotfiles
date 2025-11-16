@@ -1,0 +1,27 @@
+/* Gruvbox Light Color Palette */
+@define-color rosewater #d65d0e;
+@define-color flamingo #cc241d;
+@define-color pink #b16286;
+@define-color mauve #8f3f71;
+@define-color red #cc241d;
+@define-color maroon #9d0006;
+@define-color peach #d65d0e;
+@define-color yellow #d79921;
+@define-color green #98971a;
+@define-color teal #689d6a;
+@define-color sky #427b58;
+@define-color sapphire #076678;
+@define-color blue #458588;
+@define-color lavender #8f3f71;
+@define-color text #282828;
+@define-color subtext1 #3c3836;
+@define-color subtext0 #504945;
+@define-color overlay2 #665c54;
+@define-color overlay1 #7c6f64;
+@define-color overlay0 #928374;
+@define-color surface2 #a89984;
+@define-color surface1 #bdae93;
+@define-color surface0 #d5c4a1;
+@define-color base #ebdbb2;
+@define-color mantle #f2e5bc;
+@define-color crust #fbf1c7;
