@@ -116,3 +116,17 @@ export MOZ_ENABLE_WAYLAND=1
 # Now controlled via separate desktop entries:
 #   - "Chrome (Xwayland)" for stable monitor switching
 #   - "Chrome" for native Wayland support
+
+# OSC 133 shell integration for tmux
+# Enables semantic prompt detection for better terminal integration
+# Benefits: Jump between prompts in copy-mode with { and }
+if [[ -n "$TMUX" ]]; then
+    _prompt_command_osc133() {
+        printf '\e]133;D;%s\e\\' "$?"  # Command finished with exit code
+        printf '\e]133;A\e\\'           # Prompt start
+    }
+    # Append to PROMPT_COMMAND (preserving existing commands)
+    PROMPT_COMMAND="_prompt_command_osc133${PROMPT_COMMAND:+;$PROMPT_COMMAND}"
+    # Command execution start (emitted before command runs)
+    PS0='\e]133;C\e\\'
+fi
