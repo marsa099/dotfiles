@@ -41,9 +41,13 @@
 	pull-prev = "!sh -c 'git pull origin $(git rev-parse --abbrev-ref @{-1})'"
 
 [user]
-	email = martin@koderiet.dev
+	email = 7248231+marsa099@users.noreply.github.com
 	name = Martin Sandberg
 [pull]
 	rebase = false
 [init]
 	defaultBranch = main
+
+# Azure DevOps override
+[includeIf "hasconfig:remote.*.url:https://dev.azure.com/**"]
+	path = ~/.gitconfig-azuredevops
