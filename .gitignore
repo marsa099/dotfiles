@@ -1,1 +1,27 @@
 .config/gh
+
+# Systemd symlinks (created by systemctl enable)
+.config/systemd/user/*.target.wants/
+
+# Build artifacts and dependencies
+node_modules/
+dist/
+*.js.map
+
+# Cache directories
+.cache/
+Cache/
+
+# Editor files
+.vscode/
+*.swp
+*.swo
+
+# Machine-specific
+.env
+.local/share/
+
+# Backup files
+*.backup
+*.bak
+*~

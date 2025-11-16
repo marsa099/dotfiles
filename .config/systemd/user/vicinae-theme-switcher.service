@@ -1,0 +1,18 @@
+[Unit]
+Description=Vicinae Theme Switcher - Syncs with system color scheme
+After=graphical-session.target
+Wants=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/vicinae-theme-switcher.sh
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Ensure D-Bus is available for gsettings
+Environment="DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/%U/bus"
+
+[Install]
+WantedBy=default.target
