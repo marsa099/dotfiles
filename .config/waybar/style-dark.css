@@ -33,12 +33,13 @@
 
 #workspaces {
   border-radius: 1rem;
+  padding: 0.5rem 1rem;
+  margin: 5px 0;
 }
 
 #workspaces button {
   color: @lavender;
   border-radius: 1rem;
-  padding: 0.4rem;
 }
 
 #workspaces button.active {
@@ -116,6 +117,5 @@
 }
 
 #tray {
-  margin-right: 1rem;
   border-radius: 1rem;
 }

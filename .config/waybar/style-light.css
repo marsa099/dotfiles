@@ -32,12 +32,13 @@
 
 #workspaces {
   border-radius: 1rem;
+  padding: 0.5rem 1rem;
+  margin: 5px 0;
 }
 
 #workspaces button {
   color: @dark4;
   border-radius: 1rem;
-  padding: 0.4rem;
 }
 
 #workspaces button.active {
