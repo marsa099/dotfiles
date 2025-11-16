@@ -17,11 +17,11 @@
 }
 
 .module {
-  background-color: @rosewater;
+  background-color: @light2;
 }
 
 /* rounded corners - left module section - right side */
-.modules-left > widget:last-child > * { 
+.modules-left > widget:last-child > * {
   border-radius: 0 1rem 1rem 0;
 }
 
@@ -35,18 +35,18 @@
 }
 
 #workspaces button {
-  color: @maroon;
+  color: @dark4;
   border-radius: 1rem;
   padding: 0.4rem;
 }
 
 #workspaces button.active {
-  color: @red;
+  color: @neutral_orange;
   border-radius: 1rem;
 }
 
 #workspaces button:hover {
-  color: @peach;
+  color: @bright_orange;
   border-radius: 1rem;
 }
 
@@ -65,46 +65,45 @@
 }
 
 #clock {
-  color: @base;
+  color: @neutral_blue;
 }
 
 #battery {
-  color: @base;
+  color: @neutral_green;
 }
 
 #battery.charging {
-  color: @base;
+  color: @neutral_green;
 }
 
 #battery.warning:not(.charging) {
-  color: @red;
+  color: @neutral_red;
 }
 
 #backlight {
-  color: @base;
+  color: @neutral_yellow;
 }
 
 #backlight, #battery {
 }
 
 #pulseaudio {
-  color: @base;
+  color: @neutral_purple;
 }
 
 #bluetooth {
-  color: @base;
+  color: @neutral_orange;
 }
 
 #network {
-  color: @base;
+  color: @neutral_aqua;
 }
 
 #network.disconnected {
-  color: @mantle;
+  color: @neutral_red;
 }
 
 #custom-music {
-  color: @mauve;
+  color: @bright_purple;
   border-radius: 1rem;
 }
-
