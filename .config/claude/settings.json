@@ -10,11 +10,22 @@
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.config/claude/hooks/prompt-submit.sh"
+          }
+        ]
+      }
     ]
   },
   "statusLine": {
     "type": "command",
     "command": "bash ~/.config/claude/statusline-command.sh"
   },
-  "alwaysThinkingEnabled": false
+  "alwaysThinkingEnabled": true
 }

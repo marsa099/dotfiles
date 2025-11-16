@@ -112,6 +112,9 @@ print_status "Made statusline-command.sh executable"
 chmod +x ~/.config/claude/hooks/stop-notify.sh
 print_status "Made stop-notify.sh executable"
 
+chmod +x ~/.config/claude/hooks/prompt-submit.sh
+print_status "Made prompt-submit.sh executable"
+
 echo ""
 
 # Verify symlinks
@@ -161,8 +164,13 @@ echo "  • Tested desktop notifications"
 echo ""
 echo "You can now use Claude Code with:"
 echo "  • Desktop notifications on response completion"
+echo "  • tmux window highlighting (bell icon when Claude waits for input)"
+echo "  • Pane title updates showing Claude's state"
+echo "  • OSC 133 shell integration (jump between prompts with { and })"
 echo "  • Custom statusline with git branch and directory"
 echo "  • Global instructions from CLAUDE.md"
+echo ""
+echo "Note: OSC 133 is configured in ~/.bashrc and works automatically in tmux."
 echo ""
 echo "For more information, see: ~/.config/claude/README.md"
 echo ""

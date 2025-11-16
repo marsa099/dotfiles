@@ -12,7 +12,8 @@ This directory contains Claude Code configuration files managed as part of the d
 ├── CLAUDE.md                  # Global instructions for Claude Code
 ├── statusline-command.sh      # Custom statusline script
 └── hooks/
-    └── stop-notify.sh         # Desktop notification hook
+    ├── stop-notify.sh         # Desktop notification & tmux integration hook
+    └── prompt-submit.sh       # tmux pane title update hook
 ```
 
 ## Dependencies
@@ -77,17 +78,45 @@ If you prefer to set up manually:
 
 ## Features
 
-### Desktop Notifications
+### tmux Window Highlighting
 
-The `Stop` hook sends a desktop notification when Claude Code finishes responding.
+When running Claude Code in tmux, windows waiting for input are automatically highlighted with visual indicators:
+
+**Visual Indicators:**
+- `󰂞` (bell icon) - Window where Claude is waiting for input
+- `󱅫` (activity icon) - Window has new output
+- Pane title shows state: "Claude: Waiting for input ⌨" or "Claude: Processing... 🤔"
 
 **How it works:**
-- Triggers after every Claude Code response
-- Extracts conversation title from tmux pane title
-- Displays notification with conversation context
+1. **Stop hook** triggers when Claude finishes responding:
+   - Updates pane title to "Claude: Waiting for input ⌨"
+   - Sends bell character → tmux shows `󰂞` icon in status bar
+   - Sends desktop notification
+2. **UserPromptSubmit hook** triggers when you type input:
+   - Updates pane title to "Claude: Processing... 🤔"
+
+**Benefits:**
+- Easily spot which tmux windows need attention
+- Know Claude's state at a glance from the status bar
+- Never miss when Claude is waiting for your response
+
+### OSC 133 Shell Integration
+
+Bash is configured to emit OSC 133 sequences in tmux for semantic prompt detection.
+
+**Benefits:**
+- Jump between prompts in tmux copy-mode with `{` and `}`
+- Better terminal integration and command output selection
+- Foundation for future shell state detection features
+
+**Configured in:** `~/.bashrc` (automatically enabled when in tmux)
+
+### Desktop Notifications
+
+Desktop notifications are sent when Claude Code finishes responding.
 
 **Notification format:**
-- **Title:** Conversation title (e.g., "Desktop Notifications Setup")
+- **Title:** Conversation title (from tmux pane title)
 - **Body:** "Ready for input"
 - **Icon:** robot
 
@@ -102,7 +131,9 @@ The statusline script displays:
 ### settings.json
 
 Main configuration file containing:
-- **hooks**: Event-driven automation (Stop hook for notifications)
+- **hooks**: Event-driven automation
+  - **Stop hook**: Triggers when Claude finishes responding (notifications + tmux integration)
+  - **UserPromptSubmit hook**: Triggers when user submits input (tmux pane title updates)
 - **statusLine**: Custom statusline command
 - **alwaysThinkingEnabled**: Toggle for thinking mode display
 
@@ -121,10 +152,17 @@ Bash script that generates the custom statusline:
 
 ### hooks/stop-notify.sh
 
-Desktop notification hook that:
+Desktop notification and tmux integration hook that:
+- Updates tmux pane title to "Claude: Waiting for input ⌨"
+- Sends bell character to trigger tmux bell monitoring (`󰂞` icon)
 - Reads conversation title from tmux pane title
-- Sends notification via dunstify
-- Falls back to "Claude Code" if not in tmux
+- Sends desktop notification via dunstify
+
+### hooks/prompt-submit.sh
+
+tmux pane title update hook that:
+- Updates tmux pane title to "Claude: Processing... 🤔"
+- Triggers when user submits input to Claude
 
 ## Troubleshooting
 

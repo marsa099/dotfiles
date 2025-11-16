@@ -1,7 +1,11 @@
 #!/bin/bash
 
-# Claude Code Stop Hook - Desktop Notification
-# Sends a notification when Claude finishes responding
+# Claude Code Stop Hook - Desktop Notification & tmux Integration
+# Triggers when Claude finishes responding and waits for input
+# Features:
+#   - Updates tmux pane title to show "Waiting for input" state
+#   - Sends bell character to trigger tmux bell monitoring
+#   - Sends desktop notification
 
 # Default title fallback
 CONVERSATION_TITLE="Claude Code"
@@ -12,6 +16,13 @@ if [ -n "$TMUX" ]; then
     if [ $? -eq 0 ] && [ -n "$TMUX_TITLE" ]; then
         CONVERSATION_TITLE="$TMUX_TITLE"
     fi
+
+    # Update tmux pane title to show "waiting" state
+    printf '\033]2;Claude: Waiting for input ⌨\033\\'
+
+    # Send bell character to trigger tmux bell monitoring
+    # This will show the bell icon (󰂞) in the window status bar
+    printf '\a'
 fi
 
 # Send desktop notification
