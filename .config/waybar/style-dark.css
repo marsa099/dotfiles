@@ -3,7 +3,6 @@
 * {
   font-family: JetBrainsMono Nerd Font;
   font-size: 17px;
-  min-height: 0;
 }
 
 #waybar {
@@ -33,8 +32,6 @@
 
 #workspaces {
   border-radius: 1rem;
-  padding: 0.5rem 1rem;
-  margin: 5px 0;
 }
 
 #workspaces button {
@@ -45,6 +42,7 @@
 #workspaces button.active {
   color: @sky;
   border-radius: 1rem;
+  border: 2px solid @sapphire;
 }
 
 #workspaces button:hover {
@@ -63,7 +61,6 @@
 #custom-lock,
 #custom-power {
   padding: 0.5rem 1rem;
-  margin: 5px 0;
 }
 
 #clock {
@@ -108,12 +105,6 @@
 #custom-music {
   color: @mauve;
   border-radius: 1rem;
-}
-
-#custom-power {
-    margin-right: 1rem;
-    border-radius: 0px 1rem 1rem 0px;
-    color: @red;
 }
 
 #tray {

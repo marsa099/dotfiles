@@ -4,6 +4,7 @@
     // "width": 1280, // Waybar width
     // Choose the order of the modules
     "reload_style_on_change": true,
+    "margin-top": 4,
     "margin-bottom": 4,
     "modules-left": ["tray"],
     "modules-center": ["hyprland/workspaces"],
@@ -11,7 +12,7 @@
     "hyprland/workspaces": {
          "disable-scroll": true,
          "sort-by-name": true,
-         "format": " {icon} ",
+         "format": "{name}",
          "format-icons": {
              "default": "",
          },
@@ -94,15 +95,5 @@
         "tooltip-format-enumerate-connected": "{device_alias}\t{device_address}",
         "tooltip-format-enumerate-connected-battery": "{device_alias}\t{device_address}\t󰥉 {device_battery_percentage}%",
         "on-click": "blueman-manager"
-   },
-    "custom/lock": {
-        "tooltip": false,
-        "on-click": "sh -c '(sleep 0.5s; hyprlock --grace 0)' & disown",
-        "format": "",
-    },
-    "custom/power": {
-        "tooltip": false,
-        "on-click": "wlogout &",
-        "format": "襤"
-    }
+   }
 }
