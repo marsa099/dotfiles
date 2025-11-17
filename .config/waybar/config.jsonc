@@ -6,7 +6,7 @@
     "reload_style_on_change": true,
     "margin-top": 4,
     "margin-bottom": 4,
-    "modules-left": ["tray"],
+    "modules-left": ["tray", "cpu", "memory"],
     "modules-center": ["hyprland/workspaces"],
     "modules-right": ["pulseaudio", "backlight", "bluetooth", "network", "battery", "clock"],
     "hyprland/workspaces": {
@@ -35,7 +35,7 @@
         "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
         "format-alt": "{:%d/%m/%Y}",
         "format": "{:%H:%M:%S}",
-        "interval": 1,
+        "interval": 1
     },
     "backlight": {
         "device": "intel_backlight",
@@ -57,7 +57,7 @@
           "󰂀",
           "󰂁",
           "󰂂"
-        ],
+        ]
     },
     "pulseaudio": {
         // "scroll-step": 1, // %, can be a float
@@ -95,5 +95,29 @@
         "tooltip-format-enumerate-connected": "{device_alias}\t{device_address}",
         "tooltip-format-enumerate-connected-battery": "{device_alias}\t{device_address}\t󰥉 {device_battery_percentage}%",
         "on-click": "blueman-manager"
+   },
+   "cpu": {
+        "interval": 5,
+        "format": "CPU: {usage}%",
+        "format-alt": "CPU: {avg_frequency}GHz | {load}",
+        "tooltip": true,
+        "states": {
+            "low": 20,
+            "medium": 50,
+            "elevated": 70,
+            "critical": 85
+        }
+   },
+   "memory": {
+        "interval": 5,
+        "format": "MEM: {percentage}%",
+        "format-alt": "MEM: {used:0.1f}GB/{total:0.1f}GB",
+        "tooltip-format": "Used: {used:0.1f}GB\nAvailable: {avail:0.1f}GB\nTotal: {total:0.1f}GB",
+        "states": {
+            "low": 20,
+            "medium": 50,
+            "elevated": 70,
+            "critical": 85
+        }
    }
 }

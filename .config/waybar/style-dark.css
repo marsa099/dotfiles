@@ -58,6 +58,8 @@
 #bluetooth,
 #pulseaudio,
 #network,
+#cpu,
+#memory,
 #custom-lock,
 #custom-power {
   padding: 0.5rem 1rem;
@@ -109,4 +111,58 @@
 
 #tray {
   border-radius: 1rem;
+}
+
+#cpu {
+  color: @green;
+}
+
+#cpu.low {
+  color: @yellow;
+}
+
+#cpu.medium {
+  color: @peach;
+}
+
+#cpu.elevated {
+  color: @maroon;
+}
+
+#cpu.critical {
+  color: @red;
+  animation: blink 1s ease-in-out infinite;
+}
+
+#memory {
+  color: @green;
+}
+
+#memory.low {
+  color: @yellow;
+}
+
+#memory.medium {
+  color: @peach;
+}
+
+#memory.elevated {
+  color: @maroon;
+}
+
+#memory.critical {
+  color: @red;
+  animation: blink 1s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 1;
+  }
 }
