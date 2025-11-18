@@ -1,8 +1,8 @@
 @import "frappe.css";
 
 * {
-  font-family: JetBrainsMono Nerd Font;
-  font-size: 17px;
+  font-family: "FantasqueSansM Nerd Font";
+  font-size: 22px;
 }
 
 #waybar {
@@ -31,7 +31,7 @@
 /* Add 1rem spacing between modules, excluding first module in each section */
 .modules-left > widget:not(:first-child) > *,
 .modules-right > widget:not(:first-child) > * {
-  margin-left: 1rem;
+  /* margin-left: 1rem; */
 }
 
 /* rounded corners - left module section - right side */

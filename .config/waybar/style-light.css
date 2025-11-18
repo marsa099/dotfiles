@@ -1,8 +1,8 @@
 @import "gruvbox-light.css";
 
 * {
-  font-family: JetBrainsMono Nerd Font;
-  font-size: 17px;
+  font-family: "FantasqueSansM Nerd Font";
+  font-size: 22px;
 }
 
 #waybar {
