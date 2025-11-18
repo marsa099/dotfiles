@@ -16,8 +16,7 @@
 }
 
 .modules-right {
-  background-color: @light2;
-  border-radius: 1rem 0 0 1rem;
+  background-color: transparent;
 }
 
 .modules-center {
@@ -29,8 +28,7 @@
 }
 
 /* Add 1rem spacing between modules, excluding first module in each section */
-.modules-left > widget:not(:first-child) > *,
-.modules-right > widget:not(:first-child) > * {
+.modules-left > widget:not(:first-child) > * {
   margin-left: 1rem;
 }
 
@@ -39,8 +37,16 @@
   border-radius: 0 1rem 1rem 0;
 }
 
-/* rounded corners - right module section - left side */
-.modules-right > widget:first-child > * {
+/* Style audio group (left container) */
+#audio {
+  background-color: @light2;
+  border-radius: 1rem;
+  margin-right: 1rem;
+}
+
+/* Style system group (right container) */
+#system {
+  background-color: @light2;
   border-radius: 1rem 0 0 1rem;
 }
 

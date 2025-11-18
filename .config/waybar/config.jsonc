@@ -8,7 +8,7 @@
     "margin-bottom": 16,
     "modules-left": ["tray", "cpu", "memory"],
     "modules-center": ["hyprland/workspaces"],
-    "modules-right": ["pulseaudio", "backlight", "bluetooth", "network", "battery", "clock"],
+    "modules-right": ["group/audio", "group/system"],
     "hyprland/workspaces": {
          "disable-scroll": true,
          "sort-by-name": true,
@@ -61,10 +61,12 @@
     },
     "pulseaudio": {
         // "scroll-step": 1, // %, can be a float
-        "format": "{icon} {volume}%",
-        "format-muted": "󰖁 {volume}%",
+        "format": "{format_source}",
+        "format-muted": "{format_source}󰖁",
+        "format-source": "",
+        "format-source-muted": "󰍭 ",
         "format-icons": {
-            "default": ["󰕿", "󰖀", "󰕾"]
+            "default": ["", "", ""]
         },
         "on-click": "pavucontrol"
     },
@@ -119,5 +121,13 @@
             "elevated": 70,
             "critical": 85
         }
+   },
+   "group/audio": {
+        "orientation": "inherit",
+        "modules": ["pulseaudio"]
+   },
+   "group/system": {
+        "orientation": "inherit",
+        "modules": ["backlight", "bluetooth", "network", "battery", "clock"]
    }
 }

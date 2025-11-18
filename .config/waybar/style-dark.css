@@ -16,8 +16,7 @@
 }
 
 .modules-right {
-  background-color: @surface0;
-  border-radius: 1rem 0 0 1rem;
+  background-color: transparent;
 }
 
 .modules-center {
@@ -29,18 +28,35 @@
 }
 
 /* Add 1rem spacing between modules, excluding first module in each section */
-.modules-left > widget:not(:first-child) > *,
-.modules-right > widget:not(:first-child) > * {
+.modules-left > widget:not(:first-child) > * {
   /* margin-left: 1rem; */
 }
 
 /* rounded corners - left module section - right side */
-.modules-left > widget:last-child > * { 
+.modules-left > widget:last-child > * {
   border-radius: 0 1rem 1rem 0;
 }
 
-/* rounded corners - right module section - left side */
-.modules-right > widget:first-child > * {
+/* Style audio group (left container) */
+#audio {
+  background-color: @surface0;
+  border-radius: 1rem;
+  margin-right: 1rem;
+}
+
+/* ronded corners - pulseaudio section */
+#audio > widget > * {
+  border-radius: 1rem;
+}
+
+/* Style system group (right container) */
+#system {
+  background-color: @surface0;
+  border-radius: 1rem 0 0 1rem;
+}
+
+/* ronded corners - system section - left side */
+#system > widget > * {
   border-radius: 1rem 0 0 1rem;
 }
 
