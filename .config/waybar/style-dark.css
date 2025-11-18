@@ -10,14 +10,28 @@
   color: @text;
 }
 
-.modules-left,
-.modules-center,
+.modules-left {
+  background-color: @surface0;
+  border-radius: 0 1rem 1rem 0;
+}
+
 .modules-right {
+  background-color: @surface0;
+  border-radius: 1rem 0 0 1rem;
+}
+
+.modules-center {
   /* background: red; */ /* Debug line to see space allocated by the modules */
 }
 
 .module {
   background-color: @surface0;
+}
+
+/* Add 1rem spacing between modules, excluding first module in each section */
+.modules-left > widget:not(:first-child) > *,
+.modules-right > widget:not(:first-child) > * {
+  margin-left: 1rem;
 }
 
 /* rounded corners - left module section - right side */
