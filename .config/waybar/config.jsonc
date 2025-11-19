@@ -33,8 +33,8 @@
     "clock": {
         "timezone": "Europe/Stockholm",
         "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
-        "format-alt": "󰃭 {:%d %b  %H:%M:%S}",
-        "format": "󰥔 {:%H:%M}",
+        "format-alt": "📅 {:%d %b  %H:%M:%S}",
+        "format": "🕐 {:%H:%M}",
         "interval": 1
     },
     "backlight": {
@@ -48,15 +48,15 @@
             "critical": 15
         },
         "format": "{icon} {capacity}%",
-        "format-charging": "󰂅 {capacity}%",
-        "format-plugged": "󰂅 {capacity}%",
+        "format-charging": "⚡ {capacity}%",
+        "format-plugged": "🔌 {capacity}%",
         "format-alt": "{capacity}%",
         "format-icons": [
-          "󰂎",
-          "󰁿",
-          "󰂀",
-          "󰂁",
-          "󰂂"
+          "🪫",
+          "🔋",
+          "🔋",
+          "🔋",
+          "🔋"
         ]
     },
     "pulseaudio#speaker": {
