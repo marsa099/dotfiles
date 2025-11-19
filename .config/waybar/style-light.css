@@ -1,7 +1,7 @@
 @import "gruvbox-light.css";
 
 * {
-  font-family: "FantasqueSansM Nerd Font";
+  font-family: "GeistMono NF", "GeistMono Nerd Font", "Geist Mono", monospace;
   font-size: 22px;
 }
 
