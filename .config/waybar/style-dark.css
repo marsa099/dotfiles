@@ -2,7 +2,7 @@
 
 * {
   font-family: "GeistMono NF", "GeistMono Nerd Font", "Geist Mono", monospace;
-  font-size: 22px;
+  font-size: 18px;
 }
 
 #waybar {
@@ -11,7 +11,7 @@
 }
 
 .modules-left {
-  background-color: @surface0;
+  background-color: rgba(48, 48, 52, 0.85);
   border-radius: 0 1rem 1rem 0;
 }
 
@@ -24,7 +24,7 @@
 }
 
 .module {
-  background-color: @surface0;
+  background-color: rgba(48, 48, 52, 0.85);
 }
 
 /* Add 1rem spacing between modules, excluding first module in each section */
@@ -49,7 +49,7 @@
 
 /* Style system group (right container) */
 #system {
-  background-color: @surface0;
+  background-color: rgba(48, 48, 52, 0.85);
   border-radius: 1rem 0 0 1rem;
 }
 
@@ -90,19 +90,19 @@
 #memory,
 #custom-lock,
 #custom-power {
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 1.5rem;
 }
 
 #clock {
-  color: @blue;
+  color: @text;
 }
 
 #battery {
-  color: @green;
+  color: @text;
 }
 
 #battery.charging {
-  color: @green;
+  color: @text;
 }
 
 #battery.warning:not(.charging) {
@@ -110,31 +110,31 @@
 }
 
 #backlight {
-  color: @yellow;
+  color: @text;
 }
 
 #backlight, #battery {
 }
 
 #pulseaudio {
-  color: @maroon;
+  color: @text;
   padding: 0.5rem 1rem;
 }
 
 /* Style both pulseaudio instances when muted */
 #pulseaudio.muted {
-  background-color: @surface0;
+  background-color: rgba(48, 48, 52, 0.85);
   border-radius: 1rem;
   padding: 0 1.5rem;
   margin-right: 1rem;
 }
 
 #bluetooth {
-  color: @peach;
+  color: @text;
 }
 
 #network {
-  color: @teal;
+  color: @text;
 }
 
 #network.disconnected {
@@ -142,7 +142,7 @@
 }
 
 #custom-music {
-  color: @mauve;
+  color: @text;
   border-radius: 1rem;
 }
 
@@ -151,19 +151,19 @@
 }
 
 #cpu {
-  color: @green;
+  color: @text;
 }
 
 #cpu.low {
-  color: @yellow;
+  color: @text;
 }
 
 #cpu.medium {
-  color: @peach;
+  color: @yellow;
 }
 
 #cpu.elevated {
-  color: @maroon;
+  color: @peach;
 }
 
 #cpu.critical {
@@ -172,19 +172,19 @@
 }
 
 #memory {
-  color: @green;
+  color: @text;
 }
 
 #memory.low {
-  color: @yellow;
+  color: @text;
 }
 
 #memory.medium {
-  color: @peach;
+  color: @yellow;
 }
 
 #memory.elevated {
-  color: @maroon;
+  color: @peach;
 }
 
 #memory.critical {
