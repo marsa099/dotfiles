@@ -59,16 +59,19 @@
           "󰂂"
         ]
     },
-    "pulseaudio": {
-        // "scroll-step": 1, // %, can be a float
+    "pulseaudio#speaker": {
+        "format": "",
+        "format-muted": "󰖁",
+        "on-click": "pavucontrol",
+        "tooltip": false
+    },
+    "pulseaudio#mic": {
         "format": "{format_source}",
-        "format-muted": "{format_source}󰖁",
+        "format-muted": "{format_source}",
         "format-source": "",
-        "format-source-muted": "󰍭 ",
-        "format-icons": {
-            "default": ["", "", ""]
-        },
-        "on-click": "pavucontrol"
+        "format-source-muted": "󰍭",
+        "on-click": "pavucontrol",
+        "tooltip": false
     },
     "network": {
         "format-wifi": "{icon} {signalStrength}%",
@@ -124,7 +127,7 @@
    },
    "group/audio": {
         "orientation": "inherit",
-        "modules": ["pulseaudio"]
+        "modules": ["pulseaudio#mic", "pulseaudio#speaker"]
    },
    "group/system": {
         "orientation": "inherit",
