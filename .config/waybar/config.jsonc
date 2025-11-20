@@ -6,9 +6,9 @@
     "reload_style_on_change": true,
     "margin-top": 0,
     "margin-bottom": 16,
-    "modules-left": ["tray", "cpu", "memory", "custom/music"],
-    "modules-center": ["hyprland/workspaces"],
-    "modules-right": ["group/audio", "group/system"],
+    "modules-left": ["hyprland/workspaces", "cpu", "memory"],
+    "modules-center": ["custom/music"],
+    "modules-right": ["group/audio", "tray", "group/system"],
     "hyprland/workspaces": {
          "disable-scroll": true,
          "sort-by-name": true,

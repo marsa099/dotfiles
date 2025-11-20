@@ -11,7 +11,6 @@
 }
 
 .modules-left {
-  background-color: rgba(48, 48, 52, 0.85);
   border-radius: 0 1rem 1rem 0;
 }
 
@@ -59,7 +58,8 @@
 }
 
 #workspaces {
-  border-radius: 1rem;
+  border-radius: 0 1rem 1rem 0;
+  margin-right: 1rem;
 }
 
 #workspaces button {
@@ -145,14 +145,17 @@
 #custom-music {
   color: @text;
   border-radius: 1rem;
+  margin-left: 1rem;
 }
 
 #tray {
   border-radius: 1rem;
+  margin-right: 1rem;
 }
 
 #cpu {
   color: @text;
+  border-radius: 1rem 0 0 1rem;
 }
 
 #cpu.low {
@@ -174,6 +177,7 @@
 
 #memory {
   color: @text;
+  border-radius: 0 1rem 1rem 0;
 }
 
 #memory.low {
