@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Azure DevOps
+Comment=Open Azure DevOps in Devops Chrome profile
+Exec=/usr/bin/google-chrome-stable --profile-directory="Profile 2" --app="https://dev.azure.com/swedishinstituteforstandards"
+Icon=/home/martin/.local/share/icons/azure-devops.svg
+Terminal=false
+Categories=Network;WebBrowser;
+StartupNotify=true

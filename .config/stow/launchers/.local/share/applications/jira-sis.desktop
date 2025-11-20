@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=JIRA
+Comment=Open JIRA in SIS Chrome profile
+Exec=/usr/bin/google-chrome-stable --profile-directory="Profile 3" --app="https://sisswe.atlassian.net/"
+Icon=/home/martin/.local/share/icons/jira.svg
+Terminal=false
+Categories=Network;WebBrowser;
+StartupNotify=true
