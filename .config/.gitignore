@@ -1,0 +1,64 @@
+# Application data directories (should not be in dotfiles)
+google-chrome/
+chromium/
+BraveSoftware/
+discord/
+Discord/
+Signal/
+Slack/
+obsidian/
+Cursor/
+Code/
+spotify/
+pulse/
+dconf/
+menus/
+
+# Development tools
+nvm/
+
+# Cache and temporary files
+*.log
+*.cache
+cache/
+Cache/
+**/cache/
+**/Cache/
+
+# Local settings (not shared across machines)
+.claude/settings.local.json
+
+# System generated files
+QtProject.conf
+mimeapps.list.bak
+
+# Temporary files
+*.tmp
+*.temp
+*~
+.*.swp
+.*.swo
+
+# Node modules (if any JS projects)
+node_modules/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Build artifacts
+dist/
+build/
+
+# Editor files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Session/runtime data
+tmux-*.log
+*.pid
