@@ -65,6 +65,7 @@
 #workspaces button {
   color: @lavender;
   border-radius: 1rem;
+  border: 2px solid transparent;
 }
 
 #workspaces button.active {
