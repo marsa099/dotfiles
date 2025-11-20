@@ -47,14 +47,25 @@
   margin: 0;
 }
 
+/* ronded corners - pulseaudio section */
+#audio > widget > * {
+  border-radius: 1rem;
+}
+
 /* Style system group (right container) */
 #system {
   background-color: @light2;
   border-radius: 1rem 0 0 1rem;
 }
 
+/* ronded corners - system section - left side */
+#system > widget > * {
+  border-radius: 1rem 0 0 1rem;
+}
+
 #workspaces {
-  border-radius: 1rem;
+  border-radius: 0 1rem 1rem 0;
+  margin-right: 1rem;
 }
 
 #workspaces button {
@@ -145,10 +156,12 @@
 
 #tray {
   border-radius: 1rem;
+  margin-right: 1rem;
 }
 
 #cpu {
   color: @neutral_green;
+  border-radius: 1rem 0 0 1rem;
 }
 
 #cpu.low {
@@ -170,6 +183,7 @@
 
 #memory {
   color: @neutral_green;
+  border-radius: 0 1rem 1rem 0;
 }
 
 #memory.low {
