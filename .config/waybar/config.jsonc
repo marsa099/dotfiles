@@ -103,7 +103,7 @@
    },
    "cpu": {
         "interval": 5,
-        "format": "CPU: {usage}%",
+        "format": "󰓅 {usage}%",
         "format-alt": "CPU: {avg_frequency}GHz | {load}",
         "tooltip": true,
         "states": {
@@ -115,7 +115,7 @@
    },
    "memory": {
         "interval": 5,
-        "format": "MEM: {percentage}%",
+        "format": "󰘚 {percentage}%",
         "format-alt": "MEM: {used:0.1f}GB/{total:0.1f}GB",
         "tooltip-format": "Used: {used:0.1f}GB\nAvailable: {avail:0.1f}GB\nTotal: {total:0.1f}GB",
         "states": {
