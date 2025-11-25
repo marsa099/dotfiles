@@ -58,15 +58,25 @@ return {
 
 			-- Configure omnisharp for C#
 			vim.lsp.config("omnisharp", {
-				root_markers = { "*.sln", "*.csproj", "omnisharp.json", ".git" },
-				cmd = {
-					"OmniSharp",
-					"--languageserver",
-					"--hostPID", tostring(vim.fn.getpid()),
-				},
-				init_options = {
-					AutomaticWorkspaceInit = true,
-				},
+				root_markers = { "*.sln", "omnisharp.json", "*.csproj" },
+				cmd = function(dispatchers)
+					local bufnr = vim.api.nvim_get_current_buf()
+					local root = vim.fs.root(bufnr, { "omnisharp.json", "*.sln", "*.csproj" })
+
+					local cmd, build_type
+					if root and vim.fn.filereadable(root .. "/omnisharp.json") == 1 then
+						-- .NET Framework project - use Mono build (runs via: mono OmniSharp.exe)
+						cmd = { "/opt/omnisharp-mono/run", "--languageserver" }
+						build_type = "Mono (net472)"
+					else
+						-- .NET Core/5+ project - use Mason build (runs via: dotnet OmniSharp.dll)
+						cmd = { "OmniSharp", "--languageserver", "--hostPID", tostring(vim.fn.getpid()) }
+						build_type = ".NET Core (net6.0)"
+					end
+
+					vim.notify("OmniSharp: " .. build_type, vim.log.levels.INFO)
+					return vim.lsp.rpc.start(cmd, dispatchers)
+				end,
 				settings = {
 					FormattingOptions = {
 						EnableEditorConfigSupport = true,
