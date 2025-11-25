@@ -7,21 +7,23 @@ return {
 			vim.api.nvim_create_autocmd("LspAttach", {
 				group = vim.api.nvim_create_augroup("UserLspConfig", { clear = true }),
 				callback = function(ev)
-					local opts = { buffer = ev.buf }
+					local function map(mode, lhs, rhs, desc)
+						vim.keymap.set(mode, lhs, rhs, { buffer = ev.buf, desc = desc })
+					end
 
 					-- Navigation
-					vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
-					vim.keymap.set("n", "gi", vim.lsp.buf.implementation, opts)
-					vim.keymap.set("n", "gr", vim.lsp.buf.references, opts)
-					vim.keymap.set("n", "gD", vim.lsp.buf.declaration, opts)
+					map("n", "gd", vim.lsp.buf.definition, "Go to definition")
+					map("n", "gi", vim.lsp.buf.implementation, "Go to implementation")
+					map("n", "gr", vim.lsp.buf.references, "Go to references")
+					map("n", "gD", vim.lsp.buf.declaration, "Go to declaration")
 
 					-- Information
-					vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
-					vim.keymap.set("i", "<C-k>", vim.lsp.buf.signature_help, opts)
+					map("n", "K", vim.lsp.buf.hover, "Hover documentation")
+					map("i", "<C-k>", vim.lsp.buf.signature_help, "Signature help")
 
 					-- Actions
-					vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts)
-					vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, opts)
+					map("n", "<leader>rn", vim.lsp.buf.rename, "Rename symbol")
+					map("n", "<leader>ca", vim.lsp.buf.code_action, "Code action")
 				end,
 			})
 
@@ -61,6 +63,9 @@ return {
 					"OmniSharp",
 					"--languageserver",
 					"--hostPID", tostring(vim.fn.getpid()),
+				},
+				init_options = {
+					AutomaticWorkspaceInit = true,
 				},
 				settings = {
 					FormattingOptions = {
