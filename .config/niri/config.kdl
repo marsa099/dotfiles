@@ -609,6 +609,9 @@ binds {
     Mod+Shift+E { quit; }
     Ctrl+Alt+Delete { quit; }
 
+    // Reload config and restart waybar
+    Mod+Shift+C { spawn-sh "killall waybar; waybar & niri msg action load-config-file"; }
+
     // Powers off the monitors. To turn them back on, do any input like
     // moving the mouse or pressing any other key.
     Mod+Shift+P { power-off-monitors; }
