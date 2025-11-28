@@ -6,10 +6,10 @@
     "reload_style_on_change": true,
     "margin-top": 0,
     "margin-bottom": 16,
-    "modules-left": ["hyprland/workspaces", "cpu", "memory"],
+    "modules-left": ["niri/workspaces", "cpu", "memory"],
     "modules-center": ["custom/music"],
     "modules-right": ["group/audio", "tray", "group/system"],
-    "hyprland/workspaces": {
+    "niri/workspaces": {
          "disable-scroll": true,
          "sort-by-name": true,
          "format": "{name}",
