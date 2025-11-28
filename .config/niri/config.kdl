@@ -16,16 +16,9 @@ environment {
 input {
     keyboard {
         xkb {
-            // You can set rules, model, layout, variant and options.
-            // For more information, see xkeyboard-config(7).
-
-            // For example:
-            // layout "us,ru"
-            // options "grp:win_space_toggle,compose:ralt,ctrl:nocaps"
-
-            // If this section is empty, niri will fetch xkb settings
-            // from org.freedesktop.locale1. You can control these using
-            // localectl set-x11-keymap.
+            // Matching Hyprland keyboard settings
+            layout "us_swedish,se"
+            options "grp:alt_shift_toggle,caps:escape"
         }
 
         // Enable numlock on startup, omitting this setting disables it.
