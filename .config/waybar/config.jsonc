@@ -5,7 +5,7 @@
     // Choose the order of the modules
     "reload_style_on_change": true,
     "margin-top": 0,
-    "margin-bottom": 16,
+    "margin-bottom": 8,
     "modules-left": ["niri/workspaces", "cpu", "memory"],
     "modules-center": ["custom/music"],
     "modules-right": ["group/audio", "tray", "group/system"],
