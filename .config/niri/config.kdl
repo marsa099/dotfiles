@@ -3,6 +3,13 @@
 // Check the wiki for a full description of the configuration:
 // https://yalter.github.io/niri/Configuration:-Introduction
 
+// Environment variables for processes spawned by niri.
+// XDG_CURRENT_DESKTOP tells applications which compositor is running,
+// so they can use the correct portal backend for features like theme detection.
+environment {
+    XDG_CURRENT_DESKTOP "niri"
+}
+
 // Input device configuration.
 // Find the full list of options on the wiki:
 // https://yalter.github.io/niri/Configuration:-Input
@@ -266,6 +273,12 @@ layout {
 // Note that running niri as a session supports xdg-desktop-autostart,
 // which may be more convenient to use.
 // See the binds section below for more spawn examples.
+
+// Export WAYLAND_DISPLAY and XDG_CURRENT_DESKTOP to systemd and D-Bus.
+// This is needed because xdg-desktop-portal-gtk runs as a systemd user service
+// and needs these variables to connect to niri and provide theme info to apps.
+// Without this, portals fail with "cannot open display" and apps can't detect dark/light mode.
+spawn-sh-at-startup "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP"
 
 // This line starts waybar, a commonly used bar for Wayland compositors.
 spawn-at-startup "waybar"
