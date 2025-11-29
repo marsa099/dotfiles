@@ -4,12 +4,14 @@
 // https://yalter.github.io/niri/Configuration:-Introduction
 
 // Environment variables for processes spawned by niri.
-// XDG_CURRENT_DESKTOP tells applications which compositor is running,
-// so they can use the correct portal backend for features like theme detection.
+// Note: XDG_CURRENT_DESKTOP and XDG_SESSION_TYPE are set by niri-session automatically.
 environment {
-    XDG_CURRENT_DESKTOP "niri"
-    ELECTRON_OZONE_PLATFORM_HINT "wayland"
+    ELECTRON_OZONE_PLATFORM_HINT "auto"
 }
+
+// Named workspaces (these always exist, even when empty)
+workspace "main"
+workspace "chat"
 
 // Input device configuration.
 // Find the full list of options on the wiki:
@@ -268,13 +270,8 @@ layout {
 // which may be more convenient to use.
 // See the binds section below for more spawn examples.
 
-// Export WAYLAND_DISPLAY and XDG_CURRENT_DESKTOP to systemd and D-Bus.
-// This is needed because xdg-desktop-portal-gtk runs as a systemd user service
-// and needs these variables to connect to niri and provide theme info to apps.
-// Without this, portals fail with "cannot open display" and apps can't detect dark/light mode.
-spawn-sh-at-startup "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP"
-
 // This line starts waybar, a commonly used bar for Wayland compositors.
+// Note: dbus-update-activation-environment is handled by niri-session automatically.
 spawn-at-startup "waybar"
 
 // Start vicinae launcher server
@@ -353,6 +350,18 @@ window-rule {
 window-rule {
     geometry-corner-radius 10
     clip-to-geometry true
+}
+
+// Open Discord on chat workspace
+window-rule {
+    match app-id="discord"
+    open-on-workspace "chat"
+}
+
+// Open Teams on chat workspace
+window-rule {
+    match app-id="teams-for-linux"
+    open-on-workspace "chat"
 }
 
 binds {
@@ -619,7 +628,7 @@ binds {
     Ctrl+Alt+Delete { quit; }
 
     // Reload config and restart waybar + vicinae
-    Mod+Shift+C { spawn-sh "killall waybar vicinae; waybar & vicinae & niri msg action load-config-file"; }
+    Mod+Shift+C { spawn-sh "killall waybar vicinae; waybar & vicinae server & niri msg action load-config-file"; }
 
     // Powers off the monitors. To turn them back on, do any input like
     // moving the mouse or pressing any other key.
