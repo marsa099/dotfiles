@@ -12,13 +12,13 @@
     "niri/workspaces": {
          "disable-scroll": true,
          "sort-by-name": true,
-         "format": "{name}",
+         "format": "{icon}",
          "format-icons": {
              "default": "",
          },
      },
     "tray": {
-        "icon-size": 21,
+        "icon-size": 12,
         "spacing": 10
     },
     "custom/music": {

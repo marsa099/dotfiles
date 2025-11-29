@@ -2,7 +2,7 @@
 
 * {
   font-family: "GeistMono NF", "GeistMono Nerd Font", "Geist Mono", monospace;
-  font-size: 18px;
+  font-size: 16px;
 }
 
 #waybar {
@@ -91,7 +91,7 @@
 #memory,
 #custom-lock,
 #custom-power {
-  padding: 0.5rem 1.5rem;
+  padding: 0 1.5rem;
 }
 
 #clock {
@@ -119,7 +119,7 @@
 
 #pulseaudio {
   color: @text;
-  padding: 0.5rem 1rem;
+  padding: 0rem 1.5rem;
 }
 
 /* Style both pulseaudio instances when muted */
