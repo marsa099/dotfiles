@@ -1,0 +1,52 @@
+#!/bin/bash
+# Usage: niri-spawn-or-focus <app_id> <spawn_command>
+# Example: niri-spawn-or-focus com.mitchellh.ghostty ghostty
+
+APP_ID="$1"
+SPAWN_CMD="$2"
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/niri-focus"
+STATE_FILE="$STATE_DIR/$APP_ID"
+
+# Ensure state directory exists
+mkdir -p "$STATE_DIR"
+
+# Get all windows matching app_id
+WINDOWS=$(niri msg -j windows | jq -r "[.[] | select(.app_id == \"$APP_ID\")] | sort_by(.id)")
+COUNT=$(echo "$WINDOWS" | jq 'length')
+
+if [ "$COUNT" -eq 0 ]; then
+    # No windows found, spawn new
+    niri msg action spawn -- $SPAWN_CMD
+    exit 0
+fi
+
+# Get currently focused window
+FOCUSED_ID=$(echo "$WINDOWS" | jq -r '.[] | select(.is_focused) | .id // empty')
+
+# Get last focused ID from state file
+LAST_ID=$(cat "$STATE_FILE" 2>/dev/null || echo "")
+
+if [ -n "$FOCUSED_ID" ]; then
+    # Already focused on this app type, cycle to next
+    WINDOW_IDS=($(echo "$WINDOWS" | jq -r '.[].id'))
+    CURRENT_IDX=0
+    for i in "${!WINDOW_IDS[@]}"; do
+        if [ "${WINDOW_IDS[$i]}" == "$FOCUSED_ID" ]; then
+            CURRENT_IDX=$i
+            break
+        fi
+    done
+    NEXT_IDX=$(( (CURRENT_IDX + 1) % COUNT ))
+    NEXT_ID="${WINDOW_IDS[$NEXT_IDX]}"
+    niri msg action focus-window --id "$NEXT_ID"
+    echo "$NEXT_ID" > "$STATE_FILE"
+else
+    # Not focused on this app, focus last used or first available
+    if [ -n "$LAST_ID" ] && echo "$WINDOWS" | jq -e ".[] | select(.id == $LAST_ID)" > /dev/null 2>&1; then
+        niri msg action focus-window --id "$LAST_ID"
+    else
+        FIRST_ID=$(echo "$WINDOWS" | jq -r '.[0].id')
+        niri msg action focus-window --id "$FIRST_ID"
+        echo "$FIRST_ID" > "$STATE_FILE"
+    fi
+fi
