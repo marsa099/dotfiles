@@ -2,16 +2,16 @@
 
 * {
   font-family: "GeistMono NF", "GeistMono Nerd Font", "Geist Mono", monospace;
-  font-size: 16px;
+  font-size: 18px;
 }
 
 #waybar {
   background: transparent;
-  color: @text;
-}
+  color: #ffffff;
+  }
 
 .modules-left {
-  border-radius: 0 1rem 1rem 0;
+  border-radius: 0;
 }
 
 .modules-right {
@@ -23,7 +23,9 @@
 }
 
 .module {
-  background-color: rgba(48, 48, 52, 0.85);
+  background-color: #303034;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
 }
 
 /* Add 1rem spacing between modules, excluding first module in each section */
@@ -33,7 +35,7 @@
 
 /* rounded corners - left module section - right side */
 .modules-left > widget:last-child > * {
-  border-radius: 0 1rem 1rem 0;
+  border-radius: 0 0 0.5rem 0;
 }
 
 /* Style audio group (left container) - no inherent styling */
@@ -43,40 +45,41 @@
 
 /* ronded corners - pulseaudio section */
 #audio > widget > * {
-  border-radius: 1rem;
+  border-radius: 0 0 0.5rem 0.5rem;
 }
 
 /* Style system group (right container) */
 #system {
-  background-color: rgba(48, 48, 52, 0.85);
-  border-radius: 1rem 0 0 1rem;
+  background-color: #303034;
+  border-radius: 0 0 0 0.5rem;
 }
 
 /* ronded corners - system section - left side */
 #system > widget > * {
-  border-radius: 1rem 0 0 1rem;
+  border-radius: 0 0 0 0.5rem;
 }
 
 #workspaces {
-  border-radius: 0 1rem 1rem 0;
+  border-radius: 0 0 0.5rem 0.5rem;
   margin-right: 1rem;
 }
 
 #workspaces button {
-  color: @lavender;
-  border-radius: 1rem;
+  color: #888888;
+  border-radius: 0 0 0.5rem 0.5rem;
   border: 2px solid transparent;
+  padding: 0 0.5rem;
 }
 
 #workspaces button.active {
-  color: @sky;
-  border-radius: 1rem;
-  border: 2px solid @sapphire;
+  color: #ffffff;
+  border-radius: 0 0 0.5rem 0.5rem;
+  border: 2px solid transparent;
 }
 
 #workspaces button:hover {
-  color: @sapphire;
-  border-radius: 1rem;
+  color: #e55300;
+  border-radius: 0 0 0.5rem 0.5rem;
 }
 
 #custom-music,
@@ -95,15 +98,15 @@
 }
 
 #clock {
-  color: @text;
+  color: #ffffff;
 }
 
 #battery {
-  color: @text;
+  color: #ffffff;
 }
 
 #battery.charging {
-  color: @text;
+  color: #ffffff;
 }
 
 #battery.warning:not(.charging) {
@@ -111,31 +114,31 @@
 }
 
 #backlight {
-  color: @text;
+  color: #ffffff;
 }
 
 #backlight, #battery {
 }
 
 #pulseaudio {
-  color: @text;
+  color: #ffffff;
   padding: 0rem 1.5rem;
 }
 
 /* Style both pulseaudio instances when muted */
 #pulseaudio.muted {
-  background-color: rgba(48, 48, 52, 0.85);
-  border-radius: 1rem;
+  background-color: #303034;
+  border-radius: 0 0 0.5rem 0.5rem;
   padding: 0 1.5rem;
   margin-right: 1rem;
 }
 
 #bluetooth {
-  color: @text;
+  color: #ffffff;
 }
 
 #network {
-  color: @text;
+  color: #ffffff;
 }
 
 #network.disconnected {
@@ -143,23 +146,22 @@
 }
 
 #custom-music {
-  color: @text;
-  border-radius: 1rem;
+  color: #ffffff;
+  border-radius: 0 0 0.5rem 0.5rem;
   margin-left: 1rem;
 }
 
 #tray {
-  border-radius: 1rem;
+  border-radius: 0 0 0.5rem 0.5rem;
   margin-right: 1rem;
 }
 
 #cpu {
-  color: @text;
-  border-radius: 1rem 0 0 1rem;
+  color: #ffffff;
 }
 
 #cpu.low {
-  color: @text;
+  color: #ffffff;
 }
 
 #cpu.medium {
@@ -176,12 +178,12 @@
 }
 
 #memory {
-  color: @text;
-  border-radius: 0 1rem 1rem 0;
+  color: #ffffff;
+  border-radius: 0 0 0.5rem 0;
 }
 
 #memory.low {
-  color: @text;
+  color: #ffffff;
 }
 
 #memory.medium {
