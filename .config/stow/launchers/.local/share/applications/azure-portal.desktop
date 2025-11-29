@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Azure Portal
+Comment=Open Azure Portal in Chrome
+Exec=/usr/bin/google-chrome-stable --profile-directory="Profile 4" --app="https://portal.azure.com/"
+Icon=/home/martin/.local/share/icons/azure-devops.svg
+Terminal=false
+Categories=Network;WebBrowser;
+StartupNotify=true

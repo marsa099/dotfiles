@@ -397,6 +397,15 @@ binds {
     Mod+S { spawn-sh "$HOME/.local/bin/niri-spawn-or-focus $BROWSER_APP_ID $BROWSER"; }
     Mod+Shift+S { spawn-sh "$BROWSER"; }
 
+    Mod+X { spawn-sh "$HOME/.local/bin/niri-spawn-or-focus chrome-sisswe.atlassian.net__-Profile_3 'google-chrome-stable --profile-directory=\"Profile 3\" --app=\"https://sisswe.atlassian.net/\"'"; }
+    Mod+Shift+X { spawn "google-chrome-stable" "--profile-directory=Profile 3" "--app=https://sisswe.atlassian.net/"; }
+    Mod+C { spawn-sh "$HOME/.local/bin/niri-spawn-or-focus chrome-dev.azure.com__swedishinstituteforstandards-Profile_2 'google-chrome-stable --profile-directory=\"Profile 2\" --app=\"https://dev.azure.com/swedishinstituteforstandards\"'"; }
+    Mod+Shift+C { spawn "google-chrome-stable" "--profile-directory=Profile 2" "--app=https://dev.azure.com/swedishinstituteforstandards"; }
+    Mod+Z { spawn-sh "$HOME/.local/bin/niri-spawn-or-focus chrome-portal.azure.com__-Profile_4 'google-chrome-stable --profile-directory=\"Profile 4\" --app=\"https://portal.azure.com/\"'"; }
+    Mod+Shift+Z { spawn "google-chrome-stable" "--profile-directory=Profile 4" "--app=https://portal.azure.com/"; }
+    Mod+M { spawn-sh "$HOME/.local/bin/niri-spawn-or-focus chrome-outlook.office365.com__mail-Profile_3 'google-chrome-stable --profile-directory=\"Profile 3\" --app=\"https://outlook.office365.com/mail\"'"; }
+    Mod+Shift+M { spawn "google-chrome-stable" "--profile-directory=Profile 3" "--app=https://outlook.office365.com/mail"; }
+
     // Use spawn-sh to run a shell command. Do this if you need pipes, multiple commands, etc.
     // Note: the entire command goes as a single argument. It's passed verbatim to `sh -c`.
     // For example, this is a standard bind to toggle the screen reader (orca).
@@ -581,10 +590,10 @@ binds {
     // Makes the column "fill the rest of the space".
     Mod+Ctrl+F { expand-column-to-available-width; }
 
-    Mod+C { center-column; }
+    Mod+G { center-column; }
 
     // Center all fully visible columns on screen.
-    Mod+Ctrl+C { center-visible-columns; }
+    Mod+Ctrl+G { center-visible-columns; }
 
     // Finer width adjustments.
     // This command can also:
@@ -635,9 +644,6 @@ binds {
     // The quit action will show a confirmation dialog to avoid accidental exits.
     Mod+Shift+E { quit; }
     Ctrl+Alt+Delete { quit; }
-
-    // Reload config and restart waybar + vicinae
-    Mod+Shift+C { spawn-sh "killall waybar vicinae; waybar & vicinae server & niri msg action load-config-file"; }
 
     // Powers off the monitors. To turn them back on, do any input like
     // moving the mouse or pressing any other key.

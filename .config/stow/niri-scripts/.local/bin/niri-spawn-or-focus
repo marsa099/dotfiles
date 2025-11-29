@@ -15,8 +15,8 @@ WINDOWS=$(niri msg -j windows | jq -r "[.[] | select(.app_id == \"$APP_ID\")] | 
 COUNT=$(echo "$WINDOWS" | jq 'length')
 
 if [ "$COUNT" -eq 0 ]; then
-    # No windows found, spawn new
-    niri msg action spawn -- $SPAWN_CMD
+    # No windows found, spawn new (eval handles quoted args like "Profile 3")
+    eval niri msg action spawn -- $SPAWN_CMD
     exit 0
 fi
 

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Outlook Mail
+Comment=Open Outlook in SIS Chrome profile
+Exec=/usr/bin/google-chrome-stable --profile-directory="Profile 3" --app="https://outlook.office365.com/mail"
+Icon=/home/martin/.local/share/icons/outlook.svg
+Terminal=false
+Categories=Network;WebBrowser;
+StartupNotify=true
