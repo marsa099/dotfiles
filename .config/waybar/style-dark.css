@@ -1,7 +1,7 @@
 @import "frappe.css";
 
 * {
-  font-family: "GeistMono NF", "GeistMono Nerd Font", "Geist Mono", monospace;
+  font-family: "Hack", monospace;
   font-size: 18px;
 }
 
