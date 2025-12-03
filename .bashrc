@@ -127,3 +127,6 @@ if [[ -n "$TMUX" ]]; then
     # Command execution start (emitted before command runs)
     PS0='\e]133;C\e\\'
 fi
+
+
+eval "$(zoxide init bash)"
