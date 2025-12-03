@@ -94,9 +94,6 @@ alias dp='delete-prompt'
 alias rbc='source ~/.bashrc'
 alias ebc='$EDITOR ~/.bashrc'
 
-# i3/.config
-alias i3conf='$EDITOR ~/.config/i3/config'
-
 
 export NVM_DIR="$HOME/.config/nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
