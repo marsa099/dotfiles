@@ -112,6 +112,11 @@ input {
     position x=1280 y=0
 }
 
+output "DP-3" {
+    mode "3840x2160@144.000"
+    scale 1.25
+}
+
 // Settings that influence how windows are positioned and sized.
 // Find more information on the wiki:
 // https://yalter.github.io/niri/Configuration:-Layout
@@ -353,18 +358,6 @@ window-rule {
 window-rule {
     geometry-corner-radius 10
     clip-to-geometry true
-}
-
-// Open Discord on chat workspace
-window-rule {
-    match app-id="discord"
-    open-on-workspace "chat"
-}
-
-// Open Teams on chat workspace
-window-rule {
-    match app-id="teams-for-linux"
-    open-on-workspace "chat"
 }
 
 binds {
