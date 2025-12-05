@@ -1,0 +1,40 @@
+# Mako notification daemon configuration
+# Generated from centralized theme system
+
+# Font
+font=monospace 11, Noto Emoji 11
+
+# Colors
+background-color={{background.primary}}
+text-color={{foreground.primary}}
+border-color={{accent.cyan}}
+progress-color=over {{background.secondary}}
+
+# Border
+border-size=2
+border-radius=10
+
+# Padding
+padding=15
+margin=10,20,10,10
+
+# Size
+width=350
+height=150
+
+# Position (top-right)
+anchor=top-right
+
+# Timeout
+default-timeout=5000
+
+# Icons
+icons=1
+max-icon-size=48
+icon-location=left
+
+# Grouped notifications
+group-by=app-name
+
+# Appearance
+layer=overlay

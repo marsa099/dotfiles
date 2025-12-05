@@ -1,0 +1,36 @@
+# Tide prompt color configuration
+# Generated from centralized theme system
+
+# Background colors (pill-shaped segments)
+set -U tide_pwd_bg_color '#1B1B1B'
+set -U tide_git_bg_color '#1B1B1B'
+set -U tide_git_bg_color_unstable '#1B1B1B'
+set -U tide_git_bg_color_urgent '#1B1B1B'
+set -U tide_status_bg_color '#1B1B1B'
+set -U tide_status_bg_color_failure '#1B1B1B'
+set -U tide_cmd_duration_bg_color '#1B1B1B'
+set -U tide_context_bg_color '#1B1B1B'
+set -U tide_jobs_bg_color '#1B1B1B'
+set -U tide_node_bg_color '#1B1B1B'
+set -U tide_python_bg_color '#1B1B1B'
+
+# Foreground colors
+set -U tide_pwd_color_anchors '#8A9AA6'
+set -U tide_pwd_color_dirs '#8A9AA6'
+set -U tide_pwd_color_truncated_dirs '#8A9AA6'
+set -U tide_git_color_branch '#97B5A6'
+set -U tide_git_color_dirty '#FF570D'
+set -U tide_git_color_staged '#FF570D'
+set -U tide_git_color_conflicted '#FF7B72'
+set -U tide_git_color_stash '#97B5A6'
+set -U tide_git_color_untracked '#CCD5E4'
+set -U tide_git_color_upstream '#97B5A6'
+set -U tide_character_color '#97B5A6'
+set -U tide_character_color_failure '#FF7B72'
+set -U tide_status_color '#97B5A6'
+set -U tide_status_color_failure '#FF7B72'
+set -U tide_cmd_duration_color '#CCD5E4'
+
+# Frame and separator colors
+set -U tide_prompt_color_frame_and_connection '#707B84'
+set -U tide_prompt_color_separator_same_color '#707B84'

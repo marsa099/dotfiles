@@ -1,0 +1,35 @@
+[[themes]]
+name = "custom"
+
+[themes.palette]
+background = "#181818"
+foreground = "#EDEDED"
+black = "#1B1B1B"
+red = "#FF7B72"
+green = "#97B5A6"
+yellow = "#ff8a31"
+blue = "#CCD5E4"
+magenta = "#8A92A7"
+cyan = "#8A9AA6"
+white = "#C3C8C6"
+bright_black = "#292826"
+bright_red = "#FF7B72"
+bright_green = "#97B5A6"
+bright_yellow = "#ff8a31"
+bright_blue = "#CCD5E4"
+bright_magenta = "#8A92A7"
+bright_cyan = "#8A9AA6"
+bright_white = "#EDEDED"
+
+[themes.component_style]
+playback_metadata = { fg = "#C3C8C6" }
+playback_track = { fg = "#EDEDED", modifiers = ["Bold"] }
+playback_artists = { fg = "#97B5A6" }
+playback_album = { fg = "#ff8a31" }
+playback_genres = { fg = "#707B84" }
+current_playing = { fg = "#ff8a31", modifiers = ["Bold"] }
+selection = { fg = "#EDEDED", bg = "#282F38", modifiers = ["Bold"] }
+block_title = { fg = "#97B5A6", modifiers = ["Bold"] }
+table_header = { fg = "#707B84" }
+playlist_desc = { fg = "#707B84" }
+like = { fg = "#FF7B72" }

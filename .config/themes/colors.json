@@ -1,0 +1,166 @@
+{
+  "metadata": {
+    "name": "Custom Theme System",
+    "description": "Centralized color palette for unified theme management",
+    "version": "1.0.0",
+    "author": "David Karlsson"
+  },
+  "themes": {
+    "dark": {
+      "background": {
+        "primary": "#181818",
+        "secondary": "#1B1B1B",
+        "tertiary": "#1B1B1B",
+        "selection": "#282F38",
+        "surface": "#1B1B1B",
+        "overlay": "#292826",
+        "prompt": "#323A40"
+      },
+      "foreground": {
+        "primary": "#EDEDED",
+        "secondary": "#C3C8C6",
+        "muted": "#707B84",
+        "subtle": "#707B84"
+      },
+      "accent": {
+        "red": "#FF7B72",
+        "orange": "#FF570D",
+        "yellow": "#ff8a31",
+        "green": "#97B5A6",
+        "cyan": "#8A9AA6",
+        "blue": "#CCD5E4",
+        "purple": "#8A92A7",
+        "pink": "#8A92A7"
+      },
+      "semantic": {
+        "error": "accent.red",
+        "warning": "accent.orange",
+        "success": "accent.green",
+        "info": "accent.blue",
+        "keyword": "accent.green",
+        "command": "accent.blue",
+        "operator": "accent.yellow",
+        "comment": "foreground.muted",
+        "string": "accent.blue",
+        "function": "accent.blue",
+        "type": "accent.cyan",
+        "number": "accent.red",
+        "boolean": "accent.purple",
+        "variable": "foreground.primary",
+        "property": "accent.cyan",
+        "method": "accent.orange",
+        "tag": "accent.blue",
+        "attribute": "accent.cyan",
+        "cursor": "#FF570D",
+        "highlight_low": "#2F2E3E",
+        "highlight_medium": "#545168",
+        "highlight_high": "#6F6C85"
+      },
+      "terminal": {
+        "black": "background.tertiary",
+        "red": "accent.red",
+        "green": "accent.green",
+        "yellow": "accent.orange",
+        "blue": "accent.blue",
+        "magenta": "accent.purple",
+        "cyan": "accent.cyan",
+        "white": "foreground.secondary",
+        "bright_black": "foreground.muted",
+        "bright_red": "accent.red",
+        "bright_green": "accent.green",
+        "bright_yellow": "accent.yellow",
+        "bright_blue": "accent.blue",
+        "bright_magenta": "accent.purple",
+        "bright_cyan": "accent.cyan",
+        "bright_white": "foreground.primary"
+      },
+      "ui": {
+        "focus_active": "#7fc8ff",
+        "focus_inactive": "#505050",
+        "border_active": "#ffc87f",
+        "border_inactive": "#505050",
+        "border_urgent": "#9b0000",
+        "notification_frame": "accent.cyan",
+        "notification_frame_critical": "accent.red"
+      }
+    },
+    "light": {
+      "background": {
+        "primary": "#FDF6E3",
+        "secondary": "#F9F2DF",
+        "tertiary": "#FDF6E3",
+        "selection": "#f4eeee",
+        "surface": "#F9F2DF",
+        "overlay": "#EBE4D6",
+        "prompt": "#E8EAED"
+      },
+      "foreground": {
+        "primary": "#2D4A3D",
+        "secondary": "#575279",
+        "muted": "#9893a5",
+        "subtle": "#8A92A7"
+      },
+      "accent": {
+        "red": "#ED333B",
+        "orange": "#d7827e",
+        "yellow": "#69756C",
+        "green": "#5E7270",
+        "cyan": "#4A7C59",
+        "blue": "#286983",
+        "purple": "#B8713A",
+        "pink": "#8A92A7"
+      },
+      "semantic": {
+        "error": "accent.red",
+        "warning": "accent.yellow",
+        "success": "accent.green",
+        "info": "accent.cyan",
+        "keyword": "accent.red",
+        "command": "accent.blue",
+        "operator": "accent.cyan",
+        "comment": "foreground.muted",
+        "string": "accent.cyan",
+        "function": "accent.blue",
+        "type": "accent.cyan",
+        "number": "accent.red",
+        "boolean": "accent.purple",
+        "variable": "foreground.primary",
+        "property": "accent.cyan",
+        "method": "accent.orange",
+        "tag": "accent.blue",
+        "attribute": "accent.cyan",
+        "cursor": "#FF570D",
+        "highlight_low": "#E8EAED",
+        "highlight_medium": "#D5D8DD",
+        "highlight_high": "#C2C6CC"
+      },
+      "terminal": {
+        "black": "foreground.primary",
+        "red": "accent.red",
+        "green": "accent.green",
+        "yellow": "accent.orange",
+        "blue": "accent.blue",
+        "magenta": "accent.purple",
+        "cyan": "accent.cyan",
+        "white": "background.primary",
+        "bright_black": "foreground.secondary",
+        "bright_red": "accent.red",
+        "bright_green": "accent.green",
+        "bright_yellow": "accent.yellow",
+        "bright_blue": "accent.blue",
+        "bright_magenta": "accent.purple",
+        "bright_cyan": "accent.cyan",
+        "bright_white": "background.secondary"
+      },
+      "ui": {
+        "focus_active": "#286983",
+        "focus_inactive": "#9893a5",
+        "border_active": "#d7827e",
+        "border_inactive": "#9893a5",
+        "border_urgent": "#ED333B",
+        "notification_frame": "accent.cyan",
+        "notification_frame_critical": "accent.red"
+      }
+    }
+  }
+}

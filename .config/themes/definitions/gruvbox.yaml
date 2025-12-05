@@ -1,0 +1,102 @@
+# Gruvbox Dark Theme
+# A retro groove color scheme
+scheme: "Gruvbox Dark"
+author: "Martin (based on morhetz)"
+variant: "dark"
+
+# Base16 color definitions (hex without #)
+base00: "1d2021"  # Default Background (hard dark)
+base01: "282828"  # Lighter Background (medium dark)
+base02: "3c3836"  # Selection Background
+base03: "504945"  # Comments, Invisibles
+base04: "bdae93"  # Dark Foreground
+base05: "ebdbb2"  # Default Foreground
+base06: "d5c4a1"  # Light Foreground
+base07: "fbf1c7"  # Light Background
+base08: "fb4934"  # Red (bright red)
+base09: "fe8019"  # Orange (bright orange)
+base0A: "fabd2f"  # Yellow (bright yellow)
+base0B: "b8bb26"  # Green (bright green)
+base0C: "8ec07c"  # Cyan (bright aqua)
+base0D: "83a598"  # Blue (bright blue)
+base0E: "d3869b"  # Purple (bright purple)
+base0F: "d65d0e"  # Brown (bright orange)
+
+# Semantic color mappings for Waybar
+semantic:
+  # General colors
+  background: "base01"
+  foreground: "base05"
+  foreground_bright: "base06"
+
+  # Waybar window
+  waybar_bg: "transparent"
+  waybar_fg: "base05"
+
+  # Module backgrounds
+  module_bg: "base01"
+
+  # Workspace colors
+  waybar_workspace_fg: "base05"
+  waybar_workspace_focused: "base0D"
+  waybar_workspace_active: "base0C"
+  waybar_workspace_urgent: "base08"
+  waybar_workspace_hover: "base02"
+
+  # State colors
+  critical: "base08"
+  warning: "base09"
+  success: "base0B"
+  info: "base0D"
+
+  # Module-specific colors
+  battery_critical: "base08"
+  battery_animation_bg1: "base01"
+  battery_animation_bg2: "base08"
+
+  power_performance: "base08"
+  power_balanced: "base0D"
+  power_saver: "base0B"
+  power_saver_fg: "base00"
+
+  cpu_bg: "base0B"
+  cpu_fg: "base00"
+
+  memory_bg: "base0E"
+
+  disk_bg: "base0F"
+
+  temperature_bg: "base09"
+  temperature_critical: "base08"
+
+  tray_bg: "base0D"
+
+  pulseaudio_hover: "base0A"
+  pulseaudio_muted: "base08"
+
+  wireplumber_bg: "base07"
+  wireplumber_fg: "base00"
+  wireplumber_muted: "base08"
+
+  media_bg: "base0C"
+  media_fg: "base00"
+  media_vlc: "base09"
+
+  idle_inhibitor_bg: "base02"
+  idle_inhibitor_active_bg: "base06"
+  idle_inhibitor_active_fg: "base00"
+
+  mpd_bg: "base0C"
+  mpd_fg: "base00"
+  mpd_disconnected: "base08"
+  mpd_stopped: "base03"
+  mpd_paused: "base0C"
+
+  keyboard_state_bg: "base0B"
+  keyboard_state_fg: "base00"
+
+  privacy_screenshare: "base09"
+  privacy_audio_in: "base0B"
+  privacy_audio_out: "base0D"
+
+  tooltip_bg: "base01"

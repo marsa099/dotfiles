@@ -1,0 +1,26 @@
+# Ghostty terminal theme
+# Generated from centralized theme system
+
+background = {{background.primary}}
+foreground = {{foreground.primary}}
+cursor-color = {{semantic.cursor}}
+
+# ANSI colors (0-7)
+palette = 0={{terminal.black}}
+palette = 1={{terminal.red}}
+palette = 2={{terminal.green}}
+palette = 3={{terminal.yellow}}
+palette = 4={{terminal.blue}}
+palette = 5={{terminal.magenta}}
+palette = 6={{terminal.cyan}}
+palette = 7={{terminal.white}}
+
+# Bright ANSI colors (8-15)
+palette = 8={{terminal.bright_black}}
+palette = 9={{terminal.bright_red}}
+palette = 10={{terminal.bright_green}}
+palette = 11={{terminal.bright_yellow}}
+palette = 12={{terminal.bright_blue}}
+palette = 13={{terminal.bright_magenta}}
+palette = 14={{terminal.bright_cyan}}
+palette = 15={{terminal.bright_white}}

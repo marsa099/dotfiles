@@ -1,0 +1,102 @@
+# Nord Theme - Based on current Waybar colors
+# This is your current color scheme extracted from waybar/style.css
+scheme: "Nord"
+author: "Martin"
+variant: "dark"
+
+# Base16 color definitions (hex without #)
+base00: "292929"  # Default Background (dark gray)
+base01: "3c3836"  # Lighter Background
+base02: "504945"  # Selection Background
+base03: "64727D"  # Comments, Invisibles
+base04: "bdae93"  # Dark Foreground
+base05: "eceff4"  # Default Foreground (light gray)
+base06: "ffffff"  # Light Foreground (white)
+base07: "fbf1c7"  # Light Background
+base08: "eb4d4b"  # Red (Variables, Errors, Urgent)
+base09: "f0932b"  # Orange (Temperature)
+base0A: "fabd2f"  # Yellow (Classes)
+base0B: "2ecc71"  # Green (Success, CPU)
+base0C: "0081ac"  # Cyan (Active)
+base0D: "5e81ac"  # Blue (Functions, Focused)
+base0E: "9b59b6"  # Purple (Memory)
+base0F: "964B00"  # Brown (Disk)
+
+# Semantic color mappings for Waybar
+semantic:
+  # General colors
+  background: "base00"
+  foreground: "base05"
+  foreground_bright: "base06"
+
+  # Waybar window
+  waybar_bg: "transparent"
+  waybar_fg: "base06"
+
+  # Module backgrounds
+  module_bg: "base00"
+
+  # Workspace colors
+  waybar_workspace_fg: "base06"
+  waybar_workspace_focused: "base0D"
+  waybar_workspace_active: "base0C"
+  waybar_workspace_urgent: "base08"
+  waybar_workspace_hover: "000000"  # rgba(0, 0, 0, 0.2)
+
+  # State colors
+  critical: "f53c3c"  # Bright red
+  warning: "base08"
+  success: "base0B"
+  info: "2980b9"  # Blue
+
+  # Module-specific colors
+  battery_critical: "f53c3c"
+  battery_animation_bg1: "2b303b"  # rgba(43, 48, 59)
+  battery_animation_bg2: "8b3a3a"  # rgba(139, 58, 58)
+
+  power_performance: "f53c3c"
+  power_balanced: "2980b9"
+  power_saver: "base0B"
+  power_saver_fg: "000000"
+
+  cpu_bg: "base0B"
+  cpu_fg: "000000"
+
+  memory_bg: "base0E"
+
+  disk_bg: "base0F"
+
+  temperature_bg: "base09"
+  temperature_critical: "base08"
+
+  tray_bg: "2980b9"
+
+  pulseaudio_hover: "a37800"
+  pulseaudio_muted: "f53c3c"
+
+  wireplumber_bg: "fff0f5"
+  wireplumber_fg: "000000"
+  wireplumber_muted: "f53c3c"
+
+  media_bg: "66cc99"
+  media_fg: "2a5c45"
+  media_vlc: "ffa000"
+
+  idle_inhibitor_bg: "2d3436"
+  idle_inhibitor_active_bg: "ecf0f1"
+  idle_inhibitor_active_fg: "2d3436"
+
+  mpd_bg: "66cc99"
+  mpd_fg: "2a5c45"
+  mpd_disconnected: "f53c3c"
+  mpd_stopped: "90b1b1"
+  mpd_paused: "51a37a"
+
+  keyboard_state_bg: "97e1ad"
+  keyboard_state_fg: "000000"
+
+  privacy_screenshare: "cf5700"
+  privacy_audio_in: "1ca000"
+  privacy_audio_out: "0069d4"
+
+  tooltip_bg: "2b303b"  # rgba(43, 48, 59, 0.95)

@@ -1,0 +1,102 @@
+# Catppuccin Mocha Theme
+# A soothing pastel theme for the high-spirited
+scheme: "Catppuccin Mocha"
+author: "Martin (based on Catppuccin)"
+variant: "dark"
+
+# Base16 color definitions (hex without #)
+base00: "1e1e2e"  # Base (background)
+base01: "181825"  # Mantle (darker bg)
+base02: "313244"  # Surface0 (selection)
+base03: "45475a"  # Surface1 (comments)
+base04: "585b70"  # Surface2
+base05: "cdd6f4"  # Text (foreground)
+base06: "f5e0dc"  # Rosewater (light fg)
+base07: "b4befe"  # Lavender (light bg)
+base08: "f38ba8"  # Red
+base09: "fab387"  # Peach (orange)
+base0A: "f9e2af"  # Yellow
+base0B: "a6e3a1"  # Green
+base0C: "94e2d5"  # Teal (cyan)
+base0D: "89b4fa"  # Blue
+base0E: "cba6f7"  # Mauve (purple)
+base0F: "f2cdcd"  # Flamingo (pink)
+
+# Semantic color mappings for Waybar
+semantic:
+  # General colors
+  background: "base01"
+  foreground: "base05"
+  foreground_bright: "base06"
+
+  # Waybar window
+  waybar_bg: "transparent"
+  waybar_fg: "base05"
+
+  # Module backgrounds
+  module_bg: "base01"
+
+  # Workspace colors
+  waybar_workspace_fg: "base05"
+  waybar_workspace_focused: "base0D"
+  waybar_workspace_active: "base0C"
+  waybar_workspace_urgent: "base08"
+  waybar_workspace_hover: "base02"
+
+  # State colors
+  critical: "base08"
+  warning: "base09"
+  success: "base0B"
+  info: "base0D"
+
+  # Module-specific colors
+  battery_critical: "base08"
+  battery_animation_bg1: "base01"
+  battery_animation_bg2: "base08"
+
+  power_performance: "base08"
+  power_balanced: "base0D"
+  power_saver: "base0B"
+  power_saver_fg: "base00"
+
+  cpu_bg: "base0B"
+  cpu_fg: "base00"
+
+  memory_bg: "base0E"
+
+  disk_bg: "base09"
+
+  temperature_bg: "base09"
+  temperature_critical: "base08"
+
+  tray_bg: "base0D"
+
+  pulseaudio_hover: "base0A"
+  pulseaudio_muted: "base08"
+
+  wireplumber_bg: "base06"
+  wireplumber_fg: "base00"
+  wireplumber_muted: "base08"
+
+  media_bg: "base0C"
+  media_fg: "base00"
+  media_vlc: "base09"
+
+  idle_inhibitor_bg: "base02"
+  idle_inhibitor_active_bg: "base06"
+  idle_inhibitor_active_fg: "base00"
+
+  mpd_bg: "base0C"
+  mpd_fg: "base00"
+  mpd_disconnected: "base08"
+  mpd_stopped: "base03"
+  mpd_paused: "base0C"
+
+  keyboard_state_bg: "base0B"
+  keyboard_state_fg: "base00"
+
+  privacy_screenshare: "base09"
+  privacy_audio_in: "base0B"
+  privacy_audio_out: "base0D"
+
+  tooltip_bg: "base01"

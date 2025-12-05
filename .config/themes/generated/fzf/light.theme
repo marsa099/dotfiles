@@ -1,0 +1,17 @@
+# FZF color scheme
+# Generated from centralized theme system
+
+set -gx FZF_DEFAULT_OPTS "
+--color=bg+:#FDF6E3
+--color=bg:#FDF6E3
+--color=spinner:#4A7C59
+--color=hl:#ED333B
+--color=fg:#2D4A3D
+--color=header:#ED333B
+--color=info:#4A7C59
+--color=pointer:#FF570D
+--color=marker:#FF570D
+--color=fg+:#2D4A3D
+--color=prompt:#4A7C59
+--color=hl+:#ED333B
+"

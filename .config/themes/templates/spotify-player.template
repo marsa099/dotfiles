@@ -1,0 +1,35 @@
+[[themes]]
+name = "custom"
+
+[themes.palette]
+background = "{{background.primary}}"
+foreground = "{{foreground.primary}}"
+black = "{{background.secondary}}"
+red = "{{accent.red}}"
+green = "{{accent.green}}"
+yellow = "{{accent.yellow}}"
+blue = "{{accent.blue}}"
+magenta = "{{accent.purple}}"
+cyan = "{{accent.cyan}}"
+white = "{{foreground.secondary}}"
+bright_black = "{{background.overlay}}"
+bright_red = "{{accent.red}}"
+bright_green = "{{accent.green}}"
+bright_yellow = "{{accent.yellow}}"
+bright_blue = "{{accent.blue}}"
+bright_magenta = "{{accent.purple}}"
+bright_cyan = "{{accent.cyan}}"
+bright_white = "{{foreground.primary}}"
+
+[themes.component_style]
+playback_metadata = { fg = "{{foreground.secondary}}" }
+playback_track = { fg = "{{foreground.primary}}", modifiers = ["Bold"] }
+playback_artists = { fg = "{{accent.green}}" }
+playback_album = { fg = "{{accent.yellow}}" }
+playback_genres = { fg = "{{foreground.muted}}" }
+current_playing = { fg = "{{accent.yellow}}", modifiers = ["Bold"] }
+selection = { fg = "{{foreground.primary}}", bg = "{{background.selection}}", modifiers = ["Bold"] }
+block_title = { fg = "{{accent.green}}", modifiers = ["Bold"] }
+table_header = { fg = "{{foreground.muted}}" }
+playlist_desc = { fg = "{{foreground.muted}}" }
+like = { fg = "{{accent.red}}" }

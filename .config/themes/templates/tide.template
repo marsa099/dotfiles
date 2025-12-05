@@ -1,0 +1,36 @@
+# Tide prompt color configuration
+# Generated from centralized theme system
+
+# Background colors (pill-shaped segments)
+set -U tide_pwd_bg_color '{{background.secondary}}'
+set -U tide_git_bg_color '{{background.secondary}}'
+set -U tide_git_bg_color_unstable '{{background.secondary}}'
+set -U tide_git_bg_color_urgent '{{background.secondary}}'
+set -U tide_status_bg_color '{{background.secondary}}'
+set -U tide_status_bg_color_failure '{{background.secondary}}'
+set -U tide_cmd_duration_bg_color '{{background.secondary}}'
+set -U tide_context_bg_color '{{background.secondary}}'
+set -U tide_jobs_bg_color '{{background.secondary}}'
+set -U tide_node_bg_color '{{background.secondary}}'
+set -U tide_python_bg_color '{{background.secondary}}'
+
+# Foreground colors
+set -U tide_pwd_color_anchors '{{accent.cyan}}'
+set -U tide_pwd_color_dirs '{{accent.cyan}}'
+set -U tide_pwd_color_truncated_dirs '{{accent.cyan}}'
+set -U tide_git_color_branch '{{accent.green}}'
+set -U tide_git_color_dirty '{{accent.orange}}'
+set -U tide_git_color_staged '{{accent.orange}}'
+set -U tide_git_color_conflicted '{{accent.red}}'
+set -U tide_git_color_stash '{{accent.green}}'
+set -U tide_git_color_untracked '{{accent.blue}}'
+set -U tide_git_color_upstream '{{accent.green}}'
+set -U tide_character_color '{{accent.green}}'
+set -U tide_character_color_failure '{{accent.red}}'
+set -U tide_status_color '{{accent.green}}'
+set -U tide_status_color_failure '{{accent.red}}'
+set -U tide_cmd_duration_color '{{accent.blue}}'
+
+# Frame and separator colors
+set -U tide_prompt_color_frame_and_connection '{{foreground.muted}}'
+set -U tide_prompt_color_separator_same_color '{{foreground.muted}}'

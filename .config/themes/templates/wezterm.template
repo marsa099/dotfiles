@@ -1,0 +1,30 @@
+-- Wezterm color theme (auto-generated from theme system)
+return {
+  background = "{{background.primary}}",
+  foreground = "{{foreground.primary}}",
+  cursor_bg = "{{semantic.cursor}}",
+  cursor_border = "{{semantic.cursor}}",
+  cursor_fg = "{{background.primary}}",
+
+  ansi = {
+    "{{terminal.black}}",
+    "{{terminal.red}}",
+    "{{terminal.green}}",
+    "{{terminal.yellow}}",
+    "{{terminal.blue}}",
+    "{{terminal.magenta}}",
+    "{{terminal.cyan}}",
+    "{{terminal.white}}",
+  },
+
+  brights = {
+    "{{terminal.bright_black}}",
+    "{{terminal.bright_red}}",
+    "{{terminal.bright_green}}",
+    "{{terminal.bright_yellow}}",
+    "{{terminal.bright_blue}}",
+    "{{terminal.bright_magenta}}",
+    "{{terminal.bright_cyan}}",
+    "{{terminal.bright_white}}",
+  },
+}

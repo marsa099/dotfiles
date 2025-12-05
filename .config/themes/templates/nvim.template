@@ -1,0 +1,125 @@
+-- Custom Theme for Neovim
+-- Generated from centralized theme system
+
+local M = {}
+
+M.colors = {
+  -- Dark theme colors
+  dark = {
+    -- Background colors
+    bg = "{{dark.background.primary}}",
+    bg_secondary = "{{dark.background.secondary}}",
+    bg_tertiary = "{{dark.background.tertiary}}",
+    bg_selection = "{{dark.background.selection}}",
+    bg_surface = "{{dark.background.surface}}",
+    bg_overlay = "{{dark.background.overlay}}",
+    
+    -- Foreground colors
+    fg = "{{dark.foreground.primary}}",
+    fg_secondary = "{{dark.foreground.secondary}}",
+    fg_muted = "{{dark.foreground.muted}}",
+    fg_subtle = "{{dark.foreground.subtle}}",
+    
+    -- Accent colors
+    red = "{{dark.accent.red}}",
+    orange = "{{dark.accent.orange}}",
+    yellow = "{{dark.accent.yellow}}",
+    green = "{{dark.accent.green}}",
+    cyan = "{{dark.accent.cyan}}",
+    blue = "{{dark.accent.blue}}",
+    purple = "{{dark.accent.purple}}",
+    pink = "{{dark.accent.pink}}",
+    
+    -- Semantic colors
+    error = "{{dark.semantic.error}}",
+    warning = "{{dark.semantic.warning}}",
+    success = "{{dark.semantic.success}}",
+    info = "{{dark.semantic.info}}",
+    keyword = "{{dark.semantic.keyword}}",
+    command = "{{dark.semantic.command}}",
+    operator = "{{dark.semantic.operator}}",
+    comment = "{{dark.semantic.comment}}",
+    string = "{{dark.semantic.string}}",
+    ["function"] = "{{dark.semantic.function}}",
+    type = "{{dark.semantic.type}}",
+    number = "{{dark.semantic.number}}",
+    boolean = "{{dark.semantic.boolean}}",
+    variable = "{{dark.semantic.variable}}",
+    property = "{{dark.semantic.property}}",
+    method = "{{dark.semantic.method}}",
+    tag = "{{dark.semantic.tag}}",
+    attribute = "{{dark.semantic.attribute}}",
+    
+    -- Highlights
+    highlight_low = "{{dark.semantic.highlight_low}}",
+    highlight_med = "{{dark.semantic.highlight_medium}}",
+    highlight_high = "{{dark.semantic.highlight_high}}",
+    
+    -- Special
+    cursor = "{{dark.semantic.cursor}}",
+    none = "NONE",
+  },
+  
+  -- Light theme colors
+  light = {
+    -- Background colors
+    bg = "{{light.background.primary}}",
+    bg_secondary = "{{light.background.secondary}}",
+    bg_tertiary = "{{light.background.tertiary}}",
+    bg_selection = "{{light.background.selection}}",
+    bg_surface = "{{light.background.surface}}",
+    bg_overlay = "{{light.background.overlay}}",
+    
+    -- Foreground colors
+    fg = "{{light.foreground.primary}}",
+    fg_secondary = "{{light.foreground.secondary}}",
+    fg_muted = "{{light.foreground.muted}}",
+    fg_subtle = "{{light.foreground.subtle}}",
+    
+    -- Accent colors
+    red = "{{light.accent.red}}",
+    orange = "{{light.accent.orange}}",
+    yellow = "{{light.accent.yellow}}",
+    green = "{{light.accent.green}}",
+    cyan = "{{light.accent.cyan}}",
+    blue = "{{light.accent.blue}}",
+    purple = "{{light.accent.purple}}",
+    pink = "{{light.accent.pink}}",
+    
+    -- Semantic colors
+    error = "{{light.semantic.error}}",
+    warning = "{{light.semantic.warning}}",
+    success = "{{light.semantic.success}}",
+    info = "{{light.semantic.info}}",
+    keyword = "{{light.semantic.keyword}}",
+    command = "{{light.semantic.command}}",
+    operator = "{{light.semantic.operator}}",
+    comment = "{{light.semantic.comment}}",
+    string = "{{light.semantic.string}}",
+    ["function"] = "{{light.semantic.function}}",
+    type = "{{light.semantic.type}}",
+    number = "{{light.semantic.number}}",
+    boolean = "{{light.semantic.boolean}}",
+    variable = "{{light.semantic.variable}}",
+    property = "{{light.semantic.property}}",
+    method = "{{light.semantic.method}}",
+    tag = "{{light.semantic.tag}}",
+    attribute = "{{light.semantic.attribute}}",
+    
+    -- Highlights
+    highlight_low = "{{light.semantic.highlight_low}}",
+    highlight_med = "{{light.semantic.highlight_medium}}",
+    highlight_high = "{{light.semantic.highlight_high}}",
+    
+    -- Special
+    cursor = "{{light.semantic.cursor}}",
+    none = "NONE",
+  }
+}
+
+-- Get current theme based on vim background
+function M.get_colors()
+  return vim.o.background == "light" and M.colors.light or M.colors.dark
+end
+
+return M
