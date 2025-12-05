@@ -1,6 +1,6 @@
 * {
   font-family: "GeistMono NF", "GeistMono Nerd Font", "Geist Mono", monospace;
-  font-size: 14px;
+  font-size: 16px;
   min-height: 0;
   border: none;
   border-radius: 0;
@@ -16,7 +16,7 @@ window#waybar {
 .modules-left {
   background: alpha(#1B1B1B, 0.85);
   border-radius: 8px;
-  margin: 4px 8px 4px 20px;
+  margin: 8px;
   padding: 0px 8px;
 }
 
@@ -61,7 +61,7 @@ window#waybar {
 .modules-center {
   background: alpha(#1B1B1B, 0.85);
   border-radius: 8px;
-  margin: 4px 8px;
+  margin: 8px;
   padding: 0px 8px;
 }
 
@@ -95,7 +95,7 @@ window#waybar {
 .modules-right {
   background: alpha(#1B1B1B, 0.85);
   border-radius: 8px;
-  margin: 4px 20px 4px 8px;
+  margin: 8px;
   padding: 0px 8px;
 }
 
