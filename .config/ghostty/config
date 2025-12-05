@@ -2,4 +2,4 @@ command = /usr/bin/bash
 click-repeat-interval = 500
 gtk-single-instance = false
 auto-update-channel = tip
-theme = light:Selenized Light,dark:Catppuccin Frappe
+theme = light:light,dark:dark
