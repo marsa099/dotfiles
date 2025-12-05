@@ -1,212 +1,153 @@
-@import "frappe.css";
-
 * {
-  font-family: "Hack", monospace;
-  font-size: 18px;
+  font-family: "GeistMono NF", "GeistMono Nerd Font", "Geist Mono", monospace;
+  font-size: 14px;
+  min-height: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: #EDEDED;
 }
 
-#waybar {
+window#waybar {
   background: transparent;
-  color: #ffffff;
-  }
+}
 
+/* Left side modules */
 .modules-left {
+  background: alpha(#1B1B1B, 0.85);
+  border-radius: 8px;
+  margin: 4px 8px 4px 20px;
+  padding: 0px 8px;
+}
+
+#cpu,
+#memory {
+  padding: 6px 12px;
+  margin: 0;
+  background: transparent;
+  color: #EDEDED;
   border-radius: 0;
 }
 
-.modules-right {
-  background-color: transparent;
+#cpu.medium,
+#memory.medium {
+  color: #ff8a31;
 }
 
-.modules-center {
-  /* background: red; */ /* Debug line to see space allocated by the modules */
+#cpu.elevated,
+#memory.elevated {
+  color: #FF570D;
 }
 
-.module {
-  background-color: #303034;
-  padding-top: 0.25rem;
-  padding-bottom: 0.25rem;
+#cpu.critical,
+#memory.critical {
+  color: #FF7B72;
 }
 
-/* Add 1rem spacing between modules, excluding first module in each section */
-.modules-left > widget:not(:first-child) > * {
-  /* margin-left: 1rem; */
-}
-
-/* rounded corners - left module section - right side */
-.modules-left > widget:last-child > * {
-  border-radius: 0 0 0.5rem 0;
-}
-
-/* Style audio group (left container) - no inherent styling */
-#audio {
+#clock.date,
+.modules-left #custom-weather {
+  padding: 6px 12px;
+  margin: 0;
   background: transparent;
+  color: #EDEDED;
+  border-radius: 0;
 }
 
-/* ronded corners - pulseaudio section */
-#audio > widget > * {
-  border-radius: 0 0 0.5rem 0.5rem;
+.modules-left #custom-weather {
+  color: #8A9AA6;
 }
 
-/* Style system group (right container) */
-#system {
-  background-color: #303034;
-  border-radius: 0 0 0 0.5rem;
+/* Center module */
+.modules-center {
+  background: alpha(#1B1B1B, 0.85);
+  border-radius: 8px;
+  margin: 4px 8px;
+  padding: 0px 8px;
 }
 
-/* ronded corners - system section - left side */
-#system > widget > * {
-  border-radius: 0 0 0 0.5rem;
+#custom-niri-minimap {
+  padding: 6px 12px;
+  margin: 0;
+  background: transparent;
+  color: #EDEDED;
+  border-radius: 0;
+  font-size: 16px;
 }
 
-#workspaces {
-  border-radius: 0 0 0.5rem 0.5rem;
-  margin-right: 1rem;
+#custom-discord-notifications,
+#custom-teams-notifications {
+  padding: 6px 12px;
+  margin: 0;
+  background: transparent;
+  color: #5865F2;
+  border-radius: 0;
+  font-size: 16px;
 }
 
-#workspaces button {
-  color: #888888;
-  border-radius: 0 0 0.5rem 0.5rem;
-  border: 2px solid transparent;
-  padding: 0 0.5rem;
+#custom-discord-notifications.empty,
+#custom-teams-notifications.empty {
+  padding: 0;
+  margin: 0;
+  min-width: 0;
 }
 
-#workspaces button.active {
-  color: #ffffff;
-  border-radius: 0 0 0.5rem 0.5rem;
-  border: 2px solid transparent;
+/* Right side container - all items grouped */
+.modules-right {
+  background: alpha(#1B1B1B, 0.85);
+  border-radius: 8px;
+  margin: 4px 20px 4px 8px;
+  padding: 0px 8px;
 }
 
-#workspaces button:hover {
-  color: #e55300;
-  border-radius: 0 0 0.5rem 0.5rem;
-}
-
-#custom-music,
-#tray,
-#backlight,
 #clock,
 #battery,
-#bluetooth,
-#pulseaudio,
 #network,
-#cpu,
-#memory,
-#custom-lock,
-#custom-power {
-  padding: 0 1.5rem;
+#pulseaudio {
+  padding: 6px 12px;
+  margin: 0;
+  background: transparent;
+  color: #EDEDED;
+  border-radius: 0;
 }
 
-#clock {
-  color: #ffffff;
+#battery.warning {
+  color: #ff8a31;
 }
 
-#battery {
-  color: #ffffff;
+#battery.critical {
+  color: #FF7B72;
 }
 
 #battery.charging {
-  color: #ffffff;
+  color: #97B5A6;
 }
 
-#battery.warning:not(.charging) {
-  color: @red;
-}
-
-#backlight {
-  color: #ffffff;
-}
-
-#backlight, #battery {
-}
-
-#pulseaudio {
-  color: #ffffff;
-  padding: 0rem 1.5rem;
-}
-
-/* Style both pulseaudio instances when muted */
-#pulseaudio.muted {
-  background-color: #303034;
-  border-radius: 0 0 0.5rem 0.5rem;
-  padding: 0 1.5rem;
-  margin-right: 1rem;
-}
-
-#bluetooth {
-  color: #ffffff;
+#clock {
+  color: #CCD5E4;
 }
 
 #network {
-  color: #ffffff;
+  color: #97B5A6;
 }
 
 #network.disconnected {
-  color: @red;
+  color: #FF7B72;
 }
 
-#custom-music {
-  color: #ffffff;
-  border-radius: 0 0 0.5rem 0.5rem;
-  margin-left: 1rem;
+#pulseaudio {
+  color: #CCD5E4;
 }
 
-#tray {
-  border-radius: 0 0 0.5rem 0.5rem;
-  margin-right: 1rem;
+#pulseaudio.muted {
+  color: #8A9AA6;
 }
 
-#cpu {
-  color: #ffffff;
+tooltip {
+  background: alpha(#1B1B1B, 0.95);
+  border: 1px solid alpha(#8A9AA6, 0.2);
+  border-radius: 8px;
 }
 
-#cpu.low {
-  color: #ffffff;
-}
-
-#cpu.medium {
-  color: @yellow;
-}
-
-#cpu.elevated {
-  color: @peach;
-}
-
-#cpu.critical {
-  color: @red;
-  animation: blink 1s ease-in-out infinite;
-}
-
-#memory {
-  color: #ffffff;
-  border-radius: 0 0 0.5rem 0;
-}
-
-#memory.low {
-  color: #ffffff;
-}
-
-#memory.medium {
-  color: @yellow;
-}
-
-#memory.elevated {
-  color: @peach;
-}
-
-#memory.critical {
-  color: @red;
-  animation: blink 1s ease-in-out infinite;
-}
-
-@keyframes blink {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.3;
-  }
-  100% {
-    opacity: 1;
-  }
+tooltip label {
+  color: #EDEDED;
 }
