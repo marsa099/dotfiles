@@ -29,6 +29,34 @@ window#waybar {
   border-radius: 0;
 }
 
+#custom-screencast {
+  padding: 6px 12px;
+  margin: 0;
+  background: transparent;
+  color: #ff4444;
+  border-radius: 0;
+  animation: pulse 2s steps(2) infinite;
+}
+
+#custom-screencast.inactive {
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  animation: none;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
 #cpu.medium,
 #memory.medium {
   color: #ff8a31;

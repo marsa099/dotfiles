@@ -1,0 +1,11 @@
+#!/bin/bash
+# Waybar module to detect active screen/window sharing via PipeWire
+
+# Check for video stream nodes (created when screen sharing)
+streams=$(pw-dump 2>/dev/null | jq '[.[] | select(.type == "PipeWire:Interface:Node") | select(.info.props["media.class"]? | strings | test("Stream.*Video|Video.*Stream"))] | length' 2>/dev/null)
+
+if [ "$streams" -gt 0 ]; then
+    echo '{"text": "󰻃", "class": "active", "tooltip": "Screen sharing active"}'
+else
+    echo '{"text": "", "class": "inactive"}'
+fi

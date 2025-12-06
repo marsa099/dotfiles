@@ -186,6 +186,19 @@
   border-radius: 0 1rem 1rem 0;
 }
 
+#custom-screencast {
+  padding: 0.5rem 1rem;
+  color: @neutral_red;
+  animation: blink 2s steps(2) infinite;
+}
+
+#custom-screencast.inactive {
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  animation: none;
+}
+
 #memory.low {
   color: @neutral_yellow;
 }
