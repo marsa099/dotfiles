@@ -199,6 +199,19 @@
   animation: none;
 }
 
+#custom-camera {
+  padding: 0.5rem 1rem;
+  color: @neutral_red;
+  animation: blink 2s steps(2) infinite;
+}
+
+#custom-camera.inactive {
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  animation: none;
+}
+
 #memory.low {
   color: @neutral_yellow;
 }

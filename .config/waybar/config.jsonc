@@ -6,7 +6,7 @@
     "reload_style_on_change": true,
     "margin-top": 0,
     "margin-bottom": 0,
-    "modules-left": ["cpu", "memory", "custom/screencast"],
+    "modules-left": ["cpu", "memory", "custom/screencast", "custom/camera"],
     "modules-center": ["niri/workspaces"],
     "modules-right": ["group/audio", "group/system"],
     "niri/workspaces": {
@@ -137,6 +137,12 @@
    },
    "custom/screencast": {
         "exec": "~/.local/bin/waybar-screencast",
+        "return-type": "json",
+        "interval": 1,
+        "tooltip": true
+   },
+   "custom/camera": {
+        "exec": "~/.local/bin/waybar-camera",
         "return-type": "json",
         "interval": 1,
         "tooltip": true

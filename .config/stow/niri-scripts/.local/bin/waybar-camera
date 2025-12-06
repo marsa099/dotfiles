@@ -1,0 +1,11 @@
+#!/bin/bash
+# Waybar module to detect active camera usage
+
+# Check for read/write access to video devices (indicates active recording)
+camera=$(lsof /dev/video* 2>/dev/null | grep -c '[0-9]u ')
+
+if [ "$camera" -gt 0 ]; then
+    echo '{"text": "󰕧", "class": "active", "tooltip": "Camera active"}'
+else
+    echo '{"text": "", "class": "inactive"}'
+fi
