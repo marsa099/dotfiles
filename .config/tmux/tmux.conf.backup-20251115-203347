@@ -1,0 +1,162 @@
+# Key bindings
+# Examples:
+# https://gist.github.com/achilleas-k/10286c5e269c98129b66b44fdd77b1e7
+
+# set prefix to Ctrl-space
+unbind C-b
+set -g prefix C-Space
+
+set -g focus-events               # form vim/tmux d/y buffer sync
+set -g status-keys vi             # vi for command status
+
+bind r source-file ~/.config/tmux/tmux.conf \; display-message "Configuration reloaded."
+bind C-Space last-window
+bind | split-window -h -c'#{pane_current_path}'
+bind - split-window -v -c'#{pane_current_path}'
+unbind '"'
+unbind %
+
+# Auto rename window
+set-option -g status-interval 5
+set-option -g automatic-rename on
+set-option -g automatic-rename-format '#{b:pane_current_path}'
+# Using repository name
+# set-option -g automatic-rename-format '#(basename `git rev-parse --show-toplevel`)'
+
+# vi keys to resize
+bind -r C-k resize-pane -U 1
+bind -r C-j resize-pane -D 1
+bind -r C-h resize-pane -L 1
+bind -r C-l resize-pane -R 1
+
+
+# Open scratch window
+bind -n C-s display-popup -E "tmux new-session -A -s scratch -c ~/playground/ scratch"
+bind -n M-s display-popup -E "exa -sold ~/playground/scratch/ |\
+  fzf --reverse |\
+  xargs $EDITOR"
+
+unbind f
+bind f display-popup -E "\
+    tmux list-sessions -F '#{?session_attached,,#{session_name}}' |\
+    sed '/^$/d' |\
+    fzf --reverse --header jump-to-session --preview 'tmux capture-pane -pt {}'  |\
+    xargs tmux switch-client -t"
+
+bind g display-popup -E -w 90% -h 80% "lazygit"
+
+# bind C-j display-popup -E "tmux list-sessions | sed -E 's/:.*$//' | grep -v \"^$(tmux display-message -p '#S')\$\" | fzf --reverse | xargs tmux switch-client -t"
+
+# Allow holding Ctrl when using using prefix+p/n for switching windows
+bind C-p previous-window
+bind C-n next-window
+bind "n" next-window
+bind "p" previous-window
+
+bind -r "C-h" previous-window
+bind -r "C-l" next-window
+
+bind -r "h" select-pane -t :--
+bind -r "l" select-pane -t :.+
+
+# === Settings ===
+set-option -g default-shell $SHELL
+# set -g default-terminal "screen-256color" # improve colors
+set -g default-terminal "tmux-256color"
+set -g base-index 1               # start window from 1
+setw -g pane-base-index 1         # start pane from 1
+set-option -g renumber-windows on
+setw -g monitor-activity on       # show activity in background windows
+set -s escape-time 0              # address vim mode switching delay
+
+# set-option -sa terminal-overrides ",xterm*:Tc"
+
+# increase history limit
+set -g history-limit 30000
+
+# Use vim keybindings in copy mode
+setw -g mode-keys vi
+bind v copy-mode
+bind-key -T copy-mode-vi v send -X begin-selection
+bind-key -T copy-mode-vi y send -X copy-pipe-and-cancel "clip"
+unbind -T copy-mode-vi Enter
+bind-key -T copy-mode-vi Enter send -X copy-pipe-and-cancel "clip"
+unbind -T copy-mode-vi Space
+bind -T copy-mode-vi Space send -X jump-again
+bind-key -T copy-mode-vi 0 send -X back-to-indentation
+bind y run 'tmux save-buffer - | clip '
+bind C-y run 'tmux save-buffer - | clip '
+
+# Default to incremental search in copy-mode
+bind-key  -T copy-mode-vi / command-prompt -i -p "search down" "send -X search-forward-incremental \"%%%\""
+bind-key  -T copy-mode-vi ? command-prompt -i -p "search up" "send -X search-backward-incremental "%%%""
+bind-key / copy-mode\; command-prompt -i -p "search up" "send -X search-backward-incremental "%%%""
+
+# === Status bar ===
+# https://arcolinux.com/everything-you-need-to-know-about-tmux-status-bar/
+set -g status on
+set -g status-interval 30
+set -g status-justify centre
+set -g status-keys vi
+set -g status-position bottom
+set -g status-left-length 20
+set -g status-left-style default
+set -g status-left '#[bold,fg=#98971a]#S'
+# set -g status-right "#[bold,fg=#689d6a]%a %m/%d %H:%M%p#[nobold,fg=default]"
+set -g status-right ""
+set -g status-style                 fg="#ebdbb2",bg="#282828"
+setw -g window-status-style         fg="#ebdbb2",bg="#282828"
+setw -g window-status-current-style fg="#282828",bg="#ebdbb2"
+
+# Border colors between panes
+set -g pane-border-style            fg="#3c2836",bg="#3c2836"
+set -g pane-active-border-style     fg="#3c2836",bg="#3c2836"
+
+# === Plugins ===
+# tmux plugin installer
+# to install plugins: prefix + I
+#
+set -g @plugin 'tmux-plugins/tpm'
+set -g @plugin 'tmux-plugins/tmux-sensible'
+set -g @plugin 'christoomey/vim-tmux-navigator'
+set -g @plugin 'tmux-plugins/tmux-resurrect'
+set -g @plugin 'sainnhe/tmux-fzf'
+set -g @plugin 'tmux-plugins/tmux-copycat'
+set -g @plugin 'tmux-plugins/tmux-resurrect'
+set -g @plugin 'tmux-plugins/tmux-continuum'
+
+# Auto-start tmux on boot and auto-restore sessions
+# set -g @continuum-boot 'on'
+set -g @continuum-restore 'on'
+
+# Restore processes
+set -g @resurrect-capture-pane-contents 'on'
+#set -g @resurrect-processes 'ssh vim nvim man less more tail top htop watch pnpm npm yarn node python claude dotnet'
+set -g @resurrect-processes '"nvim *" "dotnet run *" "claude->claude --continue" "~pnpm run" "~docker-compose logs *"'
+
+# prefix+C-f to launch fzf
+TMUX_FZF_LAUNCH_KEY="C-f"
+# Default value in tmux < 3.2
+TMUX_FZF_OPTIONS="-m"
+# Default value in tmux >= 3.2
+TMUX_FZF_OPTIONS="-p -w 62% -h 38% -m"
+# Preview is enabled by default.
+TMUX_FZF_PREVIEW=1
+# To customize the order of the actions
+# TMUX_FZF_ORDER="session|window|pane|command|keybinding|clipboard|process"
+# You can also use this variable to disable unwanted features. For
+# example, to disable clipboard and process, simply delete them in
+# $TMUX_FZF_ORDER="session|window|pane|command|keybinding"
+# $TMUX_FZF_ORDER="session|window|pane|command|keybinding"
+
+
+# For some reasons, you may want to customize format of panes, windows,
+# sessions listed in fzf. There are three variables to complete this work:
+# TMUX_FZF_PANE_FORMAT="[#{window_name}] #{pane_current_command}  [#{pane_width}x#{pane_height}] [history #{history_size}/#{history_limit}, #{history_bytes} bytes] #{?pane_active,[active],[inactive]}"
+
+# TMUX Plugin Manager (https://github.com/tmux-plugins/tpm)
+# git clone https://github.com/tmux-plugins/tpm ~/.config/tmux/plugins/tpm
+# Prefix + I
+# Can also run command
+# ~/.config/tmux/plugins/tpm/scripts/install_plugins.sh
+run -b ~/.config/tmux/plugins/tpm/tpm
