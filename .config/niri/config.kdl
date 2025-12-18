@@ -111,7 +111,7 @@ input {
 }
 
 output "DP-3" {
-    mode "3840x2160@144.000"
+    mode "3840x2160@120.000"
     scale 1.25
 }
 
@@ -278,6 +278,7 @@ layout {
 // This line starts waybar, a commonly used bar for Wayland compositors.
 // Note: dbus-update-activation-environment is handled by niri-session automatically.
 spawn-at-startup "waybar"
+spawn-at-startup "swaybg" "-i" "/home/martin/wallpapers/wallhaven-man-on-field.jpg" "-m" "fill"
 
 // Start vicinae launcher server
 spawn-at-startup "vicinae" "server"
@@ -385,7 +386,7 @@ binds {
     // Suggested binds for running programs: terminal, app launcher, screen locker.
     Mod+Return hotkey-overlay-title="Open a Terminal: ghostty" { spawn "ghostty"; }
     Mod+Space hotkey-overlay-title="Run an Application: vicinae" { spawn "vicinae" "toggle"; }
-    Super+Alt+L hotkey-overlay-title="Lock the Screen: swaylock" { spawn "swaylock"; }
+    Super+Alt+L hotkey-overlay-title="Lock the Screen: swaylock" { spawn "swaylock" "-i" "/home/martin/wallpapers/wallbase-pink-chemicals.png"; }
 
     // Spawn-or-focus keybindings (focus existing window, cycle through instances, or spawn new)
     Mod+A { spawn-sh "$HOME/.local/bin/niri-spawn-or-focus com.mitchellh.ghostty ghostty"; }
