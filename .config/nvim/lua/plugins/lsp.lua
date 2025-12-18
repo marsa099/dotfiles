@@ -3,6 +3,85 @@ return {
 		"neovim/nvim-lspconfig",
 		lazy = false,
 		config = function()
+			-- Enable line highlighting for diagnostics
+			vim.diagnostic.config({
+				signs = {
+					linehl = {
+						[vim.diagnostic.severity.ERROR] = "DiagnosticLineError",
+						[vim.diagnostic.severity.WARN] = "DiagnosticLineWarn",
+						[vim.diagnostic.severity.INFO] = "DiagnosticLineInfo",
+						[vim.diagnostic.severity.HINT] = "DiagnosticLineHint",
+					},
+				},
+			})
+
+			-- OmniSharp progress indicator
+			local omnisharp_state = {
+				min_remaining = math.huge,
+				max_total = 0,
+				max_projects = 0,
+				notify_id = nil,
+				initial_done = false,
+			}
+
+			vim.lsp.handlers["o#/backgrounddiagnosticstatus"] = function(_, result)
+				local total = result.NumberFilesTotal or 0
+				local remaining = result.NumberFilesRemaining or 0
+				local projects = result.NumberProjects or 0
+
+				-- Filter: ignore messages with no projects (initialization noise)
+				if projects == 0 then return end
+
+				-- After initial analysis, ignore all subsequent notifications
+				if omnisharp_state.initial_done then return end
+
+				-- Status 2 = analysis complete
+				-- Only show completion if we were actively tracking a multi-file analysis
+				-- (notify_id will be set when we showed progress)
+				if result.Status == 2 and omnisharp_state.notify_id ~= nil then
+					vim.notify("Analysis complete", vim.log.levels.INFO, {
+						title = "OmniSharp",
+						replace = omnisharp_state.notify_id,
+						timeout = 3000,
+					})
+					-- Mark initial analysis as done - no more notifications after this
+					omnisharp_state.initial_done = true
+					return
+				end
+
+				-- Status 1 = actively analyzing
+				if result.Status == 1 and total > 0 then
+					-- Only track multi-file analyses (initial load), ignore single-file re-analysis
+					if total < 2 then return end
+
+					-- Track maximums (totals can increase as projects are discovered)
+					if total > omnisharp_state.max_total then
+						omnisharp_state.max_total = total
+					end
+					if projects > omnisharp_state.max_projects then
+						omnisharp_state.max_projects = projects
+					end
+
+					-- Only update if progress increased (remaining decreased)
+					if remaining < omnisharp_state.min_remaining then
+						omnisharp_state.min_remaining = remaining
+
+						local done = omnisharp_state.max_total - omnisharp_state.min_remaining
+						local pct = math.floor((done / omnisharp_state.max_total) * 100)
+
+						omnisharp_state.notify_id = vim.notify(
+							string.format("%d%% (%d/%d files, %d projects)",
+								pct, done, omnisharp_state.max_total, omnisharp_state.max_projects),
+							vim.log.levels.INFO,
+							{ title = "OmniSharp", replace = omnisharp_state.notify_id, timeout = false }
+						)
+					end
+				end
+			end
+
+			-- We don't need projectdiagnosticstatus anymore, but keep handler to suppress warnings
+			vim.lsp.handlers["o#/projectdiagnosticstatus"] = function() end
+
 			-- Complete LSP keybindings
 			vim.api.nvim_create_autocmd("LspAttach", {
 				group = vim.api.nvim_create_augroup("UserLspConfig", { clear = true }),
@@ -20,6 +99,7 @@ return {
 					-- Information
 					map("n", "K", vim.lsp.buf.hover, "Hover documentation")
 					map("i", "<C-k>", vim.lsp.buf.signature_help, "Signature help")
+					map("n", "<leader>e", vim.diagnostic.open_float, "Show diagnostic")
 
 					-- Actions
 					map("n", "<leader>rn", vim.lsp.buf.rename, "Rename symbol")
