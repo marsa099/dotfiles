@@ -62,7 +62,7 @@
         ]
     },
     "pulseaudio#speaker": {
-        "format": "",
+        "format": "󰕾",
         "format-muted": "󰖁",
         "on-click": "pavucontrol",
         "tooltip": false
@@ -70,7 +70,7 @@
     "pulseaudio#mic": {
         "format": "{format_source}",
         "format-muted": "{format_source}",
-        "format-source": "",
+        "format-source": "󰍬",
         "format-source-muted": "󰍭",
         "on-click": "pavucontrol",
         "tooltip": false
