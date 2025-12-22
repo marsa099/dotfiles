@@ -4,8 +4,6 @@
   min-height: 0;
   border: none;
   border-radius: 0;
-  background: transparent;
-  color: #EDEDED;
 }
 
 window#waybar {
@@ -16,8 +14,21 @@ window#waybar {
 .modules-left {
   background: alpha(#1B1B1B, 0.85);
   border-radius: 8px;
-  margin: 8px;
+  margin: 4px 8px 4px 20px;
   padding: 0px 8px;
+}
+
+#clock.date,
+.modules-left #custom-weather {
+  padding: 6px 12px;
+  margin: 0;
+  background: transparent;
+  color: #EDEDED;
+  border-radius: 0;
+}
+
+.modules-left #custom-weather {
+  color: #8A9AA6;
 }
 
 #cpu,
@@ -27,6 +38,21 @@ window#waybar {
   background: transparent;
   color: #EDEDED;
   border-radius: 0;
+}
+
+#cpu.medium,
+#memory.medium {
+  color: #ff8a31;
+}
+
+#cpu.elevated,
+#memory.elevated {
+  color: #FF570D;
+}
+
+#cpu.critical,
+#memory.critical {
+  color: #FF7B72;
 }
 
 #custom-screencast {
@@ -73,39 +99,11 @@ window#waybar {
   }
 }
 
-#cpu.medium,
-#memory.medium {
-  color: #ff8a31;
-}
-
-#cpu.elevated,
-#memory.elevated {
-  color: #FF570D;
-}
-
-#cpu.critical,
-#memory.critical {
-  color: #FF7B72;
-}
-
-#clock.date,
-.modules-left #custom-weather {
-  padding: 6px 12px;
-  margin: 0;
-  background: transparent;
-  color: #EDEDED;
-  border-radius: 0;
-}
-
-.modules-left #custom-weather {
-  color: #8A9AA6;
-}
-
 /* Center module */
 .modules-center {
   background: alpha(#1B1B1B, 0.85);
   border-radius: 8px;
-  margin: 8px;
+  margin: 4px 8px;
   padding: 0px 8px;
 }
 
@@ -139,7 +137,7 @@ window#waybar {
 .modules-right {
   background: alpha(#1B1B1B, 0.85);
   border-radius: 8px;
-  margin: 8px;
+  margin: 4px 20px 4px 8px;
   padding: 0px 8px;
 }
 
@@ -178,12 +176,35 @@ window#waybar {
   color: #FF7B72;
 }
 
-#pulseaudio {
+#pulseaudio.speaker {
   color: #CCD5E4;
 }
 
-#pulseaudio.muted {
+#pulseaudio.speaker.muted {
   color: #8A9AA6;
+}
+
+#pulseaudio.mic {
+  color: #CCD5E4;
+}
+
+#pulseaudio.mic.source-muted {
+  color: #8A9AA6;
+}
+
+#custom-dnd {
+  padding: 6px 12px;
+  margin: 0;
+  background: transparent;
+  border-radius: 0;
+}
+
+#custom-dnd.active {
+  color: #8A92A7;
+}
+
+#custom-dnd.inactive {
+  color: #707B84;
 }
 
 tooltip {
