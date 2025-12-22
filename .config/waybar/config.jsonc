@@ -6,9 +6,9 @@
     "reload_style_on_change": true,
     "margin-top": 0,
     "margin-bottom": 0,
-    "modules-left": ["cpu", "memory", "custom/screencast", "custom/camera"],
+    "modules-left": ["cpu", "memory", "custom/screencast", "custom/camera", "custom/dnd", "pulseaudio#mic", "pulseaudio#speaker"],
     "modules-center": ["niri/workspaces"],
-    "modules-right": ["custom/dnd", "group/audio", "group/system"],
+    "modules-right": ["group/system"],
     "niri/workspaces": {
          "disable-scroll": true,
          "sort-by-name": true,
@@ -62,7 +62,7 @@
         ]
     },
     "pulseaudio#speaker": {
-        "format": "󰕾",
+        "format": "",
         "format-muted": "󰖁",
         "on-click": "pavucontrol",
         "tooltip": false
@@ -70,7 +70,7 @@
     "pulseaudio#mic": {
         "format": "{format_source}",
         "format-muted": "{format_source}",
-        "format-source": "󰍬",
+        "format-source": "",
         "format-source-muted": "󰍭",
         "on-click": "pavucontrol",
         "tooltip": false
@@ -150,7 +150,8 @@
    "custom/dnd": {
         "exec": "~/.local/bin/waybar-dnd",
         "return-type": "json",
-        "interval": 1,
+        "interval": "once",
+        "signal": 10,
         "tooltip": true,
         "on-click": "~/.local/bin/waybar-dnd-toggle"
    }

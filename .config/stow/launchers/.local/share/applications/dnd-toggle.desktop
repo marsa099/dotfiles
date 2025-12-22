@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Do Not Disturb
+Comment=Toggle Do Not Disturb mode (notifications + sounds)
+Exec=/home/martin/.local/bin/waybar-dnd-toggle
+Icon=weather-clear-night
+Terminal=false
+Categories=Utility;
+StartupNotify=false

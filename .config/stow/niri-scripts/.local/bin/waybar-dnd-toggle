@@ -13,3 +13,6 @@ else
     dunstctl set-paused true
     gsettings set org.gnome.desktop.sound event-sounds false
 fi
+
+# Signal waybar to update DND module instantly
+pkill -RTMIN+10 waybar
