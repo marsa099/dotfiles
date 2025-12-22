@@ -8,7 +8,7 @@
     "margin-bottom": 0,
     "modules-left": ["cpu", "memory", "custom/screencast", "custom/camera"],
     "modules-center": ["niri/workspaces"],
-    "modules-right": ["group/audio", "group/system"],
+    "modules-right": ["custom/dnd", "group/audio", "group/system"],
     "niri/workspaces": {
          "disable-scroll": true,
          "sort-by-name": true,
@@ -146,5 +146,12 @@
         "return-type": "json",
         "interval": 1,
         "tooltip": true
+   },
+   "custom/dnd": {
+        "exec": "~/.local/bin/waybar-dnd",
+        "return-type": "json",
+        "interval": 1,
+        "tooltip": true,
+        "on-click": "dunstctl set-paused toggle"
    }
 }
