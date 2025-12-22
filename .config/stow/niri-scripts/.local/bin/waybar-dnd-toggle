@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# Toggle DND: dunst notifications + system event sounds
+
+is_paused=$(dunstctl is-paused)
+
+if [ "$is_paused" = "true" ]; then
+    # Disable DND
+    dunstctl set-paused false
+    gsettings set org.gnome.desktop.sound event-sounds true
+else
+    # Enable DND
+    dunstctl set-paused true
+    gsettings set org.gnome.desktop.sound event-sounds false
+fi

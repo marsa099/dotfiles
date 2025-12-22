@@ -152,6 +152,6 @@
         "return-type": "json",
         "interval": 1,
         "tooltip": true,
-        "on-click": "dunstctl set-paused toggle"
+        "on-click": "~/.local/bin/waybar-dnd-toggle"
    }
 }

@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# Waybar DND (Do Not Disturb) module for dunst
-# Outputs JSON for waybar with moon icon
+# Waybar DND (Do Not Disturb) module
+# Controls: dunst notifications + system event sounds
 # Active: filled moon, Inactive: outline moon (dimmed via CSS)
 
 is_paused=$(dunstctl is-paused)
 
 if [ "$is_paused" = "true" ]; then
-    echo '{"text": "󰽥", "tooltip": "Do Not Disturb: ON\nClick to disable", "class": "active"}'
+    echo '{"text": "󰽥", "tooltip": "Do Not Disturb: ON\nNotifications + sounds muted\nClick to disable", "class": "active"}'
 else
     echo '{"text": "󰽥", "tooltip": "Do Not Disturb: OFF\nClick to enable", "class": "inactive"}'
 fi
