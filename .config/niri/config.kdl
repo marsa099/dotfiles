@@ -384,13 +384,13 @@ binds {
     Mod+Shift+Slash { show-hotkey-overlay; }
 
     // Suggested binds for running programs: terminal, app launcher, screen locker.
-    Mod+Return hotkey-overlay-title="Open a Terminal: ghostty" { spawn "ghostty"; }
+    Mod+Return hotkey-overlay-title="Open a Terminal: kitty" { spawn "kitty"; }
     Mod+Space hotkey-overlay-title="Run an Application: vicinae" { spawn "vicinae" "toggle"; }
     Super+Alt+L hotkey-overlay-title="Lock the Screen: swaylock" { spawn "swaylock" "-i" "/home/martin/wallpapers/wallbase-pink-chemicals.png"; }
 
     // Spawn-or-focus keybindings (focus existing window, cycle through instances, or spawn new)
-    Mod+A { spawn-sh "$HOME/.local/bin/niri-spawn-or-focus com.mitchellh.ghostty ghostty"; }
-    Mod+Shift+A { spawn "ghostty"; }
+    Mod+A { spawn-sh "$HOME/.local/bin/niri-spawn-or-focus kitty kitty"; }
+    Mod+Shift+A { spawn "kitty"; }
     Mod+T { spawn-sh "$HOME/.local/bin/niri-spawn-or-focus teams-for-linux teams-for-linux"; }
     Mod+Shift+T { spawn "teams-for-linux"; }
     Mod+D { spawn-sh "$HOME/.local/bin/niri-spawn-or-focus discord discord"; }

@@ -47,6 +47,10 @@ local c = {
   string = "#CCD5E4",
   ["function"] = "#CCD5E4",
   type = "#8A9AA6",
+  class = "#8A9AA6",
+  interface = "#97B5A6",
+  struct = "#8A92A7",
+  enum = "#CCD5E4",
   number = "#FF7B72",
   boolean = "#8A92A7",
   variable = "#EDEDED",
@@ -324,10 +328,11 @@ hl("@lsp.type.string", { link = "String" })
 hl("@lsp.type.number", { link = "Number" })
 hl("@lsp.type.operator", { link = "Operator" })
 hl("@lsp.type.type", { link = "Type" })
-hl("@lsp.type.class", { link = "Type" })
-hl("@lsp.type.interface", { link = "Type" })
+hl("@lsp.type.class", { fg = c.class })
+hl("@lsp.type.interface", { fg = c.interface })
+hl("@lsp.type.struct", { fg = c.struct })
 hl("@lsp.type.namespace", { link = "@namespace" })
-hl("@lsp.type.enum", { link = "Type" })
+hl("@lsp.type.enum", { fg = c.enum })
 hl("@lsp.type.enumMember", { link = "Constant" })
 hl("@lsp.mod.readonly", {})
 hl("@lsp.mod.defaultLibrary", {})
