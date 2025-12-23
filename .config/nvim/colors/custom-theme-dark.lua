@@ -40,24 +40,27 @@ local c = {
   warning = "#FF570D",
   success = "#97B5A6",
   info = "#CCD5E4",
-  keyword = "#97B5A6",
+  keyword = "#569CD6",
   command = "#CCD5E4",
-  operator = "#ff8a31",
-  comment = "#707B84",
-  string = "#CCD5E4",
-  ["function"] = "#CCD5E4",
-  type = "#8A9AA6",
-  class = "#8A9AA6",
-  interface = "#97B5A6",
-  struct = "#8A92A7",
-  enum = "#CCD5E4",
-  number = "#FF7B72",
-  boolean = "#8A92A7",
-  variable = "#EDEDED",
-  property = "#8A9AA6",
-  method = "#FF570D",
-  tag = "#CCD5E4",
-  attribute = "#8A9AA6",
+  operator = "#EDEDED",
+  comment = "#6A9955",
+  string = "#CE9178",
+  ["function"] = "#DCDCAA",
+  type = "#4EC9B0",
+  class = "#4EC9B0",
+  interface = "#B8D7A3",
+  struct = "#4EC9B0",
+  enum = "#B8D7A3",
+  number = "#B5CEA8",
+  boolean = "#569CD6",
+  variable = "#9CDCFE",
+  property = "#9CDCFE",
+  method = "#DCDCAA",
+  tag = "#569CD6",
+  attribute = "#4EC9B0",
+  controlFlow = "#C586C0",
+  parameter = "#9CDCFE",
+  constant = "#4FC1FF",
 
   -- Highlights
   highlight_low = "#2F2E3E",
@@ -139,7 +142,7 @@ hl("WinBarNC", { link = "WinBar" })
 
 -- ************** SYNTAX **************
 hl("Comment", { fg = c.comment, italic = true })
-hl("Constant", { fg = c.purple })
+hl("Constant", { fg = c.constant })
 hl("Function", { fg = c["function"] })
 hl("Keyword", { fg = c.keyword })
 hl("Number", { fg = c.number })
@@ -149,9 +152,9 @@ hl("Type", { fg = c.type })
 
 hl("Boolean", { fg = c.boolean })
 hl("Character", { link = "String" })
-hl("Conditional", { link = "Statement" })
+hl("Conditional", { fg = c.controlFlow })
 hl("Define", { link = "PreProc" })
-hl("Exception", { link = "Statement" })
+hl("Exception", { fg = c.controlFlow })
 hl("Float", { link = "Number" })
 hl("Identifier", { fg = c.fg })
 hl("Include", { link = "PreProc" })
@@ -159,9 +162,9 @@ hl("Label", { link = "Conditional" })
 hl("Macro", { link = "PreProc" })
 hl("PreCondit", { link = "PreProc" })
 hl("PreProc", { fg = c.fg })
-hl("Repeat", { link = "Conditional" })
+hl("Repeat", { fg = c.controlFlow })
 hl("Special", { fg = c.fg })
-hl("Statement", { link = "Keyword" })
+hl("Statement", { fg = c.controlFlow })
 hl("StorageClass", { link = "Type" })
 hl("Structure", { link = "Type" })
 hl("Tag", { fg = c.fg })
@@ -232,6 +235,20 @@ hl("@text.literal", { fg = c.fg })
 hl("@text.reference", { link = "String" })
 hl("@text.uri", { fg = c.blue, underline = true })
 hl("@type.builtin", { link = "@type" })
+
+-- Variables
+hl("@variable", { fg = c.variable })
+hl("@variable.parameter", { fg = c.parameter })
+hl("@variable.member", { fg = c.property })
+
+-- Constants
+hl("@constant", { fg = c.constant })
+
+-- Control flow keywords
+hl("@keyword.return", { fg = c.controlFlow })
+hl("@keyword.exception", { fg = c.controlFlow })
+hl("@keyword.conditional", { fg = c.controlFlow })
+hl("@keyword.repeat", { fg = c.controlFlow })
 
 -- JSX/TSX (Legacy treesitter)
 hl("@tag", { fg = c.tag })
@@ -317,8 +334,8 @@ hl("LspCodeLens", { fg = c.fg_muted })
 hl("LspSignatureActiveParameter", { sp = c.fg, underline = true })
 
 -- Semantic Tokens - explicitly link to themed groups
-hl("@lsp.type.variable", { link = "Identifier" })
-hl("@lsp.type.parameter", { link = "Identifier" })
+hl("@lsp.type.variable", { fg = c.variable })
+hl("@lsp.type.parameter", { fg = c.parameter })
 hl("@lsp.type.property", { link = "@property" })
 hl("@lsp.type.function", { link = "Function" })
 hl("@lsp.type.method", { link = "Function" })
@@ -333,7 +350,7 @@ hl("@lsp.type.interface", { fg = c.interface })
 hl("@lsp.type.struct", { fg = c.struct })
 hl("@lsp.type.namespace", { link = "@namespace" })
 hl("@lsp.type.enum", { fg = c.enum })
-hl("@lsp.type.enumMember", { link = "Constant" })
+hl("@lsp.type.enumMember", { fg = c.constant })
 hl("@lsp.mod.readonly", {})
 hl("@lsp.mod.defaultLibrary", {})
 hl("@lsp.typemod.variable.readonly", { link = "Identifier" })
