@@ -9,18 +9,5 @@ vim.keymap.set("n", "<C-k>", "<C-w>k", { desc = "Move to window above" })
 -- Buffer management
 vim.keymap.set("n", "<leader>x", ":bd<CR>", { desc = "Close current buffer" })
 
--- Quickfix toggle
-vim.keymap.set("n", "<C-q>", function()
-	local qf_open = false
-	for _, win in pairs(vim.fn.getwininfo()) do
-		if win.quickfix == 1 then
-			qf_open = true
-			break
-		end
-	end
-	if qf_open then
-		vim.cmd("cclose")
-	else
-		vim.cmd("copen")
-	end
-end, { desc = "Toggle quickfix window" })
+-- Quickfix toggle (using Trouble for better UI)
+vim.keymap.set("n", "<C-q>", "<cmd>Trouble qflist toggle<cr>", { desc = "Toggle quickfix (Trouble)" })

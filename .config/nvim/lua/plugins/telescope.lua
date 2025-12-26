@@ -9,7 +9,24 @@ return {
 		},
 		cmd = "Telescope",
 		config = function()
+			local actions = require("telescope.actions")
+
+			local function send_to_trouble(prompt_bufnr)
+				actions.send_to_qflist(prompt_bufnr)
+				vim.cmd("Trouble qflist open")
+			end
+
 			require("telescope").setup({
+				defaults = {
+					mappings = {
+						i = {
+							["<C-q>"] = send_to_trouble,
+						},
+						n = {
+							["<C-q>"] = send_to_trouble,
+						},
+					},
+				},
 				pickers = {
 					find_files = {
 						previewer = false,

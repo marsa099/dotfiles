@@ -17,6 +17,6 @@ return {
 			},
 		})
 
-		vim.cmd.colorscheme("catppuccin")
+		vim.cmd.colorscheme("custom-theme-dark")
 	end,
 }
