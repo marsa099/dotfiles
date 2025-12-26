@@ -1,6 +1,6 @@
 # Git commande
 ## Commit
-When using git commit, keep the message short and descriptive. Syntax for commit messages should be "Fixes bug #1234". instead of "Implemented a fix for bug #1234". Before committing, ask if the commit is related to a specific issue or feature and in case it is, add the provided issue number to the commit message.
+When using git commit, keep the message short and descriptive. Syntax for commit messages should be "Fixes bug #1234". instead of "Implemented a fix for bug #1234".
 
 IMPORTANT: Always use English for commit messages, never Swedish or other languages.
 
