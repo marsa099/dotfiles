@@ -22,6 +22,19 @@ profile work_jonas_desk {
     output "Dell Inc. DELL U2515H 9X2VY58L024L" mode 2560x1440@60Hz position 4480,0 scale 1.0
 }
 
+# Work left desk setup - Laptop + Dual Dell monitors
+profile work_left {
+    output "Dell Inc. DELL U2515H 9X2VY58L01XL" mode 2560x1440@60Hz position 0,0 scale 1.0
+    output "Dell Inc. DELL U2515H 9X2VY58L01ZL" mode 2560x1440@60Hz position 2560,0 scale 1.0
+    output "California Institute of Technology 0x1404 Unknown" mode 1920x1200@60Hz position 5120,0 scale 1.0
+}
+
+# Öland setup 4 - Samsung ultrawide + Laptop
+profile oland_4 {
+    output "Samsung Electric Company S34C65xV HNTY800129" mode 3440x1440@60Hz position 0,0 scale 1.0
+    output "California Institute of Technology 0x1404 Unknown" mode 1920x1200@60Hz position 3440,0 scale 1.0
+}
+
 # Add more profiles below as you connect to different monitor setups
 # Example:
 # profile work_dual {
