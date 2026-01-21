@@ -37,7 +37,7 @@ local c = {
 
   -- Semantic colors
   error = "#FF7B72",
-  warning = "#FF570D",
+  warning = "#C4A35A",
   success = "#97B5A6",
   info = "#CCD5E4",
   keyword = "#569CD6",
@@ -326,7 +326,7 @@ hl("DiagnosticUnnecessary", { fg = c.comment, undercurl = true })
 
 -- Diagnostic line backgrounds (highlight entire line with error/warning)
 hl("DiagnosticLineError", { bg = "#2d1f1f" })
-hl("DiagnosticLineWarn", { bg = "#2d2a1f" })
+hl("DiagnosticLineWarn", { bg = "#181818" })
 hl("DiagnosticLineInfo", { bg = "#1f252d" })
 hl("DiagnosticLineHint", { bg = "#1f2d2a" })
 
@@ -488,11 +488,3 @@ hl("TelescopePreviewTitle", { fg = c.bg, bg = c.green })
 hl("TelescopeResultsTitle", { fg = c.bg, bg = c.blue })
 hl("TelescopeSelection", { bg = c.highlight_low })
 hl("TelescopeMatching", { fg = c.yellow, bold = true })
-
--- akinsho/git-conflict.nvim
-hl("GitConflictCurrent", { bg = "#1f2d2a" })
-hl("GitConflictCurrentLabel", { bg = "#2a3d36" })
-hl("GitConflictIncoming", { bg = "#1f252d" })
-hl("GitConflictIncomingLabel", { bg = "#2a3340" })
-hl("GitConflictAncestor", { bg = "#2d2a1f" })
-hl("GitConflictAncestorLabel", { bg = "#3d3626" })
