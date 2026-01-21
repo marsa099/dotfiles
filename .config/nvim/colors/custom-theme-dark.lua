@@ -488,3 +488,11 @@ hl("TelescopePreviewTitle", { fg = c.bg, bg = c.green })
 hl("TelescopeResultsTitle", { fg = c.bg, bg = c.blue })
 hl("TelescopeSelection", { bg = c.highlight_low })
 hl("TelescopeMatching", { fg = c.yellow, bold = true })
+
+-- akinsho/git-conflict.nvim
+hl("GitConflictCurrent", { bg = "#1f2d2a" })
+hl("GitConflictCurrentLabel", { bg = "#2a3d36" })
+hl("GitConflictIncoming", { bg = "#1f252d" })
+hl("GitConflictIncomingLabel", { bg = "#2a3340" })
+hl("GitConflictAncestor", { bg = "#2d2a1f" })
+hl("GitConflictAncestorLabel", { bg = "#3d3626" })
