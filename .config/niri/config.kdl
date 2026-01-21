@@ -283,6 +283,9 @@ spawn-at-startup "swaybg" "-i" "/home/martin/wallpapers/wallhaven-5g2zr9.jpg" "-
 // Start vicinae launcher server
 spawn-at-startup "vicinae" "server"
 
+// Start kanshi for dynamic monitor configuration
+spawn-at-startup "kanshi"
+
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
 // spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"
 
@@ -434,8 +437,10 @@ binds {
     Mod+Q repeat=false { close-window; }
 
     Mod+H     { focus-column-left; }
-    Mod+J     { focus-window-down; }
-    Mod+K     { focus-window-up; }
+    // Mod+J     { focus-window-down; }
+    // Mod+K     { focus-window-up; }
+    Mod+J     { focus-workspace-up; }
+    Mod+K     { focus-workspace-down; }
     Mod+L     { focus-column-right; }
 
     Mod+Ctrl+Left  { move-column-left; }
@@ -443,8 +448,10 @@ binds {
     Mod+Ctrl+Up    { move-window-up; }
     Mod+Ctrl+Right { move-column-right; }
     Mod+Ctrl+H     { move-column-left; }
-    Mod+Ctrl+J     { move-window-down; }
-    Mod+Ctrl+K     { move-window-up; }
+    // Mod+Ctrl+J     { move-window-down; }
+    // Mod+Ctrl+K     { move-window-up; }
+    Mod+Ctrl+J     { move-column-to-workspace-up; }
+    Mod+Ctrl+K     { move-column-to-workspace-down; }
     Mod+Ctrl+L     { move-column-right; }
 
     // Alternative commands that move across workspaces when reaching
