@@ -277,7 +277,7 @@ layout {
 
 // This line starts waybar, a commonly used bar for Wayland compositors.
 // Note: dbus-update-activation-environment is handled by niri-session automatically.
-spawn-at-startup "waybar"
+spawn-at-startup "sh" "-c" "pkill -x waybar; exec waybar"
 spawn-at-startup "swaybg" "-i" "/home/martin/wallpapers/wallhaven-5g2zr9.jpg" "-m" "fill"
 
 // Start vicinae launcher server
