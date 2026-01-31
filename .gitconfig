@@ -48,6 +48,8 @@
 [init]
 	defaultBranch = main
 
-# Azure DevOps override
+# Azure DevOps override (HTTPS and SSH)
 [includeIf "hasconfig:remote.*.url:https://dev.azure.com/**"]
+	path = ~/.gitconfig-azuredevops
+[includeIf "hasconfig:remote.*.url:git@ssh.dev.azure.com:*/**"]
 	path = ~/.gitconfig-azuredevops
