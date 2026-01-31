@@ -67,6 +67,12 @@ local c = {
   highlight_med = "#545168",
   highlight_high = "#6F6C85",
 
+  -- Diff backgrounds
+  diff_add_bg = "#1C3528",
+  diff_delete_bg = "#3B1E1E",
+  diff_change_bg = "#2E2A1A",
+  diff_text_bg = "#2A3A4A",
+
   -- Special
   cursor = "#FF570D",
   none = "NONE",
@@ -86,9 +92,9 @@ hl("FloatTitle", { fg = c.blue, bg = c.bg_surface })
 hl("WinSeparator", { fg = c.bg_secondary })
 
 -- Diff
-hl("Added", { fg = c.green, bg = c.highlight_low })
-hl("Changed", { fg = c.yellow, bg = c.highlight_low })
-hl("Removed", { fg = c.red, bg = c.highlight_low })
+hl("Added", { fg = c.green, bg = c.diff_add_bg })
+hl("Changed", { fg = c.yellow, bg = c.diff_change_bg })
+hl("Removed", { fg = c.red, bg = c.diff_delete_bg })
 
 -- Elements
 hl("ColorColumn", {})
@@ -175,7 +181,7 @@ hl("Typedef", { link = "Type" })
 hl("DiffAdd", { link = "Added" })
 hl("DiffChange", { link = "Changed" })
 hl("DiffDelete", { link = "Removed" })
-hl("DiffText", { bg = c.blue })
+hl("DiffText", { bg = c.diff_text_bg })
 
 -- Gitcommit diffs
 hl("diffAdded", { link = "Added" })
@@ -410,9 +416,9 @@ hl("GitSignsStagedTopdelete", { link = "GitSignsStagedDelete" })
 hl("GitSignsStagedUntracked", { link = "GitSignsStagedAdd" })
 hl("GitSignsCurrentLineBlame", { link = "NonText" })
 hl("GitSignsAddInline", { link = "Added" })
-hl("GitSignsAddLnInline", { fg = c.fg, bg = c.highlight_low })
+hl("GitSignsAddLnInline", { fg = c.fg, bg = c.diff_add_bg })
 hl("GitSignsDeleteInline", { link = "Removed" })
-hl("GitSignsDeleteLnInline", { fg = c.fg, bg = c.highlight_low })
+hl("GitSignsDeleteLnInline", { fg = c.fg, bg = c.diff_delete_bg })
 hl("GitSignsChangeInline", { link = "DiffText" })
 hl("GitSignsChangeLnInline", { link = "Changed" })
 hl("GitSignsDeleteVirtLn", { link = "Removed" })

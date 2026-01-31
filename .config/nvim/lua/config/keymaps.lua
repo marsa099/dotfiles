@@ -11,3 +11,6 @@ vim.keymap.set("n", "<leader>x", ":bd<CR>", { desc = "Close current buffer" })
 
 -- Quickfix toggle (using Trouble for better UI)
 vim.keymap.set("n", "<C-q>", "<cmd>Trouble qflist toggle<cr>", { desc = "Toggle quickfix (Trouble)" })
+
+-- Clear search highlights
+vim.keymap.set("n", "<Esc>", "<cmd>nohlsearch<CR>", { desc = "Clear search highlights" })

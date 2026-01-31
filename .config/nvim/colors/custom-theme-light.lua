@@ -42,11 +42,15 @@ local c = {
   info = "#4A7C59",
   keyword = "#ED333B",
   command = "#286983",
-  operator = "#4A7C59",
+  operator = "#2D4A3D",
   comment = "#9893a5",
   string = "#4A7C59",
   ["function"] = "#286983",
   type = "#4A7C59",
+  class = "#4A7C59",
+  interface = "#5E7270",
+  struct = "#4A7C59",
+  enum = "#286983",
   number = "#ED333B",
   boolean = "#B8713A",
   variable = "#2D4A3D",
@@ -54,11 +58,20 @@ local c = {
   method = "#d7827e",
   tag = "#286983",
   attribute = "#4A7C59",
+  controlFlow = "#B8713A",
+  parameter = "#575279",
+  constant = "#286983",
 
   -- Highlights
   highlight_low = "#E8EAED",
   highlight_med = "#D5D8DD",
   highlight_high = "#C2C6CC",
+
+  -- Diff backgrounds
+  diff_add_bg = "#D4EDDA",
+  diff_delete_bg = "#F8D7DA",
+  diff_change_bg = "#FFF3CD",
+  diff_text_bg = "#BEE5EB",
 
   -- Special
   cursor = "#FF570D",
@@ -79,9 +92,9 @@ hl("FloatTitle", { fg = c.blue, bg = c.bg_surface })
 hl("WinSeparator", { fg = c.bg_secondary })
 
 -- Diff
-hl("Added", { fg = c.green, bg = c.highlight_low })
-hl("Changed", { fg = c.yellow, bg = c.highlight_low })
-hl("Removed", { fg = c.red, bg = c.highlight_low })
+hl("Added", { fg = c.green, bg = c.diff_add_bg })
+hl("Changed", { fg = c.yellow, bg = c.diff_change_bg })
+hl("Removed", { fg = c.red, bg = c.diff_delete_bg })
 
 -- Elements
 hl("ColorColumn", {})
@@ -135,7 +148,7 @@ hl("WinBarNC", { link = "WinBar" })
 
 -- ************** SYNTAX **************
 hl("Comment", { fg = c.comment, italic = true })
-hl("Constant", { fg = c.purple })
+hl("Constant", { fg = c.constant })
 hl("Function", { fg = c["function"] })
 hl("Keyword", { fg = c.keyword })
 hl("Number", { fg = c.number })
@@ -145,9 +158,9 @@ hl("Type", { fg = c.type })
 
 hl("Boolean", { fg = c.boolean })
 hl("Character", { link = "String" })
-hl("Conditional", { link = "Statement" })
+hl("Conditional", { fg = c.controlFlow })
 hl("Define", { link = "PreProc" })
-hl("Exception", { link = "Statement" })
+hl("Exception", { fg = c.controlFlow })
 hl("Float", { link = "Number" })
 hl("Identifier", { fg = c.fg })
 hl("Include", { link = "PreProc" })
@@ -155,9 +168,9 @@ hl("Label", { link = "Conditional" })
 hl("Macro", { link = "PreProc" })
 hl("PreCondit", { link = "PreProc" })
 hl("PreProc", { fg = c.fg })
-hl("Repeat", { link = "Conditional" })
+hl("Repeat", { fg = c.controlFlow })
 hl("Special", { fg = c.fg })
-hl("Statement", { link = "Keyword" })
+hl("Statement", { fg = c.controlFlow })
 hl("StorageClass", { link = "Type" })
 hl("Structure", { link = "Type" })
 hl("Tag", { fg = c.fg })
@@ -168,7 +181,7 @@ hl("Typedef", { link = "Type" })
 hl("DiffAdd", { link = "Added" })
 hl("DiffChange", { link = "Changed" })
 hl("DiffDelete", { link = "Removed" })
-hl("DiffText", { bg = c.blue })
+hl("DiffText", { bg = c.diff_text_bg })
 
 -- Gitcommit diffs
 hl("diffAdded", { link = "Added" })
@@ -228,6 +241,20 @@ hl("@text.literal", { fg = c.fg })
 hl("@text.reference", { link = "String" })
 hl("@text.uri", { fg = c.blue, underline = true })
 hl("@type.builtin", { link = "@type" })
+
+-- Variables
+hl("@variable", { fg = c.variable })
+hl("@variable.parameter", { fg = c.parameter })
+hl("@variable.member", { fg = c.property })
+
+-- Constants
+hl("@constant", { fg = c.constant })
+
+-- Control flow keywords
+hl("@keyword.return", { fg = c.controlFlow })
+hl("@keyword.exception", { fg = c.controlFlow })
+hl("@keyword.conditional", { fg = c.controlFlow })
+hl("@keyword.repeat", { fg = c.controlFlow })
 
 -- JSX/TSX (Legacy treesitter)
 hl("@tag", { fg = c.tag })
@@ -304,17 +331,17 @@ end
 hl("DiagnosticUnnecessary", { fg = c.comment, undercurl = true })
 
 -- Diagnostic line backgrounds (highlight entire line with error/warning)
-hl("DiagnosticLineError", { bg = "#fce8e8" })
-hl("DiagnosticLineWarn", { bg = "#f5f0e0" })
-hl("DiagnosticLineInfo", { bg = "#e8f0f5" })
-hl("DiagnosticLineHint", { bg = "#e8f5f0" })
+hl("DiagnosticLineError", { bg = "#fde8e8" })
+hl("DiagnosticLineWarn", { bg = "#fef3cd" })
+hl("DiagnosticLineInfo", { bg = "#e8f4fd" })
+hl("DiagnosticLineHint", { bg = "#e8fdf0" })
 
 hl("LspCodeLens", { fg = c.fg_muted })
 hl("LspSignatureActiveParameter", { sp = c.fg, underline = true })
 
 -- Semantic Tokens - explicitly link to themed groups
-hl("@lsp.type.variable", { link = "Identifier" })
-hl("@lsp.type.parameter", { link = "Identifier" })
+hl("@lsp.type.variable", { fg = c.variable })
+hl("@lsp.type.parameter", { fg = c.parameter })
 hl("@lsp.type.property", { link = "@property" })
 hl("@lsp.type.function", { link = "Function" })
 hl("@lsp.type.method", { link = "Function" })
@@ -324,11 +351,12 @@ hl("@lsp.type.string", { link = "String" })
 hl("@lsp.type.number", { link = "Number" })
 hl("@lsp.type.operator", { link = "Operator" })
 hl("@lsp.type.type", { link = "Type" })
-hl("@lsp.type.class", { link = "Type" })
-hl("@lsp.type.interface", { link = "Type" })
+hl("@lsp.type.class", { fg = c.class })
+hl("@lsp.type.interface", { fg = c.interface })
+hl("@lsp.type.struct", { fg = c.struct })
 hl("@lsp.type.namespace", { link = "@namespace" })
-hl("@lsp.type.enum", { link = "Type" })
-hl("@lsp.type.enumMember", { link = "Constant" })
+hl("@lsp.type.enum", { fg = c.enum })
+hl("@lsp.type.enumMember", { fg = c.constant })
 hl("@lsp.mod.readonly", {})
 hl("@lsp.mod.defaultLibrary", {})
 hl("@lsp.typemod.variable.readonly", { link = "Identifier" })
@@ -388,9 +416,9 @@ hl("GitSignsStagedTopdelete", { link = "GitSignsStagedDelete" })
 hl("GitSignsStagedUntracked", { link = "GitSignsStagedAdd" })
 hl("GitSignsCurrentLineBlame", { link = "NonText" })
 hl("GitSignsAddInline", { link = "Added" })
-hl("GitSignsAddLnInline", { fg = c.fg, bg = c.highlight_low })
+hl("GitSignsAddLnInline", { fg = c.fg, bg = c.diff_add_bg })
 hl("GitSignsDeleteInline", { link = "Removed" })
-hl("GitSignsDeleteLnInline", { fg = c.fg, bg = c.highlight_low })
+hl("GitSignsDeleteLnInline", { fg = c.fg, bg = c.diff_delete_bg })
 hl("GitSignsChangeInline", { link = "DiffText" })
 hl("GitSignsChangeLnInline", { link = "Changed" })
 hl("GitSignsDeleteVirtLn", { link = "Removed" })

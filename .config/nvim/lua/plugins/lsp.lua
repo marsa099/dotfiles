@@ -79,24 +79,22 @@ return {
 				end
 			end
 
-			-- Suppress OmniSharp-specific notifications that nvim doesn't understand
-			local omnisharp_notifications = {
-				"o#/projectdiagnosticstatus",
-				"o#/projectconfiguration",
-				"o#/unresolveddependencies",
-				"o#/msbuildprojectdiagnostics",
-				"o#/packagerestorestarted",
-				"o#/packagerestorefinished",
-				"o#/projectadded",
-				"o#/projectchanged",
-				"o#/projectremoved",
-				"o#/error",
-				"o#/testmessage",
-				"o#/dotnettest/message",
-			}
-			for _, method in ipairs(omnisharp_notifications) do
-				vim.lsp.handlers[method] = function() end
-			end
+			-- Suppress OmniSharp notifications that flood nvim (from lsp.log analysis):
+			-- 25710x o#/projectdiagnosticstatus
+			-- 6442x  o#/msbuildprojectdiagnostics
+			-- 6338x  o#/projectconfiguration
+			-- 2244x  o#/projectchanged
+			-- 1722x  o#/projectadded
+			-- 60x    o#/error
+			-- 42x    o#/unresolveddependencies
+			-- Note: o#/backgrounddiagnosticstatus (25718x) is handled above for progress indicator
+			vim.lsp.handlers["o#/projectdiagnosticstatus"] = function() end
+			vim.lsp.handlers["o#/msbuildprojectdiagnostics"] = function() end
+			vim.lsp.handlers["o#/projectconfiguration"] = function() end
+			vim.lsp.handlers["o#/projectchanged"] = function() end
+			vim.lsp.handlers["o#/projectadded"] = function() end
+			vim.lsp.handlers["o#/error"] = function() end
+			vim.lsp.handlers["o#/unresolveddependencies"] = function() end
 
 			-- Complete LSP keybindings
 			vim.api.nvim_create_autocmd("LspAttach", {
@@ -152,83 +150,47 @@ return {
 				},
 			})
 
-			-- Configure omnisharp for C#
-			-- Custom startup with Mono vs .NET Core detection and proper client reuse
-			local omnisharp_ready_notified = {}  -- Track "ready" notifications per root
-			vim.api.nvim_create_autocmd("FileType", {
-				pattern = { "cs" },
-				callback = function(args)
-					local root = vim.fs.root(args.buf, function(name, path)
-						return name == "omnisharp.json" or name:match("%.sln$")
-					end)
-					if not root then return end
-
-					-- Check if OmniSharp is already running for this root
-					local client_exists = false
-					local existing_clients = vim.lsp.get_clients({ name = "omnisharp" })
-					for _, client in ipairs(existing_clients) do
-						if client.root_dir == root then
-							client_exists = true
-							break
-						end
-					end
-
-					local cmd, build_type
-					local use_mono = false
-					if vim.fn.filereadable(root .. "/omnisharp.json") == 1 then
-						local ok, content = pcall(vim.fn.readfile, root .. "/omnisharp.json")
-						if ok then
-							local json_ok, json = pcall(vim.fn.json_decode, table.concat(content, "\n"))
-							use_mono = json_ok and json and json.mono == true
-						end
-					end
-					if use_mono then
-						-- .NET Framework project - use Mono build (runs via: mono OmniSharp.exe)
-						cmd = { "/opt/omnisharp-mono/run", "--languageserver" }
-						build_type = "Mono (net472)"
-					else
-						-- .NET Core/5+ project - use Mason build (runs via: dotnet OmniSharp.dll)
-						cmd = { "OmniSharp", "--languageserver", "--hostPID", tostring(vim.fn.getpid()) }
-						build_type = ".NET Core (net6.0)"
-					end
-
-					-- Only show "starting" notification for new clients
-					if not client_exists then
-						vim.notify("OmniSharp: " .. build_type .. " (starting...)", vim.log.levels.INFO)
-					end
-
-					-- vim.lsp.start() reuses existing client if name + root_dir match
-					vim.lsp.start({
-						name = "omnisharp",
-						cmd = cmd,
-						root_dir = root,
-						on_attach = function()
-							if not omnisharp_ready_notified[root] then
-								omnisharp_ready_notified[root] = true
-								vim.notify("OmniSharp: " .. build_type .. " (ready)", vim.log.levels.INFO)
-							end
-						end,
-						settings = {
-							FormattingOptions = {
-								EnableEditorConfigSupport = true,
-								OrganizeImports = true,
-							},
-							RoslynExtensionsOptions = {
-								EnableAnalyzersSupport = true,
-								EnableImportCompletion = true,
-								EnableDecompilationSupport = true,
-								AnalyzeOpenDocumentsOnly = true,
-								InlayHintsOptions = {
-									EnableForParameters = true,
-									ForLiteralParameters = true,
-									ForIndexerParameters = true,
-								},
-							},
-							Sdk = {
-								IncludePrereleases = true,
-							},
+			-- Configure omnisharp for C# using vim.lsp.config API
+			-- Key: use solution-level root (omnisharp.json or .sln) to avoid spawning
+			-- multiple OmniSharp instances per project
+			vim.lsp.config("omnisharp", {
+				cmd = { "OmniSharp", "--languageserver", "--hostPID", tostring(vim.fn.getpid()) },
+				-- Root at solution level, not per-project
+				root_markers = { "omnisharp.json", "*.sln" },
+				-- NOTE: OmniSharp reads settings from omnisharp.json, not this table.
+				-- These serve as defaults/documentation for projects without omnisharp.json.
+				settings = {
+					FormattingOptions = {
+						EnableEditorConfigSupport = true,
+						OrganizeImports = true,
+					},
+					RoslynExtensionsOptions = {
+						EnableAnalyzersSupport = false,
+						EnableImportCompletion = true,
+						EnableDecompilationSupport = true,
+						AnalyzeOpenDocumentsOnly = true,
+						InlayHintsOptions = {
+							EnableForParameters = true,
+							ForLiteralParameters = true,
+							ForIndexerParameters = true,
 						},
-					})
+					},
+					Sdk = {
+						IncludePrereleases = true,
+					},
+				},
+			})
+
+			-- Refresh semantic tokens when nvim regains focus (fixes highlighting after branch switches)
+			vim.api.nvim_create_autocmd("FocusGained", {
+				pattern = "*.cs",
+				callback = function()
+					vim.cmd("checktime")
+					local bufnr = vim.api.nvim_get_current_buf()
+					local ok, err = pcall(vim.lsp.semantic_tokens.force_refresh, bufnr)
+					if not ok then
+						vim.notify("Semantic token refresh failed: " .. tostring(err), vim.log.levels.ERROR)
+					end
 				end,
 			})
 
@@ -240,6 +202,7 @@ return {
 			-- Enable LSP servers
 			vim.lsp.enable("lua_ls")
 			vim.lsp.enable("ts_ls")
+			vim.lsp.enable("omnisharp")
 		end,
 	},
 }
