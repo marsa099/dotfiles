@@ -21,7 +21,9 @@ window#waybar {
 }
 
 #cpu,
-#memory {
+#memory,
+#custom-cpu-temp,
+#custom-gpu-temp {
   padding: 6px 12px;
   margin: 0;
   background: transparent;

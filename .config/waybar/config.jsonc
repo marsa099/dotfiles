@@ -6,7 +6,7 @@
     "reload_style_on_change": true,
     "margin-top": 0,
     "margin-bottom": 0,
-    "modules-left": ["cpu", "memory", "custom/screencast", "custom/camera", "custom/dnd", "pulseaudio#mic", "pulseaudio#speaker"],
+    "modules-left": ["cpu", "memory", "custom/cpu-temp", "custom/gpu-temp", "custom/screencast", "custom/camera", "custom/dnd", "pulseaudio#mic", "pulseaudio#speaker"],
     "modules-center": ["niri/workspaces"],
     "modules-right": ["group/system"],
     "niri/workspaces": {
@@ -76,12 +76,12 @@
         "tooltip": false
     },
     "network": {
-        "format-wifi": "{icon} {signalStrength}%",
-        "format-ethernet": " {ipaddr}/{cidr}",
+        "format-wifi": "{icon}",
+        "format-ethernet": "🌐",
         "tooltip-format": "{essid} ({signalStrength}%)\n{ifname} via {gwaddr}",
         "format-linked": " {ifname} (No IP)",
         "format-disconnected": "󰤮",
-        "format-alt": "{icon}",
+        "format-alt": "{ipaddr}/{cidr}",
         "format-icons": {
             "wifi": ["󰤯", "󰤟", "󰤠", "󰤢", "󰤣", "󰤥", "󰤦", "󰤨"],
             "ethernet": "",
@@ -154,5 +154,17 @@
         "signal": 10,
         "tooltip": true,
         "on-click": "~/.local/bin/waybar-dnd-toggle"
+   },
+   "custom/cpu-temp": {
+        "exec": "sensors k10temp-pci-00c3 | awk '/Tccd1:/ {gsub(/[^0-9.]/, \"\", $2); printf \"%.0f\", $2}'",
+        "format": "󰻠 {}°",
+        "interval": 5,
+        "tooltip-format": "CPU Temperature (Tccd1)"
+   },
+   "custom/gpu-temp": {
+        "exec": "nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits",
+        "format": "󰢮 {}°",
+        "interval": 5,
+        "tooltip-format": "GPU Temperature (RTX 5080)"
    }
 }
