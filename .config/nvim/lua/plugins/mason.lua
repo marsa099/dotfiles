@@ -1,7 +1,12 @@
 return {
 	{
 		"mason-org/mason.nvim",
-		opts = {},
+		opts = {
+			registries = {
+				"github:Crashdummyy/mason-registry",
+				"github:mason-org/mason-registry",
+			},
+		},
 		lazy = false,
 	},
 	{
@@ -11,7 +16,7 @@ return {
 			ensure_installed = {
 				"lua-language-server",
 				"stylua",
-				"omnisharp",
+				"roslyn",
 				"csharpier",
 				"typescript-language-server",
 			},

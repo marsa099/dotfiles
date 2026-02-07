@@ -15,87 +15,6 @@ return {
 				},
 			})
 
-			-- OmniSharp progress indicator
-			local omnisharp_state = {
-				min_remaining = math.huge,
-				max_total = 0,
-				max_projects = 0,
-				notify_id = nil,
-				initial_done = false,
-			}
-
-			vim.lsp.handlers["o#/backgrounddiagnosticstatus"] = function(_, result)
-				local total = result.NumberFilesTotal or 0
-				local remaining = result.NumberFilesRemaining or 0
-				local projects = result.NumberProjects or 0
-
-				-- Filter: ignore messages with no projects (initialization noise)
-				if projects == 0 then return end
-
-				-- After initial analysis, ignore all subsequent notifications
-				if omnisharp_state.initial_done then return end
-
-				-- Status 2 = analysis complete
-				-- Only show completion if we were actively tracking a multi-file analysis
-				-- (notify_id will be set when we showed progress)
-				if result.Status == 2 and omnisharp_state.notify_id ~= nil then
-					vim.notify("Analysis complete", vim.log.levels.INFO, {
-						title = "OmniSharp",
-						replace = omnisharp_state.notify_id,
-						timeout = 3000,
-					})
-					-- Mark initial analysis as done - no more notifications after this
-					omnisharp_state.initial_done = true
-					return
-				end
-
-				-- Status 1 = actively analyzing
-				if result.Status == 1 and total > 0 then
-					-- Only track multi-file analyses (initial load), ignore single-file re-analysis
-					if total < 2 then return end
-
-					-- Track maximums (totals can increase as projects are discovered)
-					if total > omnisharp_state.max_total then
-						omnisharp_state.max_total = total
-					end
-					if projects > omnisharp_state.max_projects then
-						omnisharp_state.max_projects = projects
-					end
-
-					-- Only update if progress increased (remaining decreased)
-					if remaining < omnisharp_state.min_remaining then
-						omnisharp_state.min_remaining = remaining
-
-						local done = omnisharp_state.max_total - omnisharp_state.min_remaining
-						local pct = math.floor((done / omnisharp_state.max_total) * 100)
-
-						omnisharp_state.notify_id = vim.notify(
-							string.format("%d%% (%d/%d files, %d projects)",
-								pct, done, omnisharp_state.max_total, omnisharp_state.max_projects),
-							vim.log.levels.INFO,
-							{ title = "OmniSharp", replace = omnisharp_state.notify_id, timeout = false }
-						)
-					end
-				end
-			end
-
-			-- Suppress OmniSharp notifications that flood nvim (from lsp.log analysis):
-			-- 25710x o#/projectdiagnosticstatus
-			-- 6442x  o#/msbuildprojectdiagnostics
-			-- 6338x  o#/projectconfiguration
-			-- 2244x  o#/projectchanged
-			-- 1722x  o#/projectadded
-			-- 60x    o#/error
-			-- 42x    o#/unresolveddependencies
-			-- Note: o#/backgrounddiagnosticstatus (25718x) is handled above for progress indicator
-			vim.lsp.handlers["o#/projectdiagnosticstatus"] = function() end
-			vim.lsp.handlers["o#/msbuildprojectdiagnostics"] = function() end
-			vim.lsp.handlers["o#/projectconfiguration"] = function() end
-			vim.lsp.handlers["o#/projectchanged"] = function() end
-			vim.lsp.handlers["o#/projectadded"] = function() end
-			vim.lsp.handlers["o#/error"] = function() end
-			vim.lsp.handlers["o#/unresolveddependencies"] = function() end
-
 			-- Complete LSP keybindings
 			vim.api.nvim_create_autocmd("LspAttach", {
 				group = vim.api.nvim_create_augroup("UserLspConfig", { clear = true }),
@@ -150,59 +69,28 @@ return {
 				},
 			})
 
-			-- Configure omnisharp for C# using vim.lsp.config API
-			-- Key: use solution-level root (omnisharp.json or .sln) to avoid spawning
-			-- multiple OmniSharp instances per project
-			vim.lsp.config("omnisharp", {
-				cmd = { "OmniSharp", "--languageserver", "--hostPID", tostring(vim.fn.getpid()) },
-				-- Root at solution level, not per-project
-				root_markers = { "omnisharp.json", "*.sln" },
-				-- NOTE: OmniSharp reads settings from omnisharp.json, not this table.
-				-- These serve as defaults/documentation for projects without omnisharp.json.
-				settings = {
-					FormattingOptions = {
-						EnableEditorConfigSupport = true,
-						OrganizeImports = true,
-					},
-					RoslynExtensionsOptions = {
-						EnableAnalyzersSupport = false,
-						EnableImportCompletion = true,
-						EnableDecompilationSupport = true,
-						AnalyzeOpenDocumentsOnly = true,
-						InlayHintsOptions = {
-							EnableForParameters = true,
-							ForLiteralParameters = true,
-							ForIndexerParameters = true,
-						},
-					},
-					Sdk = {
-						IncludePrereleases = true,
-					},
-				},
-			})
-
-			-- Refresh semantic tokens when nvim regains focus (fixes highlighting after branch switches)
-			vim.api.nvim_create_autocmd("FocusGained", {
-				pattern = "*.cs",
-				callback = function()
-					vim.cmd("checktime")
-					local bufnr = vim.api.nvim_get_current_buf()
-					local ok, err = pcall(vim.lsp.semantic_tokens.force_refresh, bufnr)
-					if not ok then
-						vim.notify("Semantic token refresh failed: " .. tostring(err), vim.log.levels.ERROR)
-					end
-				end,
-			})
-
 			-- Configure ts_ls for TypeScript/JavaScript
 			vim.lsp.config("ts_ls", {
 				root_markers = { "package.json", "tsconfig.json", "jsconfig.json", ".git" },
 			})
 
+			-- Configure Roslyn for C# (server lifecycle managed by roslyn.nvim)
+			vim.lsp.config("roslyn", {
+				settings = {
+					["csharp|background_analysis"] = {
+						dotnet_analyzer_diagnostics_scope = "openFiles",
+						dotnet_compiler_diagnostics_scope = "openFiles",
+					},
+					["csharp|completion"] = {
+						dotnet_show_completion_items_from_unimported_namespaces = true,
+						dotnet_show_name_completion_suggestions = true,
+					},
+				},
+			})
+
 			-- Enable LSP servers
 			vim.lsp.enable("lua_ls")
 			vim.lsp.enable("ts_ls")
-			vim.lsp.enable("omnisharp")
 		end,
 	},
 }
