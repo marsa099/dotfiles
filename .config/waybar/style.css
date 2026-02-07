@@ -21,10 +21,24 @@ window#waybar {
 }
 
 #cpu,
-#memory,
-#custom-cpu-temp,
-#custom-gpu-temp {
+#memory {
   padding: 6px 12px;
+  margin: 0;
+  background: transparent;
+  color: #EDEDED;
+  border-radius: 0;
+}
+
+#custom-cpu-temp {
+  padding: 6px 0 6px 12px;
+  margin: 0;
+  background: transparent;
+  color: #EDEDED;
+  border-radius: 0;
+}
+
+#custom-gpu-temp {
+  padding: 6px 12px 6px 0;
   margin: 0;
   background: transparent;
   color: #EDEDED;

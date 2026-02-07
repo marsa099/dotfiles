@@ -105,7 +105,7 @@
    },
    "cpu": {
         "interval": 5,
-        "format": "󰓅 {usage}%",
+        "format": "🧠 {usage}%",
         "format-alt": "CPU: {avg_frequency}GHz | {load}",
         "tooltip": true,
         "states": {
@@ -117,7 +117,7 @@
    },
    "memory": {
         "interval": 5,
-        "format": "󰘚 {percentage}%",
+        "format": "📊 {percentage}%",
         "format-alt": "MEM: {used:0.1f}GB/{total:0.1f}GB",
         "tooltip-format": "Used: {used:0.1f}GB\nAvailable: {avail:0.1f}GB\nTotal: {total:0.1f}GB",
         "states": {
@@ -157,13 +157,13 @@
    },
    "custom/cpu-temp": {
         "exec": "sensors k10temp-pci-00c3 | awk '/Tccd1:/ {gsub(/[^0-9.]/, \"\", $2); printf \"%.0f\", $2}'",
-        "format": "󰻠 {}°",
+        "format": "🌡️{}°/",
         "interval": 5,
         "tooltip-format": "CPU Temperature (Tccd1)"
    },
    "custom/gpu-temp": {
         "exec": "nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits",
-        "format": "󰢮 {}°",
+        "format": "{}°",
         "interval": 5,
         "tooltip-format": "GPU Temperature (RTX 5080)"
    }
