@@ -396,8 +396,8 @@ binds {
     Mod+Shift+A { spawn "kitty"; }
     Mod+T { spawn-sh "$HOME/.local/bin/niri-spawn-or-focus teams-for-linux teams-for-linux"; }
     Mod+Shift+T { spawn "teams-for-linux"; }
-    Mod+D { spawn-sh "$HOME/.local/bin/niri-spawn-or-focus discord discord"; }
-    Mod+Shift+D { spawn "discord"; }
+    Mod+D { spawn-sh "$HOME/.local/bin/niri-spawn-or-focus vesktop vesktop"; }
+    Mod+Shift+D { spawn "vesktop"; }
     Mod+S { spawn-sh "$HOME/.local/bin/niri-spawn-or-focus $BROWSER_APP_ID $BROWSER"; }
     Mod+Shift+S { spawn-sh "$BROWSER"; }
 
