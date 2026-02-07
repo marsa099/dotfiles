@@ -3,7 +3,18 @@ return {
 	version = "*",
 	dependencies = { "nvim-tree/nvim-web-devicons" },
 	event = "VeryLazy",
-	opts = {
+	opts = function()
+		local c = require("theme.colors").get_colors()
+		return {
+		highlights = {
+			fill = { bg = c.bg },
+			background = { fg = c.fg_muted, bg = c.bg },
+			buffer_selected = { fg = c.fg, bg = c.bg, bold = true },
+			buffer_visible = { fg = c.fg_muted, bg = c.bg },
+			separator = { fg = c.bg, bg = c.bg },
+			separator_selected = { fg = c.bg, bg = c.bg },
+			separator_visible = { fg = c.bg, bg = c.bg },
+		},
 		options = {
 			mode = "buffers",
 			diagnostics = "nvim_lsp",
@@ -29,9 +40,10 @@ return {
 			},
 			show_buffer_close_icons = true,
 			show_close_icon = false,
-			separator_style = "thin",
+			separator_style = "slant",
 		},
-	},
+	}
+	end,
 	keys = {
 		{ "<S-h>", "<cmd>BufferLineCyclePrev<cr>", desc = "Previous buffer" },
 		{ "<S-l>", "<cmd>BufferLineCycleNext<cr>", desc = "Next buffer" },

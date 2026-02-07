@@ -41,3 +41,5 @@ if not package.loaded["lazy"] then
 		},
 	})
 end
+
+vim.cmd.colorscheme("custom-theme-dark")
