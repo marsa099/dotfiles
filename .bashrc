@@ -54,8 +54,9 @@ export DOTNETTOOLS="${HOME}/.dotnet/tools"
 export SCRIPTS="${HOME}/.scripts"
 export XDG_CONFIG_HOME="${HOME}/.config"
 export NPM_PATH="${HOME}/.npm-global/bin"
+export LOCAL_BIN="${HOME}/.local/bin"
 
-export PATH="$PATH:$DOTNETTOOLS:$SCRIPTS:$XDG_CONFIG_HOME:$NPM_PATH"
+export PATH="$PATH:$DOTNETTOOLS:$SCRIPTS:$XDG_CONFIG_HOME:$NPM_PATH:$LOCAL_BIN"
 
 # Clipboard
 alias cb='wl-copy'
