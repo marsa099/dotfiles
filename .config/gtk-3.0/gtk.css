@@ -1,0 +1,5 @@
+/* Geary unread email styling */
+row.conversation-list.unread {
+    background-color: #45475a;
+    border-left: 4px solid #3584e4;
+}
