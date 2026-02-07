@@ -1,6 +1,10 @@
 return {
 	"seblyng/roslyn.nvim",
-	ft = "cs",
+	-- Not lazy-loaded by ft to avoid race condition:
+	-- plugin/roslyn.lua calls vim.lsp.enable before setup(opts) runs,
+	-- causing "Multiple potential target files found" on first open.
+	-- The LSP server itself only starts when a .cs file is opened.
+	lazy = false,
 	opts = {
 		broad_search = true,
 		lock_target = true,
