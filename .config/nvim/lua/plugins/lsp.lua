@@ -26,7 +26,7 @@ return {
 					-- Navigation
 					map("n", "gd", vim.lsp.buf.definition, "Go to definition")
 					map("n", "gi", vim.lsp.buf.implementation, "Go to implementation")
-					map("n", "gr", vim.lsp.buf.references, "Go to references")
+					-- gr mapped to Glance references (see glance.lua)
 					map("n", "gD", vim.lsp.buf.declaration, "Go to declaration")
 
 					-- Information
