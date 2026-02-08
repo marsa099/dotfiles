@@ -37,30 +37,30 @@ local c = {
 
   -- Semantic colors
   error = "#FF7B72",
-  warning = "#C4A35A",
+  warning = "#FF570D",
   success = "#97B5A6",
   info = "#CCD5E4",
-  keyword = "#569CD6",
+  keyword = "#6BAFA7",
   command = "#CCD5E4",
-  operator = "#EDEDED",
-  comment = "#6A9955",
-  string = "#CE9178",
-  ["function"] = "#DCDCAA",
-  type = "#4EC9B0",
-  class = "#4EC9B0",
-  interface = "#B8D7A3",
-  struct = "#4EC9B0",
-  enum = "#B8D7A3",
-  number = "#B5CEA8",
-  boolean = "#569CD6",
-  variable = "#9CDCFE",
-  property = "#9CDCFE",
-  method = "#DCDCAA",
-  tag = "#569CD6",
-  attribute = "#4EC9B0",
-  controlFlow = "#C586C0",
-  parameter = "#9CDCFE",
-  constant = "#4FC1FF",
+  operator = "#B8AFA0",
+  comment = "#707B84",
+  string = "#A3B18A",
+  ["function"] = "#D4A373",
+  type = "#88A4C0",
+  class = "#88A4C0",
+  interface = "#6BAFA7",
+  struct = "#A690B8",
+  enum = "#88A4C0",
+  number = "#CC8B8B",
+  boolean = "#A690B8",
+  variable = "#EDEDED",
+  property = "#88A4C0",
+  method = "#D4A373",
+  tag = "#6BAFA7",
+  attribute = "#88A4C0",
+  controlFlow = "#A690B8",
+  parameter = "#C3C8C6",
+  constant = "#CC8B8B",
 
   -- Highlights
   highlight_low = "#2F2E3E",
@@ -332,7 +332,7 @@ hl("DiagnosticUnnecessary", { fg = c.comment, undercurl = true })
 
 -- Diagnostic line backgrounds (highlight entire line with error/warning)
 hl("DiagnosticLineError", { bg = "#2d1f1f" })
-hl("DiagnosticLineWarn", { bg = "#181818" })
+hl("DiagnosticLineWarn", { bg = "#2d2a1a" })
 hl("DiagnosticLineInfo", { bg = "#1f252d" })
 hl("DiagnosticLineHint", { bg = "#1f2d2a" })
 
