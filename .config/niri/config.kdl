@@ -275,8 +275,10 @@ layout {
 // which may be more convenient to use.
 // See the binds section below for more spawn examples.
 
-// This line starts waybar, a commonly used bar for Wayland compositors.
-// Note: dbus-update-activation-environment is handled by niri-session automatically.
+// Known bug: waybar duplicates bars on output changes (dock/undock, lid open/close)
+// because it accumulates monitor event handlers without cleaning up old ones.
+// Workaround: restart waybar process on output changes (e.g. via kanshi exec).
+// https://github.com/Alexays/Waybar/issues/3344
 spawn-at-startup "waybar"
 spawn-at-startup "swaybg" "-i" "/home/martin/wallpapers/wallhaven-5g2zr9.jpg" "-m" "fill"
 
