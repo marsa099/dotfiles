@@ -6,9 +6,6 @@
 	helper = !/usr/bin/gh auth git-credential
 [push]
 	autoSetupRemote = true
-[status]
-    showUntrackedFiles = no
-
 [alias]
 	st = status
   stu = status -u -- .
