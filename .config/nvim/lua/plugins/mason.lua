@@ -19,6 +19,7 @@ return {
 				"roslyn",
 				"csharpier",
 				"typescript-language-server",
+				"bicep-lsp",
 			},
 		},
 		lazy = false,

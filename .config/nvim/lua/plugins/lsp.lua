@@ -88,9 +88,26 @@ return {
 				},
 			})
 
+			-- Configure Bicep LSP
+			vim.lsp.config("bicep", {
+				cmd = {
+					"dotnet",
+					vim.fn.stdpath("data") .. "/mason/packages/bicep-lsp/extension/bicepLanguageServer/Bicep.LangServer.dll",
+				},
+				root_markers = { ".git" },
+			})
+
+			vim.filetype.add({
+				extension = {
+					bicep = "bicep",
+					bicepparam = "bicep",
+				},
+			})
+
 			-- Enable LSP servers
 			vim.lsp.enable("lua_ls")
 			vim.lsp.enable("ts_ls")
+			vim.lsp.enable("bicep")
 		end,
 	},
 }
