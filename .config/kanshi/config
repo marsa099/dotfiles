@@ -35,6 +35,13 @@ profile oland_4 {
     output "California Institute of Technology 0x1404 Unknown" mode 1920x1200@60Hz position 3440,0 scale 1.0
 }
 
+# Micke B desk setup - Dual Dell monitors + Laptop (right)
+profile work_micke_b {
+    output "Dell Inc. DELL P2421D 24JVR63" mode 2560x1440@60Hz position 0,0 scale 1.0
+    output "Dell Inc. DELL U2515H 9X2VY58L06PL" mode 2560x1440@60Hz position 2560,0 scale 1.0
+    output "California Institute of Technology 0x1404 Unknown" mode 1920x1200@60Hz position 5120,0 scale 1.0
+}
+
 # Add more profiles below as you connect to different monitor setups
 # Example:
 # profile work_dual {
