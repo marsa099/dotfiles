@@ -44,11 +44,13 @@
 - [ ] `rm -rf ~/.pki/`
 
 ## Step 3: Remove browsers and browser data
-- [ ] Uninstall Firefox, Zen, Chrome
-- [ ] Remove `~/.mozilla/` `~/.zen/` `~/.config/google-chrome/`
+- [x] Uninstall Firefox, Zen, Chrome — all uninstalled
+- [x] Removed `~/.config/google-chrome/` (history, passwords, cookies, credit cards)
+- [x] No `~/.mozilla/` or `~/.zen/` found
 
 ## Step 4: Remove chat apps
-- [ ] Uninstall Vesktop, Teams, Discord
+- [x] Vesktop, Teams, Discord — all uninstalled
+- [x] Removed `~/.config/discord/` and `~/.config/vesktop/`
 
 ## Step 5: Clean outside home dir (sudo)
 - [ ] Remove `/etc/NetworkManager/system-connections/*`
