@@ -1,0 +1,15 @@
+// US keyboard layout with Swedish characters on ; ' [ keys
+// ; → ö  : → Ö
+// ' → ä  " → Ä
+// [ → å  { → Å
+
+default partial alphanumeric_keys
+xkb_symbols "basic" {
+
+    include "us(basic)"
+    name[Group1] = "English (US, Swedish chars)";
+
+    key <AC10> { [ odiaeresis, Odiaeresis ] }; // ; → ö/Ö
+    key <AC11> { [ adiaeresis, Adiaeresis ] }; // ' → ä/Ä
+    key <AD11> { [ aring,      Aring      ] }; // [ → å/Å
+};
