@@ -1,9 +1,9 @@
 [credential "https://github.com"]
-	helper = 
-	helper = !/usr/bin/gh auth git-credential
+	helper =
+	helper = !/run/current-system/sw/bin/gh auth git-credential
 [credential "https://gist.github.com"]
-	helper = 
-	helper = !/usr/bin/gh auth git-credential
+	helper =
+	helper = !/run/current-system/sw/bin/gh auth git-credential
 [push]
 	autoSetupRemote = true
 [alias]
@@ -52,3 +52,5 @@
 	path = ~/.gitconfig-azuredevops
 [includeIf "hasconfig:remote.*.url:git@ssh.dev.azure.com:*/**"]
 	path = ~/.gitconfig-azuredevops
+[credential]
+	helper = /run/current-system/sw/bin/gh auth git-credential
