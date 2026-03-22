@@ -29,6 +29,22 @@ window#waybar {
   border-radius: 0;
 }
 
+#custom-cpu-temp {
+  padding: 6px 0 6px 12px;
+  margin: 0;
+  background: transparent;
+  color: #EDEDED;
+  border-radius: 0;
+}
+
+#custom-gpu-temp {
+  padding: 6px 12px 6px 0;
+  margin: 0;
+  background: transparent;
+  color: #EDEDED;
+  border-radius: 0;
+}
+
 #cpu.medium,
 #memory.medium {
   color: #ff8a31;
@@ -102,8 +118,6 @@ window#waybar {
 #clock,
 #battery,
 #network,
-#bluetooth,
-#custom-language,
 #pulseaudio {
   padding: 6px 12px;
   margin: 0;

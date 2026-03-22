@@ -99,6 +99,9 @@
     zoxide
     vesktop
     wl-clipboard
+    jq
+    python3
+    glib # provides gsettings - a CLI tool that reads/writes GNOME/GTK settings (e.g. dark/light mode preference that apps like Ghostty and Firefox listen to)
   ];
 
   # Some programs need SUID wrappers, can be configured further or are

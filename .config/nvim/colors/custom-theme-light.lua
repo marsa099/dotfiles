@@ -40,27 +40,27 @@ local c = {
   warning = "#69756C",
   success = "#5E7270",
   info = "#4A7C59",
-  keyword = "#ED333B",
+  keyword = "#3D8A82",
   command = "#286983",
-  operator = "#2D4A3D",
+  operator = "#8A7E70",
   comment = "#9893a5",
-  string = "#4A7C59",
-  ["function"] = "#286983",
-  type = "#4A7C59",
-  class = "#4A7C59",
-  interface = "#5E7270",
-  struct = "#4A7C59",
-  enum = "#286983",
-  number = "#ED333B",
-  boolean = "#B8713A",
+  string = "#6B8254",
+  ["function"] = "#A07845",
+  type = "#5A7A96",
+  class = "#5A7A96",
+  interface = "#3D8A82",
+  struct = "#7A6290",
+  enum = "#5A7A96",
+  number = "#A06060",
+  boolean = "#7A6290",
   variable = "#2D4A3D",
-  property = "#4A7C59",
-  method = "#d7827e",
-  tag = "#286983",
-  attribute = "#4A7C59",
-  controlFlow = "#B8713A",
+  property = "#5A7A96",
+  method = "#A07845",
+  tag = "#3D8A82",
+  attribute = "#5A7A96",
+  controlFlow = "#7A6290",
   parameter = "#575279",
-  constant = "#286983",
+  constant = "#A06060",
 
   -- Highlights
   highlight_low = "#E8EAED",
@@ -68,10 +68,10 @@ local c = {
   highlight_high = "#C2C6CC",
 
   -- Diff backgrounds
-  diff_add_bg = "#D4EDDA",
-  diff_delete_bg = "#F8D7DA",
-  diff_change_bg = "#FFF3CD",
-  diff_text_bg = "#BEE5EB",
+  diff_add_bg = "#d4edda",
+  diff_delete_bg = "#f8d7da",
+  diff_change_bg = "#fff3cd",
+  diff_text_bg = "#cce5ff",
 
   -- Special
   cursor = "#FF570D",
@@ -134,9 +134,9 @@ hl("SpecialKey", { fg = c.yellow })
 hl("StatusLine", { fg = c.fg })
 hl("StatusLineNC", {})
 hl("Substitute", { fg = c.green, bg = c.bg_secondary })
-hl("TabLine", { fg = c.comment, bg = c.bg })
+hl("TabLine", { fg = c.fg_muted, bg = c.bg })
 hl("TabLineFill", { fg = c.fg_muted, bg = c.bg })
-hl("TabLineSel", { fg = c.blue })
+hl("TabLineSel", { fg = c.blue, bold = true })
 hl("TermCursor", { link = "Cursor" })
 hl("Title", { link = "Directory" })
 hl("Todo", { link = "SpecialComment" })
@@ -333,8 +333,8 @@ hl("DiagnosticUnnecessary", { fg = c.comment, undercurl = true })
 -- Diagnostic line backgrounds (highlight entire line with error/warning)
 hl("DiagnosticLineError", { bg = "#fde8e8" })
 hl("DiagnosticLineWarn", { bg = "#fef3cd" })
-hl("DiagnosticLineInfo", { bg = "#e8f4fd" })
-hl("DiagnosticLineHint", { bg = "#e8fdf0" })
+hl("DiagnosticLineInfo", { bg = "#e8f0fe" })
+hl("DiagnosticLineHint", { bg = "#e6f4ea" })
 
 hl("LspCodeLens", { fg = c.fg_muted })
 hl("LspSignatureActiveParameter", { sp = c.fg, underline = true })

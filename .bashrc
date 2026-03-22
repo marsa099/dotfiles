@@ -82,6 +82,7 @@ alias connect-mobile='connect-wifi martin'
 
 alias ll='ls -la'
 alias n='nvim'
+alias rebuild='sudo nixos-rebuild switch --flake /home/martin/.config/nixos'
 
 # Function to create directory and cd into it
 mkcd () {
