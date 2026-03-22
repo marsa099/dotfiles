@@ -131,9 +131,14 @@
         "orientation": "inherit",
         "modules": ["pulseaudio#mic", "pulseaudio#speaker"]
    },
+   "custom/language": {
+        "exec": "~/.local/bin/waybar-language",
+        "interval": 1,
+        "tooltip": false
+   },
    "group/system": {
         "orientation": "inherit",
-        "modules": ["bluetooth", "network", "battery", "clock"]
+        "modules": ["custom/language", "bluetooth", "network", "battery", "clock"]
    },
    "custom/screencast": {
         "exec": "~/.local/bin/waybar-screencast",

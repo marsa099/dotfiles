@@ -1,0 +1,3 @@
+#!/bin/sh
+idx=$(niri msg --json keyboard-layouts | grep -o '"current_idx":[0-9]*' | grep -o '[0-9]*')
+if [ "$idx" = "0" ]; then echo "EN"; else echo "SE"; fi
