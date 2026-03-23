@@ -82,6 +82,9 @@
   fonts.packages = with pkgs; [
     noto-fonts-color-emoji
     nerd-fonts.jetbrains-mono
+    inter
+    ibm-plex
+    roboto
   ];
 
   # List packages installed in system profile.
