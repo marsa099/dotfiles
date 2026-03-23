@@ -82,7 +82,7 @@
         "format-disconnected": "󰤮",
         "format-alt": "{ipaddr}/{cidr}",
         "format-icons": {
-            "wifi": ["󰤯", "󰤢", "󰤨"],
+            "wifi": ["\uf1eb"],
             "ethernet": "",
             "disconnected": "󰤮"
         },
