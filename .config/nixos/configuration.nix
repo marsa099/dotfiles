@@ -101,6 +101,7 @@
     gh # gh cli
     zoxide
     vesktop
+    swaybg
     wl-clipboard
     jq
     python3

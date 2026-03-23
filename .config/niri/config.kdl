@@ -280,7 +280,7 @@ layout {
 // Workaround: restart waybar process on output changes (e.g. via kanshi exec).
 // https://github.com/Alexays/Waybar/issues/3344
 spawn-at-startup "waybar"
-spawn-at-startup "swaybg" "-i" "/home/martin/wallpapers/wallhaven-5g2zr9.jpg" "-m" "fill"
+spawn-at-startup "swaybg" "-i" "/home/martin/wallpapers/purple.jpg" "-m" "fill"
 
 
 // Start kanshi for dynamic monitor configuration
