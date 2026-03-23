@@ -81,6 +81,27 @@ window#waybar {
   padding: 0px 8px;
 }
 
+#workspaces button {
+  padding: 6px 8px;
+  margin: 4px 2px;
+  background: transparent;
+  color: alpha(#EDEDED, 0.15);
+  border-radius: 6px;
+  opacity: 0.3;
+  font-size: 12px;
+  transition: all 0.3s ease;
+}
+
+#workspaces button label {
+  font-size: inherit;
+}
+
+#workspaces button.active {
+  color: #C8A2E6;
+  opacity: 1;
+  text-shadow: 0 0 4px #C8A2E6, 0 0 10px alpha(#C8A2E6, 0.5), 0 0 20px alpha(#C8A2E6, 0.2);
+}
+
 #custom-niri-minimap {
   padding: 6px 12px;
   margin: 0;
