@@ -359,6 +359,7 @@ window-rule {
 window-rule {
     geometry-corner-radius 10
     clip-to-geometry true
+    opacity 0.9
 }
 
 // Highlight windows being screen shared with a red border
