@@ -36,7 +36,7 @@
         "timezone": "Europe/Stockholm",
         "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
         "format-alt": "󰃭  {:%d %b  %H:%M:%S}",
-        "format": "󰥔  {:%H:%M}",
+        "format": "{:%H:%M}",
         "interval": 1
     },
     "backlight": {
@@ -46,13 +46,12 @@
     },
     "battery": {
         "states": {
-            "warning": 30,
-            "critical": 15
+            "critical": 10
         },
-        "format": "{icon}  {capacity}%",
-        "format-charging": "󰂄  {capacity}%",
-        "format-plugged": "󰚥  {capacity}%",
-        "format-alt": "{icon} {time}",
+        "format": "{icon}",
+        "format-charging": "󰂄",
+        "format-plugged": "󰚥",
+        "tooltip-format": "{capacity}% — {time}",
         "format-icons": [
           "󰁺",
           "󰁼",
@@ -83,7 +82,7 @@
         "format-disconnected": "󰤮",
         "format-alt": "{ipaddr}/{cidr}",
         "format-icons": {
-            "wifi": ["󰤯", "󰤟", "󰤠", "󰤢", "󰤣", "󰤥", "󰤦", "󰤨"],
+            "wifi": ["󰤯", "󰤢", "󰤨"],
             "ethernet": "",
             "disconnected": "󰤮"
         },
