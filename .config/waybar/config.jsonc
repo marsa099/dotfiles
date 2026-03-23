@@ -53,11 +53,11 @@
         "format-plugged": "󰚥",
         "tooltip-format": "{capacity}% — {time}",
         "format-icons": [
-          "󰁺",
-          "󰁼",
-          "󰁾",
-          "󰂀",
-          "󰁹"
+          "\uf244",
+          "\uf243",
+          "\uf242",
+          "\uf241",
+          "\uf240"
         ]
     },
     "pulseaudio#speaker": {
