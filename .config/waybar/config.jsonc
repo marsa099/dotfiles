@@ -35,8 +35,8 @@
     "clock": {
         "timezone": "Europe/Stockholm",
         "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
-        "format-alt": "📅 {:%d %b  %H:%M:%S}",
-        "format": "🕐 {:%H:%M}",
+        "format-alt": "󰃭 {:%d %b  %H:%M:%S}",
+        "format": "󰥔 {:%H:%M}",
         "interval": 1
     },
     "backlight": {
@@ -50,15 +50,15 @@
             "critical": 15
         },
         "format": "{icon} {capacity}%",
-        "format-charging": "⚡ {capacity}%",
-        "format-plugged": "🔌 {capacity}%",
+        "format-charging": "󰂄 {capacity}%",
+        "format-plugged": "󰚥 {capacity}%",
         "format-alt": "{icon} {time}",
         "format-icons": [
-          "🪫",
-          "🔋",
-          "🔋",
-          "🔋",
-          "🔋"
+          "󰁺",
+          "󰁼",
+          "󰁾",
+          "󰂀",
+          "󰁹"
         ]
     },
     "pulseaudio#speaker": {
@@ -77,7 +77,7 @@
     },
     "network": {
         "format-wifi": "{icon}",
-        "format-ethernet": "🌐",
+        "format-ethernet": "󰈁",
         "tooltip-format": "{essid} ({signalStrength}%)\n{ifname} via {gwaddr}",
         "format-linked": " {ifname} (No IP)",
         "format-disconnected": "󰤮",
@@ -105,7 +105,7 @@
    },
    "cpu": {
         "interval": 5,
-        "format": "🧠 {usage}%",
+        "format": "󰍛 {usage}%",
         "format-alt": "CPU: {avg_frequency}GHz | {load}",
         "tooltip": true,
         "states": {
@@ -117,7 +117,7 @@
    },
    "memory": {
         "interval": 5,
-        "format": "📊 {percentage}%",
+        "format": "󰘚 {percentage}%",
         "format-alt": "MEM: {used:0.1f}GB/{total:0.1f}GB",
         "tooltip-format": "Used: {used:0.1f}GB\nAvailable: {avail:0.1f}GB\nTotal: {total:0.1f}GB",
         "states": {
@@ -162,7 +162,7 @@
    },
    "custom/cpu-temp": {
         "exec": "sensors k10temp-pci-00c3 | awk '/Tccd1:/ {gsub(/[^0-9.]/, \"\", $2); printf \"%.0f\", $2}'",
-        "format": "🌡️{}°/",
+        "format": "󰔏 {}°/",
         "interval": 5,
         "tooltip-format": "CPU Temperature (Tccd1)"
    },
