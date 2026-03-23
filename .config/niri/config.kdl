@@ -122,6 +122,9 @@ layout {
     // Set gaps around windows in logical pixels
     gaps 8
 
+    // Transparent background so the static wallpaper shows through
+    background-color "transparent"
+
     // When to center a column when changing focus, options are:
     // - "never", default behavior, focusing an off-screen column will keep at the left
     //   or right edge of the screen.
@@ -353,6 +356,12 @@ window-rule {
 
     // Use this instead if you want them visible on third-party screenshot tools.
     // block-out-from "screencast"
+}
+
+// Make wallpaper static (doesn't scroll with workspaces)
+layer-rule {
+    match namespace="^wallpaper$"
+    place-within-backdrop true
 }
 
 // Enable rounded corners for all windows (matching Hyprland's rounding = 10)
