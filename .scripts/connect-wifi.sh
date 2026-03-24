@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Check if a network name has been provided
 if [ -z "$1" ]; then
