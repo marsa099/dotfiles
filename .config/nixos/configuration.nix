@@ -27,6 +27,12 @@
 
   nixpkgs.config.allowUnfree = true;
 
+  # GTK 4.19.2+ removed built-in input method handling, breaking dead keys
+  # (e.g. ~ via AltGr) in GTK apps like Ghostty. Setting this to "simple"
+  # restores dead key composition without needing a full input method framework.
+  # See: https://discourse.nixos.org/t/swedish-keyboard-layout-not-working-after-upgrade-to-25-11/72882/3
+  environment.sessionVariables.GTK_IM_MODULE = "simple";
+
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";
   # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
@@ -113,6 +119,7 @@
     fd # fast file finder used by telescope.nvim
     unzip # needed by mason to extract packages
     fzf # fuzzy finder used by nvim-bqf quickfix filtering
+    wev # tool to see keycodes for key input etc
   ];
 
   # Some programs need SUID wrappers, can be configured further or are
