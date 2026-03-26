@@ -371,6 +371,12 @@ window-rule {
     opacity 0.9
 }
 
+// Force full opacity on Zen Browser to avoid compositing lag
+window-rule {
+    match app-id="zen"
+    opacity 1.0
+}
+
 // Highlight windows being screen shared with a red border
 window-rule {
     match is-window-cast-target=true
