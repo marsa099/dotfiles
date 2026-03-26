@@ -131,15 +131,16 @@
     unzip # needed by mason to extract packages
     fzf # fuzzy finder used by nvim-bqf quickfix filtering
     wev # tool to see keycodes for key input etc
+    pass # password manager (pass)
   ];
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
   # programs.mtr.enable = true;
-  # programs.gnupg.agent = {
-  #   enable = true;
-  #   enableSSHSupport = true;
-  # };
+  programs.gnupg.agent = {
+    enable = true;
+    enableSSHSupport = true;
+  };
 
   # List services that you want to enable:
   services.greetd = {
