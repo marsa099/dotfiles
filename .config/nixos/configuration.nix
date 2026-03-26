@@ -85,6 +85,12 @@
   programs.niri.enable = true;
   programs.firefox.enable = true;
 
+  # XDG Portal for screen sharing on Wayland
+  xdg.portal = {
+    enable = true;
+    extraPortals = [ pkgs.xdg-desktop-portal-gnome ];
+  };
+
   fonts.packages = with pkgs; [
     noto-fonts-color-emoji
     nerd-fonts.jetbrains-mono
@@ -92,6 +98,10 @@
     ibm-plex
     roboto
   ];
+
+  # Enable Bluetooth
+  hardware.bluetooth.enable = true;
+  services.blueman.enable = true;
 
   # List packages installed in system profile.
   # You can use https://search.nixos.org/ to find more packages (and options).
@@ -107,6 +117,7 @@
     gh # gh cli
     zoxide
     vesktop
+    teams-for-linux
     swaybg
     wl-clipboard
     jq
