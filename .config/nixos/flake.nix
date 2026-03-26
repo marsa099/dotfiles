@@ -4,8 +4,9 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     claude-code.url = "github:sadjow/claude-code-nix";
-    # Community flake for Zen Browser (not official, but actively maintained)
+    # Community flake for Zen Browser (most actively maintained)
     # See: https://wiki.nixos.org/wiki/Zen_Browser
+    # Alternative (wiki-recommended): zen-browser = { url = "github:youwen5/zen-browser-flake"; inputs.nixpkgs.follows = "nixpkgs"; };
     zen-browser.url = "github:0xc000022070/zen-browser-flake";
   };
 
