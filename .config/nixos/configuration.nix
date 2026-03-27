@@ -132,6 +132,8 @@
     fzf # fuzzy finder used by nvim-bqf quickfix filtering
     wev # tool to see keycodes for key input etc
     pass # password manager (pass)
+    azure-cli
+    terraform
   ];
 
   # Some programs need SUID wrappers, can be configured further or are
