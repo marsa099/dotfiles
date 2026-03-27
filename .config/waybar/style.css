@@ -138,8 +138,8 @@ window#waybar {
 #tray {
   background: alpha(#1B1B1B, 0.85);
   border-radius: 8px;
-  padding: 0px 8px;
-  margin-right: 6px;
+  padding: 0px 12px;
+  margin-right: 12px;
 }
 
 #tray > .passive {
