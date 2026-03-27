@@ -8,7 +8,7 @@
     "margin-bottom": 0,
     "modules-left": ["cpu", "memory", "custom/cpu-temp", "custom/gpu-temp", "custom/screencast", "custom/camera", "custom/dnd", "pulseaudio#mic", "pulseaudio#speaker"],
     "modules-center": ["niri/workspaces"],
-    "modules-right": ["group/system"],
+    "modules-right": ["tray", "group/system"],
     "niri/workspaces": {
          "disable-scroll": true,
          "sort-by-name": true,

@@ -128,11 +128,31 @@ window#waybar {
   min-width: 0;
 }
 
-/* Right side container - all items grouped */
+/* Right side container */
 .modules-right {
+  background: transparent;
+  margin: 8px;
+  padding: 0;
+}
+
+#tray {
   background: alpha(#1B1B1B, 0.85);
   border-radius: 8px;
-  margin: 8px;
+  padding: 0px 8px;
+  margin-right: 6px;
+}
+
+#tray > .passive {
+  -gtk-icon-effect: dim;
+}
+
+#tray > .needs-attention {
+  -gtk-icon-effect: highlight;
+}
+
+#system {
+  background: alpha(#1B1B1B, 0.85);
+  border-radius: 8px;
   padding: 0px 8px;
 }
 
