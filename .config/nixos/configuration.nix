@@ -130,6 +130,8 @@
     fd # fast file finder used by telescope.nvim
     unzip # needed by mason to extract packages
     fzf # fuzzy finder used by nvim-bqf quickfix filtering
+    television # fuzzy finder TUI
+    bat # cat clone with syntax highlighting, used by television for previews
     wev # tool to see keycodes for key input etc
     pass # password manager (pass)
     azure-cli
