@@ -46,7 +46,7 @@ export PS1="\[\e[32m\e[1m\]\W $ \[\e[0m\]"
 # Environment variables
 export REPOS="${HOME}/repos"
 export EDITOR=nvim
-export BROWSER=zen
+export BROWSER=zen-beta
 export NOTES="${HOME}/notes"
 
 # Path
