@@ -116,7 +116,9 @@
     fuzzel
     gh # gh cli
     zoxide
+    discord
     vesktop
+    xwayland-satellite # XWayland bridge for niri, needed by X11 apps like Discord
     teams-for-linux
     swaybg
     wl-clipboard
