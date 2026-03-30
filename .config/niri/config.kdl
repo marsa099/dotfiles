@@ -368,13 +368,11 @@ layer-rule {
 window-rule {
     geometry-corner-radius 10
     clip-to-geometry true
-    opacity 0.9
 }
 
-// Force full opacity on Zen Browser to avoid compositing lag
 window-rule {
-    match app-id="zen"
-    opacity 1.0
+    match app-id="com.mitchellh.ghostty"
+    opacity 0.9
 }
 
 // Highlight windows being screen shared with a red border
