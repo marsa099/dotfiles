@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Usage: niri-spawn-or-focus <app_id> <spawn_command>
 # Example: niri-spawn-or-focus com.mitchellh.ghostty ghostty
 
