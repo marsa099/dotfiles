@@ -11,8 +11,8 @@ environment {
     TERMINAL "ghostty"
     TERMINAL_APP_ID "com.mitchellh.ghostty"
     // Browser config for spawn-or-focus keybindings (change here to switch default browser)
-    BROWSER "zen-browser"
-    BROWSER_APP_ID "zen"
+    BROWSER "zen-beta"
+    BROWSER_APP_ID "zen-beta"
 }
 
 // Workspaces are dynamic - created/removed as needed
