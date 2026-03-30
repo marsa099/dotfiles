@@ -137,6 +137,8 @@
     wev # tool to see keycodes for key input etc
     brightnessctl # brightness control via keyboard brightness keys
     swayosd # on-screen display for brightness/volume changes
+    dunst # notification daemon
+    libnotify # provides notify-send for sending desktop notifications
     pass # password manager (pass)
     azure-cli
     terraform

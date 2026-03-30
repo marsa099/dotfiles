@@ -288,6 +288,7 @@ layout {
 spawn-at-startup "waybar"
 spawn-at-startup "swaybg" "-i" "/home/martin/wallpapers/purple.jpg" "-m" "fill"
 spawn-at-startup "swayosd-server"
+spawn-at-startup "dunst"
 
 // Start kanshi for dynamic monitor configuration
 spawn-at-startup "kanshi"
