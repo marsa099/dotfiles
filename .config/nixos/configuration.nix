@@ -76,7 +76,7 @@
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.martin = {
     isNormalUser = true;
-    extraGroups = [ "wheel" "networkmanager" ]; # Enable ‘sudo’ for the user.
+    extraGroups = [ "wheel" "networkmanager" "video" ]; # wheel = sudo, video = brightnessctl without sudo
     packages = with pkgs; [
       tree
     ];
@@ -135,6 +135,8 @@
     television # fuzzy finder TUI
     bat # cat clone with syntax highlighting, used by television for previews
     wev # tool to see keycodes for key input etc
+    brightnessctl # brightness control via keyboard brightness keys
+    swayosd # on-screen display for brightness/volume changes
     pass # password manager (pass)
     azure-cli
     terraform

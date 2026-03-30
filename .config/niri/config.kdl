@@ -7,6 +7,9 @@
 // Note: XDG_CURRENT_DESKTOP and XDG_SESSION_TYPE are set by niri-session automatically.
 environment {
     ELECTRON_OZONE_PLATFORM_HINT "auto"
+    // Terminal config for spawn-or-focus keybindings (change here to switch default terminal)
+    TERMINAL "ghostty"
+    TERMINAL_APP_ID "com.mitchellh.ghostty"
     // Browser config for spawn-or-focus keybindings (change here to switch default browser)
     BROWSER "zen-browser"
     BROWSER_APP_ID "zen"
@@ -284,7 +287,7 @@ layout {
 // https://github.com/Alexays/Waybar/issues/3344
 spawn-at-startup "waybar"
 spawn-at-startup "swaybg" "-i" "/home/martin/wallpapers/purple.jpg" "-m" "fill"
-
+spawn-at-startup "swayosd-server"
 
 // Start kanshi for dynamic monitor configuration
 spawn-at-startup "kanshi"
@@ -406,22 +409,22 @@ binds {
     Super+Alt+L hotkey-overlay-title="Lock the Screen: swaylock" { spawn "swaylock" "-i" "/home/martin/wallpapers/wallbase-pink-chemicals.png"; }
 
     // Spawn-or-focus keybindings (focus existing window, cycle through instances, or spawn new)
-    Mod+A { spawn-sh "$HOME/.local/bin/niri-spawn-or-focus ghostty com.mitchellh.ghostty"; }
-    Mod+Shift+A { spawn "ghostty"; }
-    Mod+T { spawn-sh "$HOME/.local/bin/niri-spawn-or-focus teams-for-linux teams-for-linux"; }
+    Mod+A { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus $TERMINAL_APP_ID $TERMINAL"; }
+    Mod+Shift+A { spawn-sh "$TERMINAL"; }
+    Mod+T { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus teams-for-linux teams-for-linux"; }
     Mod+Shift+T { spawn "teams-for-linux"; }
-    Mod+D { spawn-sh "$HOME/.local/bin/niri-spawn-or-focus vesktop vesktop"; }
+    Mod+D { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus vesktop vesktop"; }
     Mod+Shift+D { spawn "vesktop"; }
-    Mod+S { spawn-sh "$HOME/.local/bin/niri-spawn-or-focus $BROWSER_APP_ID $BROWSER"; }
+    Mod+S { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus $BROWSER_APP_ID $BROWSER"; }
     Mod+Shift+S { spawn-sh "$BROWSER"; }
 
-    Mod+X { spawn-sh "$HOME/.local/bin/niri-spawn-or-focus chrome-sisswe.atlassian.net__-Profile_3 'google-chrome-stable --profile-directory=\"Profile 3\" --app=\"https://sisswe.atlassian.net/\"'"; }
+    Mod+X { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus chrome-sisswe.atlassian.net__-Profile_3 'google-chrome-stable --profile-directory=\"Profile 3\" --app=\"https://sisswe.atlassian.net/\"'"; }
     Mod+Shift+X { spawn "google-chrome-stable" "--profile-directory=Profile 3" "--app=https://sisswe.atlassian.net/"; }
-    Mod+C { spawn-sh "$HOME/.local/bin/niri-spawn-or-focus chrome-dev.azure.com__swedishinstituteforstandards-Profile_2 'google-chrome-stable --profile-directory=\"Profile 2\" --app=\"https://dev.azure.com/swedishinstituteforstandards\"'"; }
+    Mod+C { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus chrome-dev.azure.com__swedishinstituteforstandards-Profile_2 'google-chrome-stable --profile-directory=\"Profile 2\" --app=\"https://dev.azure.com/swedishinstituteforstandards\"'"; }
     Mod+Shift+C { spawn "google-chrome-stable" "--profile-directory=Profile 2" "--app=https://dev.azure.com/swedishinstituteforstandards"; }
-    Mod+Z { spawn-sh "$HOME/.local/bin/niri-spawn-or-focus chrome-portal.azure.com__-Profile_4 'google-chrome-stable --profile-directory=\"Profile 4\" --app=\"https://portal.azure.com/\"'"; }
+    Mod+Z { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus chrome-portal.azure.com__-Profile_4 'google-chrome-stable --profile-directory=\"Profile 4\" --app=\"https://portal.azure.com/\"'"; }
     Mod+Shift+Z { spawn "google-chrome-stable" "--profile-directory=Profile 4" "--app=https://portal.azure.com/"; }
-    Mod+M { spawn-sh "$HOME/.local/bin/niri-spawn-or-focus chrome-outlook.office365.com__mail-Profile_3 'google-chrome-stable --profile-directory=\"Profile 3\" --app=\"https://outlook.office365.com/mail\"'"; }
+    Mod+M { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus chrome-outlook.office365.com__mail-Profile_3 'google-chrome-stable --profile-directory=\"Profile 3\" --app=\"https://outlook.office365.com/mail\"'"; }
     Mod+Shift+M { spawn "google-chrome-stable" "--profile-directory=Profile 3" "--app=https://outlook.office365.com/mail"; }
 
     // Use spawn-sh to run a shell command. Do this if you need pipes, multiple commands, etc.
@@ -429,19 +432,13 @@ binds {
     // For example, this is a standard bind to toggle the screen reader (orca).
     Super+Alt+S allow-when-locked=true hotkey-overlay-title=null { spawn-sh "pkill orca || exec orca"; }
 
-    // Example volume keys mappings for PipeWire & WirePlumber.
-    // The allow-when-locked=true property makes them work even when the session is locked.
-    // Using spawn-sh allows to pass multiple arguments together with the command.
-    XF86AudioRaiseVolume allow-when-locked=true { spawn-sh "wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.1+"; }
-    XF86AudioLowerVolume allow-when-locked=true { spawn-sh "wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.1-"; }
-    XF86AudioMute        allow-when-locked=true { spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"; }
-    XF86AudioMicMute     allow-when-locked=true { spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"; }
+    XF86AudioRaiseVolume allow-when-locked=true { spawn "swayosd-client" "--output-volume" "raise"; }
+    XF86AudioLowerVolume allow-when-locked=true { spawn "swayosd-client" "--output-volume" "lower"; }
+    XF86AudioMute        allow-when-locked=true { spawn "swayosd-client" "--output-volume" "mute-toggle"; }
+    XF86AudioMicMute     allow-when-locked=true { spawn "swayosd-client" "--input-volume" "mute-toggle"; }
 
-    // Example brightness key mappings for brightnessctl.
-    // You can use regular spawn with multiple arguments too (to avoid going through "sh"),
-    // but you need to manually put each argument in separate "" quotes.
-    XF86MonBrightnessUp allow-when-locked=true { spawn "brightnessctl" "--class=backlight" "set" "+10%"; }
-    XF86MonBrightnessDown allow-when-locked=true { spawn "brightnessctl" "--class=backlight" "set" "10%-"; }
+    XF86MonBrightnessUp allow-when-locked=true { spawn "swayosd-client" "--brightness" "raise"; }
+    XF86MonBrightnessDown allow-when-locked=true { spawn "swayosd-client" "--brightness" "lower"; }
 
     // Open/close the Overview: a zoomed-out view of workspaces and windows.
     // You can also move the mouse into the top-left hot corner,
