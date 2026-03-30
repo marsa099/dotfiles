@@ -210,3 +210,17 @@ tooltip {
 tooltip label {
   color: #EDEDED;
 }
+
+menu {
+  background: #1B1B1B;
+  border: 1px solid alpha(#8A9AA6, 0.2);
+  border-radius: 8px;
+}
+
+menu menuitem {
+  color: #EDEDED;
+}
+
+menu menuitem:hover {
+  background: alpha(#EDEDED, 0.1);
+}
