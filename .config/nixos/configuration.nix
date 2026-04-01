@@ -39,6 +39,9 @@
   # restores dead key composition without needing a full input method framework.
   # See: https://discourse.nixos.org/t/swedish-keyboard-layout-not-working-after-upgrade-to-25-11/72882/3
   environment.sessionVariables.GTK_IM_MODULE = "simple";
+  # .NET on NixOS: tools like the Azure Artifacts credential provider need these to find the runtime and libsecret
+  environment.sessionVariables.DOTNET_ROOT = "${pkgs.dotnet-sdk_10}/share/dotnet";
+  environment.sessionVariables.LD_LIBRARY_PATH = "${pkgs.libsecret}/lib";
 
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";
@@ -79,6 +82,10 @@
     enable = true;
     pulse.enable = true;
   };
+
+  # Secure token storage for MSAL (used by Azure Artifacts credential provider)
+  services.gnome.gnome-keyring.enable = true;
+  security.pam.services.greetd.enableGnomeKeyring = true; # auto-unlock keyring on login via greetd
 
   # Enable touchpad support (enabled default in most desktopManager).
   # services.libinput.enable = true;
@@ -157,6 +164,7 @@
     libnotify # provides notify-send for sending desktop notifications
     pass # password manager (pass)
     azure-cli
+    libsecret # provides libsecret for MSAL secure token storage (used by Azure Artifacts credential provider)
     terraform
   ];
 
