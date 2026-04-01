@@ -113,6 +113,9 @@ return {
 				pattern = "*.cs",
 				group = vim.api.nvim_create_augroup("CSharpRemoveUnusedUsings", { clear = true }),
 				callback = function(ev)
+					if vim.g.disable_autoformat or vim.b[ev.buf].disable_autoformat then
+						return
+					end
 					local clients = vim.lsp.get_clients({ name = "roslyn", bufnr = ev.buf })
 					if vim.tbl_isempty(clients) then
 						return
