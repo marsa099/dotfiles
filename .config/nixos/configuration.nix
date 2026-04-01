@@ -2,20 +2,27 @@
 # your system. Help is available in the configuration.nix(5) man page, on
 # https://search.nixos.org/options and in the NixOS manual (`nixos-help`).
 
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 {
-  imports =
-    [ # Include the results of the hardware scan.
-      ./hardware-configuration.nix
-    ];
+  imports = [
+    # Include the results of the hardware scan.
+    ./hardware-configuration.nix
+  ];
 
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
-
+  nix.settings.experimental-features = [
+    "nix-command"
+    "flakes"
+  ];
 
   networking.hostName = "nixos"; # Define your hostname.
 
@@ -26,7 +33,6 @@
   time.timeZone = "Europe/Amsterdam";
 
   nixpkgs.config.allowUnfree = true;
-
 
   # GTK 4.19.2+ removed built-in input method handling, breaking dead keys
   # (e.g. ~ via AltGr) in GTK apps like Ghostty. Setting this to "simple"
@@ -52,9 +58,12 @@
   # Custom US keyboard layout with Swedish characters (å ä ö on [ ' ;)
   services.xserver.xkb.extraLayouts.us_swedish = {
     description = "English (US, Swedish chars)";
-    languages = [ "eng" "swe" ];
+    languages = [
+      "eng"
+      "swe"
+    ];
     symbolsFile = ./us_swedish;
-  }; 
+  };
 
   # Configure keymap in X11
   # services.xserver.xkb.layout = "us";
@@ -77,7 +86,11 @@
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.martin = {
     isNormalUser = true;
-    extraGroups = [ "wheel" "networkmanager" "video" ]; # wheel = sudo, video = brightnessctl without sudo
+    extraGroups = [
+      "wheel"
+      "networkmanager"
+      "video"
+    ]; # wheel = sudo, video = brightnessctl without sudo
     packages = with pkgs; [
       tree
     ];
@@ -164,7 +177,6 @@
     };
   };
 
-
   # Enable the OpenSSH daemon.
   # services.openssh.enable = true;
 
@@ -199,4 +211,3 @@
   system.stateVersion = "25.11"; # Did you read the comment?
 
 }
-
