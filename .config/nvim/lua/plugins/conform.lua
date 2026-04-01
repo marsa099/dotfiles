@@ -5,13 +5,6 @@ return {
 		opts = {
 			formatters_by_ft = {
 				lua = { "stylua" },
-				cs = { "csharpier" },
-			},
-			formatters = {
-				csharpier = {
-					command = "dotnet-csharpier",
-					args = { "--write-stdout" },
-				},
 			},
 			format_on_save = function(bufnr)
 				-- Respect the disable_autoformat variable (can be set globally or per-project)
@@ -19,7 +12,7 @@ return {
 					return nil
 				end
 				return {
-					timeout_ms = 500,
+					timeout_ms = 2000,
 					lsp_fallback = true,
 				}
 			end,
