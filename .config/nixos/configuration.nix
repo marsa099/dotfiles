@@ -27,6 +27,7 @@
 
   nixpkgs.config.allowUnfree = true;
 
+
   # GTK 4.19.2+ removed built-in input method handling, breaking dead keys
   # (e.g. ~ via AltGr) in GTK apps like Ghostty. Setting this to "simple"
   # restores dead key composition without needing a full input method framework.
@@ -131,6 +132,8 @@
     dotnet-sdk_10 # needed by mason to install roslyn, csharpier, and bicep-lsp
     fd # fast file finder used by telescope.nvim
     unzip # needed by mason to extract packages
+    cargo # needed by mason to build nil (Nix LSP)
+    nixfmt-rfc-style # formatter used by nil (Nix LSP)
     fzf # fuzzy finder used by nvim-bqf quickfix filtering
     television # fuzzy finder TUI
     bat # cat clone with syntax highlighting, used by television for previews
