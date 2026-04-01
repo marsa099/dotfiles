@@ -128,7 +128,7 @@
     tree-sitter # nvim-treesitter uses this CLI to download and build parsers
     gcc # C compiler needed by tree-sitter to compile parsers
     nodejs # needed by mason to install typescript-language-server
-    dotnet-sdk # needed by mason to install roslyn, csharpier, and bicep-lsp
+    dotnet-sdk_10 # needed by mason to install roslyn, csharpier, and bicep-lsp
     fd # fast file finder used by telescope.nvim
     unzip # needed by mason to extract packages
     fzf # fuzzy finder used by nvim-bqf quickfix filtering
