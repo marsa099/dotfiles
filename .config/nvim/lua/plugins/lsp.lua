@@ -107,6 +107,41 @@ return {
 				},
 			})
 
+			-- Remove unused usings on save for C# via Roslyn's proprietary codeAction/resolve
+			-- Based on: https://github.com/seblyng/roslyn.nvim/wiki/Tips-and-tricks
+			vim.api.nvim_create_autocmd("BufWritePre", {
+				pattern = "*.cs",
+				group = vim.api.nvim_create_augroup("CSharpRemoveUnusedUsings", { clear = true }),
+				callback = function(ev)
+					local clients = vim.lsp.get_clients({ name = "roslyn", bufnr = ev.buf })
+					if vim.tbl_isempty(clients) then
+						return
+					end
+					local action = {
+						title = "Remove unnecessary usings",
+						kind = "quickfix",
+						data = {
+							CustomTags = { "RemoveUnnecessaryImports" },
+							TextDocument = { uri = vim.uri_from_bufnr(ev.buf) },
+							CodeActionPath = { "Remove unnecessary usings" },
+							Range = {
+								["start"] = { line = 0, character = 0 },
+								["end"] = { line = 0, character = 0 },
+							},
+							UniqueIdentifier = "Remove unnecessary usings",
+						},
+					}
+					local result = vim.lsp.buf_request_sync(ev.buf, "codeAction/resolve", action, 3000)
+					if result then
+						for _, res in pairs(result) do
+							if res.result and res.result.edit then
+								vim.lsp.util.apply_workspace_edit(res.result.edit, clients[1].offset_encoding)
+							end
+						end
+					end
+				end,
+			})
+
 			-- Enable LSP servers
 			vim.lsp.enable("lua_ls")
 			vim.lsp.enable("ts_ls")
