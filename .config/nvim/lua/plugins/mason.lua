@@ -20,6 +20,7 @@ return {
 				"csharpier",
 				"typescript-language-server",
 				"bicep-lsp",
+				"nil",
 			},
 		},
 		lazy = false,

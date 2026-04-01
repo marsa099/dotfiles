@@ -146,9 +146,15 @@ return {
 			})
 
 			-- Enable LSP servers
+			-- Configure nil for Nix
+			vim.lsp.config("nil_ls", {
+				root_markers = { "flake.nix", ".git" },
+			})
+
 			vim.lsp.enable("lua_ls")
 			vim.lsp.enable("ts_ls")
 			vim.lsp.enable("bicep")
+			vim.lsp.enable("nil_ls")
 		end,
 	},
 }
