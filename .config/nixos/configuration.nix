@@ -158,6 +158,7 @@
     pass # password manager (pass)
     azure-cli
     terraform
+    spotify-player
   ];
 
   # Some programs need SUID wrappers, can be configured further or are
