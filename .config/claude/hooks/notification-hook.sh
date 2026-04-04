@@ -35,9 +35,8 @@ get_tool_info() {
     ' 2>/dev/null
 }
 
-# Check if Claude Code's terminal window is currently focused
-# With tmux, the hook runs under tmux-server (separate tree from ghostty),
-# so we find the terminal via the tmux client PID instead
+# Check if Claude Code's terminal window (ghostty) is focused in niri
+# Walks from the tmux client PID up to find the ghostty window
 is_terminal_focused() {
     local focused_wid
     focused_wid=$(niri msg focused-window 2>/dev/null | awk '/^Window ID/ {print $3; exit}' | tr -d ':')
@@ -69,8 +68,9 @@ is_terminal_focused() {
 
 if [ "$TYPE" = "permission_prompt" ]; then
     # Save tmux pane for keybinding scripts
+    # Use $TMUX_PANE (env var = subprocess's actual pane) not display-message (= client's viewed pane)
     if [ -n "$TMUX" ]; then
-        PANE=$(tmux display-message -p '#{pane_id}' 2>/dev/null)
+        PANE="$TMUX_PANE"
         echo "$PANE" > "$STATE_FILE"
         echo "$(ts) [notification] saved pane=$PANE" >> "$LOG"
     fi
@@ -93,7 +93,15 @@ if [ "$TYPE" = "permission_prompt" ]; then
 
     echo "$(ts) [notification] permission: tool=$TOOL_NAME cmd=\"$TOOL_CMD\" file=\"$TOOL_FILE\"" >> "$LOG"
 
-    if is_terminal_focused; then
+    # Check if our pane is the one the user is currently looking at
+    PANE_VISIBLE=false
+    if [ -n "$TMUX" ] && [ -n "$PANE" ]; then
+        CLIENT_ACTIVE_PANE=$(tmux list-clients -F '#{pane_id}' 2>/dev/null | head -1)
+        [ "$CLIENT_ACTIVE_PANE" = "$PANE" ] && PANE_VISIBLE=true
+        echo "$(ts) [notification] our_pane=$PANE client_active=$CLIENT_ACTIVE_PANE visible=$PANE_VISIBLE" >> "$LOG"
+    fi
+
+    if is_terminal_focused && [ "$PANE_VISIBLE" = true ]; then
         echo "$(ts) [notification] skipped: terminal is focused" >> "$LOG"
     else
         dunstify "Claude Code - Permission" "$BODY" \
