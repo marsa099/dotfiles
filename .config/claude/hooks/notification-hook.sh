@@ -1,13 +1,15 @@
 #!/bin/bash
 
 # Claude Code Notification Hook
-# For permission prompts: shows fuzzel popup with action choices
-# For other notifications: shows dunst notification
+# For permission prompts: shows rich dunst notification with keybinding hints
+# For other notifications: shows simple dunst notification
+# Saves tmux pane target for global keybinding response
 #
-# Requires: jq, dunstify, fuzzel, niri, wtype
+# Requires: jq, dunstify, tmux
 
 LOG="$HOME/.cache/claude/hooks.log"
 ts() { date '+%Y-%m-%dT%H:%M:%S.%3N'; }
+STATE_FILE="/tmp/claude-permission-pane"
 
 INPUT=$(cat)
 TYPE=$(echo "$INPUT" | jq -r '.notification_type // empty')
@@ -17,80 +19,65 @@ TRANSCRIPT=$(echo "$INPUT" | jq -r '.transcript_path // empty')
 
 echo "$(ts) [notification] type=$TYPE" >> "$LOG"
 
-# Extract the actual tool use details from the transcript
-get_tool_detail() {
+# Extract tool use details from the transcript
+get_tool_info() {
     [ -n "$TRANSCRIPT" ] && [ -f "$TRANSCRIPT" ] || return
     tac "$TRANSCRIPT" | grep -m1 '"tool_use"' | jq -r '
         .message.content[] | select(.type == "tool_use") |
-        if .name == "Bash" then "Bash: \(.input.command)"
-        elif .name == "Edit" then "Edit: \(.input.file_path)"
-        elif .name == "Write" then "Write: \(.input.file_path)"
-        elif .name == "Read" then "Read: \(.input.file_path)"
-        else .name
-        end
-    ' 2>/dev/null | tail -1
+        {
+            name: .name,
+            command: (.input.command // null),
+            file_path: (.input.file_path // null),
+            description: (.input.description // null),
+            pattern: (.input.pattern // null)
+        } | to_entries | map(select(.value != null)) | from_entries
+    ' 2>/dev/null
 }
 
-# Find niri window ID by walking process tree to terminal PID
-find_niri_window_id() {
-    local window_pids
-    window_pids=$(niri msg windows 2>/dev/null) || return 1
-
-    local pid=$$
-    while [ "$pid" != "1" ] && [ -n "$pid" ]; do
-        local wid
-        wid=$(echo "$window_pids" | awk -v p="$pid" '
-            /^Window ID/ { id = $3; sub(/:$/, "", id) }
-            /PID:/ && $2 == p { print id; exit }
-        ')
-        if [ -n "$wid" ]; then
-            echo "$wid"
-            return 0
-        fi
-        pid=$(awk '{print $4}' /proc/$pid/stat 2>/dev/null)
-    done
-    return 1
-}
-
-WINDOW_ID=""
-[ -z "$TMUX" ] && WINDOW_ID=$(find_niri_window_id)
-
-if [ "$TYPE" = "permission_prompt" ] && [ -n "$WINDOW_ID" ]; then
-    TOOL_DETAIL=$(get_tool_detail)
-    DETAIL="${TOOL_DETAIL:-$MESSAGE}"
-    TOOL_NAME="${DETAIL%%: *}"
-    TOOL_CMD="${DETAIL#*: }"
-
-    # Word-wrap long commands into multiple header lines
-    WRAPPED=$(echo "$TOOL_CMD" | fold -s -w 60)
-    HEADER_LINES=$(echo "$WRAPPED" | wc -l)
-    TOTAL_LINES=$((HEADER_LINES + 4)) # header + separator + 3 options
-
-    ITEMS=$(printf "── %s ──\n%s\n1. Allow\n2. Always Allow\n3. Deny" "$TOOL_NAME" "$WRAPPED")
-    LONGEST=$(echo "$ITEMS" | awk '{l=length; if(l>m) m=l} END{print m+4}')
-    CHOICE=$(echo "$ITEMS" | fuzzel --dmenu \
-        --prompt "Permission: " \
-        --width "$LONGEST" --lines "$TOTAL_LINES")
-
-    KEY=""
-    case "$CHOICE" in
-        "1. Allow")        KEY="1" ;;
-        "2. Always Allow") KEY="2" ;;
-        "3. Deny")         KEY="3" ;;
-    esac
-
-    echo "$(ts) [notification] choice=\"$CHOICE\" key=$KEY wid=$WINDOW_ID tool=\"$TOOL_DETAIL\"" >> "$LOG"
-
-    if [ -n "$KEY" ]; then
-        setsid bash -c "
-            niri msg action focus-window --id $WINDOW_ID
-            wtype -k $KEY
-        " </dev/null &
-        disown
+if [ "$TYPE" = "permission_prompt" ]; then
+    # Save tmux pane for keybinding scripts
+    if [ -n "$TMUX" ]; then
+        PANE=$(tmux display-message -p '#{pane_id}' 2>/dev/null)
+        echo "$PANE" > "$STATE_FILE"
+        echo "$(ts) [notification] saved pane=$PANE" >> "$LOG"
     fi
+
+    # Extract tool details
+    TOOL_JSON=$(get_tool_info)
+    TOOL_NAME=$(echo "$TOOL_JSON" | jq -r '.name // empty' 2>/dev/null)
+    TOOL_CMD=$(echo "$TOOL_JSON" | jq -r '.command // empty' 2>/dev/null)
+    TOOL_FILE=$(echo "$TOOL_JSON" | jq -r '.file_path // empty' 2>/dev/null)
+    TOOL_DESC=$(echo "$TOOL_JSON" | jq -r '.description // empty' 2>/dev/null)
+    TOOL_PATTERN=$(echo "$TOOL_JSON" | jq -r '.pattern // empty' 2>/dev/null)
+
+    # Build notification body
+    BODY="<b>${TOOL_NAME:-Tool}</b>"
+
+    if [ -n "$TOOL_CMD" ]; then
+        BODY="$BODY\n$TOOL_CMD"
+    fi
+    if [ -n "$TOOL_FILE" ]; then
+        BODY="$BODY\n$TOOL_FILE"
+    fi
+    if [ -n "$TOOL_PATTERN" ]; then
+        BODY="$BODY\nPattern: $TOOL_PATTERN"
+    fi
+    if [ -n "$TOOL_DESC" ]; then
+        BODY="$BODY\n<i>$TOOL_DESC</i>"
+    fi
+
+    BODY="$BODY\n\n<b>[Ctrl+Super+Y]</b> Allow  <b>[Ctrl+Super+A]</b> Always  <b>[Ctrl+Super+N]</b> Deny"
+
+    ICON="$HOME/.config/claude/icons/claude-code.svg"
+    dunstify "Claude Code - Permission" "$BODY" \
+        --stack-tag claude-prompt \
+        -u critical -I "$ICON" -t 0
+
+    echo "$(ts) [notification] permission: tool=$TOOL_NAME cmd=\"$TOOL_CMD\" file=\"$TOOL_FILE\"" >> "$LOG"
 else
+    ICON="$HOME/.config/claude/icons/claude-code.svg"
     dunstify "$TITLE" "$MESSAGE" \
         --stack-tag claude-prompt \
-        -u normal -i robot
+        -u normal -I "$ICON"
     echo "$(ts) [notification] dunst sent: $TITLE - $MESSAGE" >> "$LOG"
 fi

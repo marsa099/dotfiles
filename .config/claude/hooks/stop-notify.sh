@@ -12,6 +12,7 @@ if [ -n "$TMUX" ]; then
     printf '\a'
 fi
 
+ICON="$HOME/.config/claude/icons/claude-code.svg"
 dunstify "Claude Code" "Ready for input" \
     --stack-tag claude-prompt \
-    -u normal -i robot
+    -u normal -I "$ICON"

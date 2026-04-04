@@ -433,6 +433,11 @@ binds {
     // For example, this is a standard bind to toggle the screen reader (orca).
     Super+Alt+S allow-when-locked=true hotkey-overlay-title=null { spawn-sh "pkill orca || exec orca"; }
 
+    // Claude Code permission prompt responses (via tmux send-keys)
+    Mod+Ctrl+Y hotkey-overlay-title=null { spawn-sh "bash $HOME/.config/claude/hooks/permission-respond.sh 1"; }
+    Mod+Ctrl+A hotkey-overlay-title=null { spawn-sh "bash $HOME/.config/claude/hooks/permission-respond.sh 2"; }
+    Mod+Ctrl+N hotkey-overlay-title=null { spawn-sh "bash $HOME/.config/claude/hooks/permission-respond.sh 3"; }
+
     XF86AudioRaiseVolume allow-when-locked=true { spawn "swayosd-client" "--output-volume" "raise"; }
     XF86AudioLowerVolume allow-when-locked=true { spawn "swayosd-client" "--output-volume" "lower"; }
     XF86AudioMute        allow-when-locked=true { spawn "swayosd-client" "--output-volume" "mute-toggle"; }
