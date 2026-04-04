@@ -159,6 +159,7 @@
     azure-cli
     terraform
     spotify-player
+    wtype # To be able to send keystrokes to a terminal from dunst notification for claude notifications
   ];
 
   # Some programs need SUID wrappers, can be configured further or are

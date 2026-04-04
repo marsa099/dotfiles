@@ -3,3 +3,6 @@ click-repeat-interval = 500
 gtk-single-instance = false
 auto-update-channel = tip
 theme = light:light,dark:dark
+keybind = ctrl+shift+j=scroll_page_down
+keybind = ctrl+shift+k=scroll_page_up
+keybind = ctrl+shift+x=write_scrollback_file:open,plain
