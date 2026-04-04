@@ -3,14 +3,16 @@
 # Claude Code Notification Hook
 # For permission prompts: shows rich dunst notification with keybinding hints
 # For other notifications: shows simple dunst notification
-# Saves tmux pane target for global keybinding response
+# Saves per-instance state for multi-instance keybinding response
 #
 # Requires: jq, dunstify, tmux, niri
 
 LOG="$HOME/.cache/claude/hooks.log"
 ts() { date '+%Y-%m-%dT%H:%M:%S.%3N'; }
-STATE_FILE="/tmp/claude-permission-pane"
+STATE_DIR="/tmp/claude-permissions"
 ICON="$HOME/.config/claude/icons/claude-code.svg"
+
+mkdir -p "$STATE_DIR"
 
 INPUT=$(cat)
 TYPE=$(echo "$INPUT" | jq -r '.notification_type // empty')
@@ -20,8 +22,26 @@ TRANSCRIPT=$(echo "$INPUT" | jq -r '.transcript_path // empty')
 
 echo "$(ts) [notification] type=$TYPE" >> "$LOG"
 
-# Extract tool use details from the transcript
+# Extract tool details saved by PermissionRequest hook, fallback to transcript
 get_tool_info() {
+    local info_file="/tmp/claude-permission-tool-info.json"
+    if [ -f "$info_file" ]; then
+        local tool_name
+        tool_name=$(jq -r '.tool_name // empty' "$info_file" 2>/dev/null)
+        if [ -n "$tool_name" ]; then
+            jq --arg name "$tool_name" '{
+                name: $name,
+                command: (.tool_input.command // null),
+                file_path: (.tool_input.file_path // null),
+                description: (.tool_input.description // null),
+                pattern: (.tool_input.pattern // null),
+                prompt: (.tool_input.prompt // null),
+                subagent_type: (.tool_input.subagent_type // null)
+            } | to_entries | map(select(.value != null)) | from_entries' "$info_file" 2>/dev/null
+            return
+        fi
+    fi
+    # Fallback: parse transcript
     [ -n "$TRANSCRIPT" ] && [ -f "$TRANSCRIPT" ] || return
     tac "$TRANSCRIPT" | grep -m1 '"tool_use"' | jq -r '
         .message.content[] | select(.type == "tool_use") |
@@ -42,7 +62,6 @@ is_terminal_focused() {
     focused_wid=$(niri msg focused-window 2>/dev/null | awk '/^Window ID/ {print $3; exit}' | tr -d ':')
     [ -z "$focused_wid" ] && return 1
 
-    # Find the starting PID: tmux client if in tmux, otherwise our own PID
     local start_pid=$$
     [ -n "$TMUX" ] && start_pid=$(tmux display-message -p '#{client_pid}' 2>/dev/null)
     [ -z "$start_pid" ] && return 1
@@ -67,12 +86,15 @@ is_terminal_focused() {
 }
 
 if [ "$TYPE" = "permission_prompt" ]; then
-    # Save tmux pane for keybinding scripts
-    # Use $TMUX_PANE (env var = subprocess's actual pane) not display-message (= client's viewed pane)
-    if [ -n "$TMUX" ]; then
-        PANE="$TMUX_PANE"
-        echo "$PANE" > "$STATE_FILE"
-        echo "$(ts) [notification] saved pane=$PANE" >> "$LOG"
+    PANE="$TMUX_PANE"
+    PANE_NUM="${TMUX_PANE#%}"
+    SESSION=$(tmux display-message -p '#{session_name}' 2>/dev/null)
+    LABEL="${SESSION:-claude}"
+
+    # Save per-instance state file
+    if [ -n "$TMUX" ] && [ -n "$PANE_NUM" ]; then
+        printf 'pane=%s\nsession=%s\nlabel=%s\n' "$PANE" "$SESSION" "$LABEL" > "$STATE_DIR/$PANE_NUM"
+        echo "$(ts) [notification] saved state: pane=$PANE session=$SESSION" >> "$LOG"
     fi
 
     # Extract tool details
@@ -82,16 +104,28 @@ if [ "$TYPE" = "permission_prompt" ]; then
     TOOL_FILE=$(echo "$TOOL_JSON" | jq -r '.file_path // empty' 2>/dev/null)
     TOOL_DESC=$(echo "$TOOL_JSON" | jq -r '.description // empty' 2>/dev/null)
     TOOL_PATTERN=$(echo "$TOOL_JSON" | jq -r '.pattern // empty' 2>/dev/null)
+    TOOL_PROMPT=$(echo "$TOOL_JSON" | jq -r '.prompt // empty' 2>/dev/null)
+    TOOL_SUBTYPE=$(echo "$TOOL_JSON" | jq -r '.subagent_type // empty' 2>/dev/null)
 
     # Build notification body
-    BODY="<b>${TOOL_NAME:-Tool}</b>"
-    [ -n "$TOOL_CMD" ] && BODY="$BODY\n$TOOL_CMD"
+    if [ -n "$TOOL_SUBTYPE" ]; then
+        BODY="<b>${TOOL_NAME:-Tool}</b> (${TOOL_SUBTYPE})"
+    else
+        BODY="<b>${TOOL_NAME:-Tool}</b>"
+    fi
+    [ -n "$TOOL_CMD" ] && BODY="$BODY\n<tt>$TOOL_CMD</tt>"
     [ -n "$TOOL_FILE" ] && BODY="$BODY\n$TOOL_FILE"
     [ -n "$TOOL_PATTERN" ] && BODY="$BODY\nPattern: $TOOL_PATTERN"
     [ -n "$TOOL_DESC" ] && BODY="$BODY\n<i>$TOOL_DESC</i>"
-    BODY="$BODY\n\nAllow <b>(Ctrl+Super+Y)</b>\nAlways Allow <b>(Ctrl+Super+A)</b>\nDeny <b>(Ctrl+Super+N)</b>"
+    if [ -n "$TOOL_PROMPT" ]; then
+        truncated="${TOOL_PROMPT:0:200}"
+        [ ${#TOOL_PROMPT} -gt 200 ] && truncated="${truncated}..."
+        BODY="$BODY\n${truncated}"
+    fi
 
-    echo "$(ts) [notification] permission: tool=$TOOL_NAME cmd=\"$TOOL_CMD\" file=\"$TOOL_FILE\"" >> "$LOG"
+    BODY="$BODY\n\nAllow <b>(Ctrl+Super+Y)</b>\nAlways Allow <b>(Ctrl+Super+A)</b>\nDeny <b>(Ctrl+Super+N)</b>\nGo to <b>(Ctrl+Super+P)</b>"
+
+    echo "$(ts) [notification] permission: tool=$TOOL_NAME cmd=\"$TOOL_CMD\" file=\"$TOOL_FILE\" desc=\"$TOOL_DESC\" pending=$PENDING" >> "$LOG"
 
     # Check if our pane is the one the user is currently looking at
     PANE_VISIBLE=false
@@ -104,13 +138,13 @@ if [ "$TYPE" = "permission_prompt" ]; then
     if is_terminal_focused && [ "$PANE_VISIBLE" = true ]; then
         echo "$(ts) [notification] skipped: terminal is focused" >> "$LOG"
     else
-        dunstify "Claude Code - Permission" "$BODY" \
-            --stack-tag claude-prompt \
+        dunstify "Claude - $LABEL" "$BODY" \
+            --stack-tag "claude-perm-$PANE_NUM" \
             -u critical -I "$ICON" -t 0
     fi
 else
     dunstify "$TITLE" "$MESSAGE" \
-        --stack-tag claude-prompt \
+        --stack-tag "claude-stop-${TMUX_PANE#%}" \
         -u normal -I "$ICON"
     echo "$(ts) [notification] dunst sent: $TITLE - $MESSAGE" >> "$LOG"
 fi
