@@ -5,11 +5,12 @@
 # For other notifications: shows simple dunst notification
 # Saves tmux pane target for global keybinding response
 #
-# Requires: jq, dunstify, tmux
+# Requires: jq, dunstify, tmux, niri
 
 LOG="$HOME/.cache/claude/hooks.log"
 ts() { date '+%Y-%m-%dT%H:%M:%S.%3N'; }
 STATE_FILE="/tmp/claude-permission-pane"
+ICON="$HOME/.config/claude/icons/claude-code.svg"
 
 INPUT=$(cat)
 TYPE=$(echo "$INPUT" | jq -r '.notification_type // empty')
@@ -34,6 +35,38 @@ get_tool_info() {
     ' 2>/dev/null
 }
 
+# Check if Claude Code's terminal window is currently focused
+# With tmux, the hook runs under tmux-server (separate tree from ghostty),
+# so we find the terminal via the tmux client PID instead
+is_terminal_focused() {
+    local focused_wid
+    focused_wid=$(niri msg focused-window 2>/dev/null | awk '/^Window ID/ {print $3; exit}' | tr -d ':')
+    [ -z "$focused_wid" ] && return 1
+
+    # Find the starting PID: tmux client if in tmux, otherwise our own PID
+    local start_pid=$$
+    [ -n "$TMUX" ] && start_pid=$(tmux display-message -p '#{client_pid}' 2>/dev/null)
+    [ -z "$start_pid" ] && return 1
+
+    local windows
+    windows=$(niri msg windows 2>/dev/null)
+
+    local pid=$start_pid
+    while [ "$pid" != "1" ] && [ -n "$pid" ] && [ "$pid" != "0" ]; do
+        local wid
+        wid=$(echo "$windows" | awk -v p="$pid" '
+            /^Window ID/ { id = $3; sub(/:$/, "", id) }
+            /PID:/ && $2 == p { print id; exit }
+        ')
+        if [ -n "$wid" ]; then
+            [ "$wid" = "$focused_wid" ] && return 0
+            return 1
+        fi
+        pid=$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')
+    done
+    return 1
+}
+
 if [ "$TYPE" = "permission_prompt" ]; then
     # Save tmux pane for keybinding scripts
     if [ -n "$TMUX" ]; then
@@ -52,30 +85,22 @@ if [ "$TYPE" = "permission_prompt" ]; then
 
     # Build notification body
     BODY="<b>${TOOL_NAME:-Tool}</b>"
-
-    if [ -n "$TOOL_CMD" ]; then
-        BODY="$BODY\n$TOOL_CMD"
-    fi
-    if [ -n "$TOOL_FILE" ]; then
-        BODY="$BODY\n$TOOL_FILE"
-    fi
-    if [ -n "$TOOL_PATTERN" ]; then
-        BODY="$BODY\nPattern: $TOOL_PATTERN"
-    fi
-    if [ -n "$TOOL_DESC" ]; then
-        BODY="$BODY\n<i>$TOOL_DESC</i>"
-    fi
-
-    BODY="$BODY\n\n<b>[Ctrl+Super+Y]</b> Allow  <b>[Ctrl+Super+A]</b> Always  <b>[Ctrl+Super+N]</b> Deny"
-
-    ICON="$HOME/.config/claude/icons/claude-code.svg"
-    dunstify "Claude Code - Permission" "$BODY" \
-        --stack-tag claude-prompt \
-        -u critical -I "$ICON" -t 0
+    [ -n "$TOOL_CMD" ] && BODY="$BODY\n$TOOL_CMD"
+    [ -n "$TOOL_FILE" ] && BODY="$BODY\n$TOOL_FILE"
+    [ -n "$TOOL_PATTERN" ] && BODY="$BODY\nPattern: $TOOL_PATTERN"
+    [ -n "$TOOL_DESC" ] && BODY="$BODY\n<i>$TOOL_DESC</i>"
+    BODY="$BODY\n\nAllow <b>(Ctrl+Super+Y)</b>\nAlways Allow <b>(Ctrl+Super+A)</b>\nDeny <b>(Ctrl+Super+N)</b>"
 
     echo "$(ts) [notification] permission: tool=$TOOL_NAME cmd=\"$TOOL_CMD\" file=\"$TOOL_FILE\"" >> "$LOG"
+
+    if is_terminal_focused; then
+        echo "$(ts) [notification] skipped: terminal is focused" >> "$LOG"
+    else
+        dunstify "Claude Code - Permission" "$BODY" \
+            --stack-tag claude-prompt \
+            -u critical -I "$ICON" -t 0
+    fi
 else
-    ICON="$HOME/.config/claude/icons/claude-code.svg"
     dunstify "$TITLE" "$MESSAGE" \
         --stack-tag claude-prompt \
         -u normal -I "$ICON"
