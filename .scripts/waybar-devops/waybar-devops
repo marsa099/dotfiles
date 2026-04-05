@@ -9,7 +9,7 @@
 # Mapping: git remote URL -> org/project/repo -> build definition -> release
 # definition -> environments -> latest deployment branch per environment.
 #
-# Auth: Uses `az account get-access-token` (requires `az login` session).
+# Auth: PAT from system keyring via secret-tool (service=azure-devops, scope=release-read).
 # Cache: ~/.cache/waybar-devops/ (discovery 1h, deployments 60s)
 # Log:   ~/.cache/waybar-devops/waybar-devops.log
 
@@ -19,9 +19,6 @@ LOG_FILE="$CACHE_DIR/waybar-devops.log"
 DEPLOY_TTL=60
 DISCOVERY_TTL=3600
 STALE_TIMEOUT=10
-# Well-known public resource ID for Azure DevOps (Microsoft-documented constant)
-# https://learn.microsoft.com/en-us/azure/devops/integrate/get-started/authentication/oauth?view=azure-devops#scopes
-AZDO_RESOURCE_ID="499b84ac-1321-427f-aa17-267ca6975798"
 LOG_MAX_LINES=500
 
 mkdir -p "$CACHE_DIR"
@@ -105,16 +102,16 @@ parse_devops_remote() {
     echo "${org} ${project} ${repo%.git}"
 }
 
-# ── Azure DevOps Token ──────────────────────────────────────────
+# ── Azure DevOps Auth ──────────────────────────────────────────
 
-get_token() {
-    az account get-access-token --resource $AZDO_RESOURCE_ID --query accessToken -o tsv 2>/dev/null || return 1
+get_pat() {
+    secret-tool lookup service azure-devops type pat scope release-read 2>/dev/null || return 1
 }
 
 # ── Release Definition Discovery ────────────────────────────────
 
-discover_release_def() {
-    local org="$1" project="$2" repo_name="$3" token="$4"
+discover_environments() {
+    local org="$1" project="$2" repo_name="$3" pat="$4"
     local cache_file="$CACHE_DIR/discovery_${org}_${project}_${repo_name}.json"
     local now
     now=$(date +%s)
@@ -131,20 +128,34 @@ discover_release_def() {
 
     log "discovery: fetching from API..."
     local release_defs
-    release_defs=$(curl -sf -H "Authorization: Bearer $token" \
+    release_defs=$(curl -sf -u ":$pat" \
         "https://vsrm.dev.azure.com/$org/$project/_apis/release/definitions?\$expand=artifacts,environments&api-version=7.1") || return 1
 
+    # Match all definitions whose artifact name starts with the repo name,
+    # then for each environment name, prefer the definition where it's the
+    # final stage (filters out gate stages like Test in a prod pipeline).
     local result
     result=$(echo "$release_defs" | jq --arg repo "$repo_name" --argjson now "$now" '
+        ($repo | ascii_downcase) as $rl |
         [.value[] |
-         select(any(.artifacts[]?; .definitionReference.definition.name | ascii_downcase == ($repo | ascii_downcase)))] |
-        first // empty |
-        if . then {
-            release_def_id: .id,
-            release_def_name: .name,
-            environments: [.environments[] | {id: .id, name: .name}],
-            cached_at: $now
-        } else empty end
+         select(any(.artifacts[]?;
+           .definitionReference.definition.name | ascii_downcase |
+           startswith($rl))) |
+         . as $def |
+         (.environments | length) as $total |
+         .environments | to_entries[] |
+         {
+           name: .value.name,
+           def_id: $def.id,
+           env_id: .value.id,
+           is_final: (.key == ($total - 1))
+         }
+        ] |
+        group_by(.name) |
+        map(sort_by(if .is_final then 0 else 1 end, .def_id) | first |
+            del(.is_final)) |
+        if length > 0 then {environments: ., cached_at: $now}
+        else empty end
     ' 2>/dev/null)
 
     [[ -z "$result" ]] && return 1
@@ -156,10 +167,10 @@ discover_release_def() {
 # ── Query Deployments ────────────────────────────────────────────
 
 get_deployments() {
-    local org="$1" project="$2" token="$3" release_info="$4"
-    local rel_def_id
-    rel_def_id=$(echo "$release_info" | jq -r '.release_def_id')
-    local cache_file="$CACHE_DIR/deploy_${org}_${project}_${rel_def_id}.json"
+    local org="$1" project="$2" pat="$3" env_info="$4"
+    local repo_hash
+    repo_hash=$(echo "$env_info" | jq -r '.environments | map(.env_id|tostring) | join("_")' 2>/dev/null)
+    local cache_file="$CACHE_DIR/deploy_${org}_${project}_${repo_hash}.json"
     local now
     now=$(date +%s)
 
@@ -176,13 +187,14 @@ get_deployments() {
     log "deployments: fetching from API..."
     local result="[]"
     while IFS= read -r env; do
-        local env_id env_name
-        env_id=$(echo "$env" | jq -r '.id')
+        local env_id env_name def_id
+        env_id=$(echo "$env" | jq -r '.env_id')
         env_name=$(echo "$env" | jq -r '.name')
+        def_id=$(echo "$env" | jq -r '.def_id')
 
         local deploy_data branch
-        deploy_data=$(curl -sf -H "Authorization: Bearer $token" \
-            "https://vsrm.dev.azure.com/$org/$project/_apis/release/deployments?definitionId=$rel_def_id&definitionEnvironmentId=$env_id&deploymentStatus=succeeded&\$top=1&api-version=7.1")
+        deploy_data=$(curl -sf -u ":$pat" \
+            "https://vsrm.dev.azure.com/$org/$project/_apis/release/deployments?definitionId=$def_id&definitionEnvironmentId=$env_id&deploymentStatus=succeeded&\$top=1&api-version=7.1")
 
         branch=$(echo "$deploy_data" | jq -r '.value[0].release.artifacts[0].definitionReference.branch.name // empty' 2>/dev/null)
 
@@ -196,7 +208,7 @@ get_deployments() {
         if [[ -n "$branch" ]]; then
             result=$(echo "$result" | jq --arg n "$env_name" --arg b "$branch" '. + [{name: $n, branch: $b}]')
         fi
-    done < <(echo "$release_info" | jq -c '.environments[]')
+    done < <(echo "$env_info" | jq -c '.environments[]')
 
     local output
     output=$(jq -n --argjson envs "$result" --argjson now "$now" '{environments: $envs, cached_at: $now}')
@@ -258,24 +270,24 @@ main() {
     read -r org project repo_name <<< "$parsed"
     log "devops: org=$org project=$project repo=$repo_name"
 
-    local token
-    if ! token=$(get_token); then
-        log "ERROR: failed to get Azure token"
+    local pat
+    if ! pat=$(get_pat); then
+        log "ERROR: failed to get PAT from keyring"
         empty_output
         return
     fi
-    log "token: ok (cached or fresh)"
+    log "auth: ok"
 
-    local release_info
-    if ! release_info=$(discover_release_def "$org" "$project" "$repo_name" "$token"); then
+    local env_info
+    if ! env_info=$(discover_environments "$org" "$project" "$repo_name" "$pat"); then
         log "no release definition found for $repo_name"
         empty_output
         return
     fi
-    log "release def: $(echo "$release_info" | jq -r '.release_def_name') (id=$(echo "$release_info" | jq -r '.release_def_id'))"
+    log "environments: $(echo "$env_info" | jq -c '[.environments[] | .name]')"
 
     local deployments
-    deployments=$(get_deployments "$org" "$project" "$token" "$release_info")
+    deployments=$(get_deployments "$org" "$project" "$pat" "$env_info")
 
     local text="" tooltip=""
     while IFS= read -r env; do
