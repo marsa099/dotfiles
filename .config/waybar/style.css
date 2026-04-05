@@ -14,10 +14,34 @@ window#waybar {
 
 /* Left side modules */
 .modules-left {
+  background: transparent;
+  margin: 8px;
+  padding: 0;
+}
+
+#hardware {
   background: alpha(#1B1B1B, 0.85);
   border-radius: 8px;
-  margin: 8px;
   padding: 0px 8px;
+}
+
+#custom-devops {
+  background: alpha(#1B1B1B, 0.85);
+  border-radius: 8px;
+  padding: 6px 12px;
+  margin-left: 12px;
+  font-size: 14px;
+}
+
+#custom-devops.empty {
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+#custom-devops.stale {
+  opacity: 0.5;
 }
 
 #cpu,

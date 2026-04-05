@@ -1,0 +1,304 @@
+#!/usr/bin/env bash
+# waybar-devops - Waybar module showing Azure DevOps deployment status
+#
+# Detects the focused terminal's working directory (tmux or bare terminal via
+# niri IPC), checks if it's inside a git repo with an Azure DevOps remote, and
+# queries the Azure DevOps Releases API for the latest successful deployment
+# per environment (e.g. Test, Prod).
+#
+# Mapping: git remote URL -> org/project/repo -> build definition -> release
+# definition -> environments -> latest deployment branch per environment.
+#
+# Auth: Uses `az account get-access-token` (requires `az login` session).
+# Cache: ~/.cache/waybar-devops/ (discovery 1h, deployments 60s)
+# Log:   ~/.cache/waybar-devops/waybar-devops.log
+
+CACHE_DIR="$HOME/.cache/waybar-devops"
+STATE_FILE="$CACHE_DIR/state.json"
+LOG_FILE="$CACHE_DIR/waybar-devops.log"
+DEPLOY_TTL=60
+DISCOVERY_TTL=3600
+STALE_TIMEOUT=10
+# Well-known public resource ID for Azure DevOps (Microsoft-documented constant)
+# https://learn.microsoft.com/en-us/azure/devops/integrate/get-started/authentication/oauth?view=azure-devops#scopes
+AZDO_RESOURCE_ID="499b84ac-1321-427f-aa17-267ca6975798"
+LOG_MAX_LINES=500
+
+mkdir -p "$CACHE_DIR"
+
+log() {
+    echo "$(date '+%H:%M:%S') $*" >> "$LOG_FILE"
+    # Trim log if too long
+    if [[ -f "$LOG_FILE" ]] && (( $(wc -l < "$LOG_FILE") > LOG_MAX_LINES )); then
+        tail -n $((LOG_MAX_LINES / 2)) "$LOG_FILE" > "$LOG_FILE.tmp" && mv "$LOG_FILE.tmp" "$LOG_FILE"
+    fi
+}
+
+empty_output() {
+    echo '{"text":"","tooltip":"","class":"empty"}'
+}
+
+# ── CWD Detection ──────────────────────────────────────────────
+
+get_cwd() {
+    local win_info app_id term_pid
+    win_info=$(niri msg --json focused-window 2>/dev/null)
+
+    if [[ -n "$win_info" ]]; then
+        app_id=$(echo "$win_info" | jq -r '.app_id // empty')
+        term_pid=$(echo "$win_info" | jq -r '.pid // empty')
+
+        # Only proceed for terminal emulators
+        case "$app_id" in
+            ghostty|foot|kitty|alacritty|wezterm|com.mitchellh.ghostty) ;;
+            *) log "cwd: focused app '$app_id' is not a terminal, skipping"; return ;;
+        esac
+    fi
+
+    # Check if a tmux client is a descendant of the focused terminal
+    if command -v tmux &>/dev/null && tmux list-sessions &>/dev/null 2>&1; then
+        if [[ -n "$term_pid" ]]; then
+            while IFS=' ' read -r cpid sname; do
+                local p="$cpid"
+                while [[ -n "$p" && "$p" != "1" && "$p" != "0" ]]; do
+                    if [[ "$p" == "$term_pid" ]]; then
+                        local cwd
+                        cwd=$(tmux display-message -t "$sname" -p '#{pane_current_path}' 2>/dev/null)
+                        [[ -n "$cwd" ]] && echo "$cwd" && return
+                        break
+                    fi
+                    p=$(awk '/^PPid:/{print $2}' "/proc/$p/status" 2>/dev/null)
+                    [[ -z "$p" ]] && break
+                done
+            done < <(tmux list-clients -F '#{client_pid} #{session_name}' 2>/dev/null)
+        else
+            # No niri info available, fall back to any attached tmux session
+            local cwd
+            cwd=$(tmux list-panes -a -F '#{session_attached} #{window_active} #{pane_active} #{pane_current_path}' 2>/dev/null |
+                  awk '$1=="1" && $2=="1" && $3=="1" {print $4; exit}')
+            [[ -n "$cwd" ]] && echo "$cwd" && return
+        fi
+    fi
+
+    # Bare terminal - find shell CWD via /proc
+    if [[ -n "$term_pid" ]]; then
+        local shell_pid
+        shell_pid=$(pgrep -oP "$term_pid" 2>/dev/null)
+        [[ -n "$shell_pid" ]] && readlink "/proc/$shell_pid/cwd" 2>/dev/null
+    fi
+}
+
+# ── Git Remote Parsing ──────────────────────────────────────────
+
+parse_devops_remote() {
+    local url="$1"
+    local org project repo
+    # SSH: git@ssh.dev.azure.com:v3/{org}/{project}/{repo}
+    if [[ "$url" =~ git@ssh\.dev\.azure\.com:v3/([^/]+)/([^/]+)/([^/[:space:]]+) ]]; then
+        org="${BASH_REMATCH[1]}" project="${BASH_REMATCH[2]}" repo="${BASH_REMATCH[3]}"
+    # HTTPS: https://{org}@dev.azure.com/{org}/{project}/_git/{repo}
+    elif [[ "$url" =~ dev\.azure\.com/([^/]+)/([^/]+)/_git/([^/[:space:]]+) ]]; then
+        org="${BASH_REMATCH[1]}" project="${BASH_REMATCH[2]}" repo="${BASH_REMATCH[3]}"
+    else
+        return 1
+    fi
+    echo "${org} ${project} ${repo%.git}"
+}
+
+# ── Azure DevOps Token ──────────────────────────────────────────
+
+get_token() {
+    az account get-access-token --resource $AZDO_RESOURCE_ID --query accessToken -o tsv 2>/dev/null || return 1
+}
+
+# ── Release Definition Discovery ────────────────────────────────
+
+discover_release_def() {
+    local org="$1" project="$2" repo_name="$3" token="$4"
+    local cache_file="$CACHE_DIR/discovery_${org}_${project}_${repo_name}.json"
+    local now
+    now=$(date +%s)
+
+    if [[ -f "$cache_file" ]]; then
+        local cached_at
+        cached_at=$(jq -r '.cached_at // 0' "$cache_file" 2>/dev/null)
+        if (( now - cached_at < DISCOVERY_TTL )); then
+            log "discovery: cache hit (age=$((now - cached_at))s)"
+            cat "$cache_file"
+            return
+        fi
+    fi
+
+    log "discovery: fetching from API..."
+    local release_defs
+    release_defs=$(curl -sf -H "Authorization: Bearer $token" \
+        "https://vsrm.dev.azure.com/$org/$project/_apis/release/definitions?\$expand=artifacts,environments&api-version=7.1") || return 1
+
+    local result
+    result=$(echo "$release_defs" | jq --arg repo "$repo_name" --argjson now "$now" '
+        [.value[] |
+         select(any(.artifacts[]?; .definitionReference.definition.name | ascii_downcase == ($repo | ascii_downcase)))] |
+        first // empty |
+        if . then {
+            release_def_id: .id,
+            release_def_name: .name,
+            environments: [.environments[] | {id: .id, name: .name}],
+            cached_at: $now
+        } else empty end
+    ' 2>/dev/null)
+
+    [[ -z "$result" ]] && return 1
+
+    echo "$result" > "$cache_file"
+    echo "$result"
+}
+
+# ── Query Deployments ────────────────────────────────────────────
+
+get_deployments() {
+    local org="$1" project="$2" token="$3" release_info="$4"
+    local rel_def_id
+    rel_def_id=$(echo "$release_info" | jq -r '.release_def_id')
+    local cache_file="$CACHE_DIR/deploy_${org}_${project}_${rel_def_id}.json"
+    local now
+    now=$(date +%s)
+
+    if [[ -f "$cache_file" ]]; then
+        local cached_at
+        cached_at=$(jq -r '.cached_at // 0' "$cache_file" 2>/dev/null)
+        if (( now - cached_at < DEPLOY_TTL )); then
+            log "deployments: cache hit (age=$((now - cached_at))s)"
+            cat "$cache_file"
+            return
+        fi
+    fi
+
+    log "deployments: fetching from API..."
+    local result="[]"
+    while IFS= read -r env; do
+        local env_id env_name
+        env_id=$(echo "$env" | jq -r '.id')
+        env_name=$(echo "$env" | jq -r '.name')
+
+        local deploy_data branch
+        deploy_data=$(curl -sf -H "Authorization: Bearer $token" \
+            "https://vsrm.dev.azure.com/$org/$project/_apis/release/deployments?definitionId=$rel_def_id&definitionEnvironmentId=$env_id&deploymentStatus=succeeded&\$top=1&api-version=7.1")
+
+        branch=$(echo "$deploy_data" | jq -r '.value[0].release.artifacts[0].definitionReference.branch.name // empty' 2>/dev/null)
+
+        # Strip refs/heads/ and common prefixes
+        branch="${branch#refs/heads/}"
+        branch="${branch#release/}"
+        branch="${branch#feature/}"
+        branch="${branch#bugfix/}"
+        branch="${branch#hotfix/}"
+
+        if [[ -n "$branch" ]]; then
+            result=$(echo "$result" | jq --arg n "$env_name" --arg b "$branch" '. + [{name: $n, branch: $b}]')
+        fi
+    done < <(echo "$release_info" | jq -c '.environments[]')
+
+    local output
+    output=$(jq -n --argjson envs "$result" --argjson now "$now" '{environments: $envs, cached_at: $now}')
+    echo "$output" > "$cache_file"
+    echo "$output"
+}
+
+# ── State Management ─────────────────────────────────────────────
+
+save_state() {
+    jq -n --arg text "$1" --arg tooltip "$2" --argjson t "$(date +%s)" \
+        '{text: $text, tooltip: $tooltip, last_seen: $t}' > "$STATE_FILE"
+}
+
+check_stale_state() {
+    [[ -f "$STATE_FILE" ]] || return 1
+    local last_seen text
+    last_seen=$(jq -r '.last_seen // 0' "$STATE_FILE" 2>/dev/null)
+    text=$(jq -r '.text // empty' "$STATE_FILE" 2>/dev/null)
+    [[ -z "$text" ]] && return 1
+    (( $(date +%s) - last_seen >= STALE_TIMEOUT )) && return 1
+    cat "$STATE_FILE"
+}
+
+# ── Main ─────────────────────────────────────────────────────────
+
+main() {
+    local cwd
+    cwd=$(get_cwd)
+    log "cwd: $cwd"
+
+    local git_root=""
+    if [[ -n "$cwd" ]]; then
+        git_root=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null)
+    fi
+
+    if [[ -z "$git_root" ]]; then
+        local stale
+        if stale=$(check_stale_state); then
+            log "not in git repo, showing stale state"
+            echo "$stale" | jq -c '{text: .text, tooltip: .tooltip, class: "stale"}'
+        else
+            log "not in git repo, empty"
+            empty_output
+        fi
+        return
+    fi
+
+    local remote_url
+    remote_url=$(git -C "$git_root" remote get-url origin 2>/dev/null)
+    local parsed
+    if ! parsed=$(parse_devops_remote "$remote_url"); then
+        log "remote '$remote_url' is not Azure DevOps"
+        empty_output
+        return
+    fi
+
+    local org project repo_name
+    read -r org project repo_name <<< "$parsed"
+    log "devops: org=$org project=$project repo=$repo_name"
+
+    local token
+    if ! token=$(get_token); then
+        log "ERROR: failed to get Azure token"
+        empty_output
+        return
+    fi
+    log "token: ok (cached or fresh)"
+
+    local release_info
+    if ! release_info=$(discover_release_def "$org" "$project" "$repo_name" "$token"); then
+        log "no release definition found for $repo_name"
+        empty_output
+        return
+    fi
+    log "release def: $(echo "$release_info" | jq -r '.release_def_name') (id=$(echo "$release_info" | jq -r '.release_def_id'))"
+
+    local deployments
+    deployments=$(get_deployments "$org" "$project" "$token" "$release_info")
+
+    local text="" tooltip=""
+    while IFS= read -r env; do
+        local name branch
+        name=$(echo "$env" | jq -r '.name')
+        branch=$(echo "$env" | jq -r '.branch')
+
+        [[ -n "$text" ]] && text+="  "
+        text+="● ${name}: ${branch}"
+
+        [[ -n "$tooltip" ]] && tooltip+="\n"
+        tooltip+="${name}: ${branch}"
+    done < <(echo "$deployments" | jq -c '.environments[]' 2>/dev/null)
+
+    if [[ -z "$text" ]]; then
+        log "no deployment data found"
+        empty_output
+        return
+    fi
+
+    log "output: $text"
+    save_state "$text" "$tooltip"
+    jq -cn --arg text "$text" --arg tooltip "$tooltip" '{text: $text, tooltip: $tooltip, class: "active"}'
+}
+
+main
