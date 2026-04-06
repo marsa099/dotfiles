@@ -1,0 +1,47 @@
+{
+  "effortLevel": "high",
+  "hooks": {
+    "PermissionRequest": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.config/claude/hooks/permission-save-tool.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "PANE=\"${TMUX_PANE#%}\"; [ -f \"/tmp/claude-permissions/$PANE\" ] && dunstify '' --stack-tag \"claude-perm-$PANE\" -t 1 2>/dev/null; rm -f \"/tmp/claude-permissions/$PANE\" \"/tmp/claude-permissions/tool-info-${PANE}.json\""
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "permission_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.config/claude/hooks/notification-hook.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "idle_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.config/claude/hooks/notification-hook.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
