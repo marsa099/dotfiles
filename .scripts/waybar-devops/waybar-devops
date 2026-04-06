@@ -154,6 +154,12 @@ discover_environments() {
         group_by(.name) |
         map(sort_by(if .is_final then 0 else 1 end, .def_id) | first |
             del(.is_final)) |
+        sort_by(.name | ascii_downcase |
+          if startswith("dev") then 0
+          elif startswith("test") then 1
+          elif startswith("stag") then 2
+          elif startswith("prod") then 3
+          else 4 end) |
         if length > 0 then {environments: ., cached_at: $now}
         else empty end
     ' 2>/dev/null)
@@ -295,8 +301,9 @@ main() {
         name=$(echo "$env" | jq -r '.name')
         branch=$(echo "$env" | jq -r '.branch')
 
-        [[ -n "$text" ]] && text+="  "
-        text+="● ${name}: ${branch}"
+        local initial="${name:0:1}"
+        [[ -n "$text" ]] && text+="    "
+        text+="${initial}: ${branch}"
 
         [[ -n "$tooltip" ]] && tooltip+="\n"
         tooltip+="${name}: ${branch}"

@@ -30,7 +30,7 @@ window#waybar {
   border-radius: 8px;
   padding: 6px 12px;
   margin-left: 12px;
-  font-size: 14px;
+  font-weight: bold;
 }
 
 #custom-devops.empty {
