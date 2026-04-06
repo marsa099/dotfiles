@@ -24,7 +24,8 @@ echo "$(ts) [notification] type=$TYPE" >> "$LOG"
 
 # Extract tool details saved by PermissionRequest hook, fallback to transcript
 get_tool_info() {
-    local info_file="/tmp/claude-permission-tool-info.json"
+    local pane_num="${TMUX_PANE#%}"
+    local info_file="/tmp/claude-permissions/tool-info-${pane_num}.json"
     if [ -f "$info_file" ]; then
         local tool_name
         tool_name=$(jq -r '.tool_name // empty' "$info_file" 2>/dev/null)
@@ -89,12 +90,20 @@ if [ "$TYPE" = "permission_prompt" ]; then
     PANE="$TMUX_PANE"
     PANE_NUM="${TMUX_PANE#%}"
     SESSION=$(tmux display-message -p '#{session_name}' 2>/dev/null)
-    LABEL="${SESSION:-claude}"
+    WINDOW_NAME=$(tmux display-message -t "$PANE" -p '#{window_name}' 2>/dev/null)
+    WINDOW_IDX=$(tmux display-message -t "$PANE" -p '#{window_index}' 2>/dev/null)
+    LABEL="${SESSION:-claude}:${WINDOW_IDX}"
+
+    # Detect prompt type: Yes/No vs Allow/Always Allow/Deny
+    PROMPT_TYPE="permission"
+    if echo "$MESSAGE" | grep -qi "Do you want to proceed"; then
+        PROMPT_TYPE="yesno"
+    fi
 
     # Save per-instance state file
     if [ -n "$TMUX" ] && [ -n "$PANE_NUM" ]; then
-        printf 'pane=%s\nsession=%s\nlabel=%s\n' "$PANE" "$SESSION" "$LABEL" > "$STATE_DIR/$PANE_NUM"
-        echo "$(ts) [notification] saved state: pane=$PANE session=$SESSION" >> "$LOG"
+        printf 'pane=%s\nsession=%s\nlabel=%s\nprompt_type=%s\n' "$PANE" "$SESSION" "$LABEL" "$PROMPT_TYPE" > "$STATE_DIR/$PANE_NUM"
+        echo "$(ts) [notification] saved state: pane=$PANE session=$SESSION prompt_type=$PROMPT_TYPE" >> "$LOG"
     fi
 
     # Extract tool details
@@ -123,7 +132,11 @@ if [ "$TYPE" = "permission_prompt" ]; then
         BODY="$BODY\n${truncated}"
     fi
 
-    BODY="$BODY\n\nAllow <b>(Ctrl+Super+Y)</b>\nAlways Allow <b>(Ctrl+Super+A)</b>\nDeny <b>(Ctrl+Super+N)</b>\nGo to <b>(Ctrl+Super+P)</b>"
+    if [ "$PROMPT_TYPE" = "yesno" ]; then
+        BODY="$BODY\n\nYes <b>(Ctrl+Super+Y)</b>\nNo <b>(Ctrl+Super+N)</b>\nGo to <b>(Ctrl+Super+P)</b>"
+    else
+        BODY="$BODY\n\nAllow <b>(Ctrl+Super+Y)</b>\nAlways Allow <b>(Ctrl+Super+A)</b>\nDeny <b>(Ctrl+Super+N)</b>\nGo to <b>(Ctrl+Super+P)</b>"
+    fi
 
     echo "$(ts) [notification] permission: tool=$TOOL_NAME cmd=\"$TOOL_CMD\" file=\"$TOOL_FILE\" desc=\"$TOOL_DESC\" pending=$PENDING" >> "$LOG"
 

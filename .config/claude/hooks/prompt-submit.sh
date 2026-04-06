@@ -11,7 +11,7 @@ echo "$(date '+%Y-%m-%dT%H:%M:%S.%3N') [submit] Prompt submitted" >> "$LOG"
 
 # Clean up any pending permission state for this pane
 if [ -n "$PANE_NUM" ]; then
-    rm -f "$STATE_DIR/$PANE_NUM"
+    rm -f "$STATE_DIR/$PANE_NUM" "$STATE_DIR/tool-info-${PANE_NUM}.json"
     dunstify "" --stack-tag "claude-perm-$PANE_NUM" -t 1 2>/dev/null
 fi
 
