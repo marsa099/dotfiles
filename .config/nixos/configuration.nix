@@ -117,6 +117,9 @@
   hardware.bluetooth.enable = true;
   services.blueman.enable = true;
 
+  # Battery monitoring (required by waybar battery module)
+  services.upower.enable = true;
+
   # List packages installed in system profile.
   # You can use https://search.nixos.org/ to find more packages (and options).
   environment.systemPackages = with pkgs; [
@@ -160,6 +163,7 @@
     terraform
     spotify-player
     wtype # To be able to send keystrokes to a terminal from dunst notification for claude notifications
+    google-chrome
   ];
 
   # Some programs need SUID wrappers, can be configured further or are

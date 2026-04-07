@@ -5,6 +5,12 @@
 # If not running interactively, don't do anything
 [[ $- != *i* ]] && return
 
+# Niri creates a new socket file each time it starts, but old shells (like tmux
+# sessions) remember the old socket path. This grabs the current one so commands
+# like "niri msg action spawn" always work, even in old terminals.
+NIRI_SOCKET=$(ls /run/user/${UID}/niri*.sock 2>/dev/null | head -1)
+[[ -n "$NIRI_SOCKET" ]] && export NIRI_SOCKET
+
 # Make sure ^[[200~ is not a part of the paste output from the clipboard
 bind 'set enable-bracketed-paste off'
 
