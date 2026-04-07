@@ -44,6 +44,10 @@ window#waybar {
   opacity: 0.5;
 }
 
+#custom-devops.building {
+  color: #f9e2af;
+}
+
 #cpu,
 #memory {
   padding: 6px 12px;

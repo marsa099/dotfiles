@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-# waybar-devops - Waybar module showing Azure DevOps deployment status
+# waybar-devops - Waybar module showing Azure DevOps build & deployment status
 #
 # Detects the focused terminal's working directory (tmux or bare terminal via
 # niri IPC), checks if it's inside a git repo with an Azure DevOps remote, and
-# queries the Azure DevOps Releases API for the latest successful deployment
-# per environment (e.g. Test, Prod).
+# shows either active build progress or the latest deployments per environment.
 #
-# Mapping: git remote URL -> org/project/repo -> build definition -> release
-# definition -> environments -> latest deployment branch per environment.
+# Priority: active builds > deployed versions
+# Build:  "Building (3/6: Test) - 1m 23s" with stage breakdown tooltip
+# Deploy: "T: test  P: 1.10.0" with env/branch tooltip
 #
 # Auth: PAT from system keyring via secret-tool (service=azure-devops, scope=release-read).
-# Cache: ~/.cache/waybar-devops/ (discovery 1h, deployments 60s)
+# Cache: ~/.cache/waybar-devops/ (discovery 1h, deployments 60s, builds 10s)
 # Log:   ~/.cache/waybar-devops/waybar-devops.log
 
 CACHE_DIR="$HOME/.cache/waybar-devops"
@@ -18,6 +18,7 @@ STATE_FILE="$CACHE_DIR/state.json"
 LOG_FILE="$CACHE_DIR/waybar-devops.log"
 DEPLOY_TTL=60
 DISCOVERY_TTL=3600
+BUILD_TTL=10
 STALE_TIMEOUT=10
 LOG_MAX_LINES=500
 
@@ -105,7 +106,7 @@ parse_devops_remote() {
 # ── Azure DevOps Auth ──────────────────────────────────────────
 
 get_pat() {
-    secret-tool lookup service azure-devops type pat scope release-read 2>/dev/null || return 1
+    secret-tool lookup service azure-devops type pat 2>/dev/null || return 1
 }
 
 # ── Release Definition Discovery ────────────────────────────────
@@ -222,6 +223,133 @@ get_deployments() {
     echo "$output"
 }
 
+# ── Build Status ─────────────────────────────────────────────────
+
+get_repo_guid() {
+    local org="$1" project="$2" repo_name="$3" pat="$4"
+    local cache_file="$CACHE_DIR/repoguid_${org}_${project}_${repo_name}.txt"
+    local now
+    now=$(date +%s)
+
+    if [[ -f "$cache_file" ]]; then
+        local cached_at guid
+        read -r cached_at guid < "$cache_file"
+        if (( now - cached_at < DISCOVERY_TTL )); then
+            echo "$guid"
+            return
+        fi
+    fi
+
+    log "build: resolving repo GUID for $repo_name..."
+    local repo_info http_code
+    repo_info=$(curl -s -u ":$pat" -w '\n%{http_code}' \
+        "https://dev.azure.com/$org/$project/_apis/git/repositories/$repo_name?api-version=7.1")
+    http_code=$(echo "$repo_info" | tail -1)
+    repo_info=$(echo "$repo_info" | sed '$d')
+    log "build: repo lookup http=$http_code"
+    [[ "$http_code" != 2* ]] && { log "build: repo lookup error: $(echo "$repo_info" | head -c 200)"; return 1; }
+
+    local guid
+    guid=$(echo "$repo_info" | jq -r '.id // empty' 2>/dev/null)
+    [[ -z "$guid" ]] && return 1
+
+    echo "$now $guid" > "$cache_file"
+    log "build: resolved repo GUID=$guid"
+    echo "$guid"
+}
+
+get_active_build() {
+    local org="$1" project="$2" repo_name="$3" pat="$4"
+    local cache_file="$CACHE_DIR/build_${org}_${project}_${repo_name}.json"
+    local now
+    now=$(date +%s)
+
+    if [[ -f "$cache_file" ]]; then
+        local cached_at
+        cached_at=$(jq -r '.cached_at // 0' "$cache_file" 2>/dev/null)
+        if (( now - cached_at < BUILD_TTL )); then
+            log "build: cache hit (age=$((now - cached_at))s)"
+            cat "$cache_file"
+            return
+        fi
+    fi
+
+    local repo_guid
+    repo_guid=$(get_repo_guid "$org" "$project" "$repo_name" "$pat") || return 1
+
+    log "build: fetching from API..."
+    local builds
+    builds=$(curl -sf -u ":$pat" \
+        "https://dev.azure.com/$org/$project/_apis/build/builds?repositoryId=$repo_guid&repositoryType=TfsGit&statusFilter=inProgress&\$top=1&api-version=7.1") || return 1
+
+    local result
+    result=$(echo "$builds" | jq --argjson now "$now" '
+        if (.count // 0) > 0 then
+            .value[0] | {
+                id: .id,
+                build_number: .buildNumber,
+                start_time: .startTime,
+                source_branch: (.sourceBranch // "" | sub("^refs/heads/"; "") | sub("^release/"; "") | sub("^feature/"; "") | sub("^bugfix/"; "") | sub("^hotfix/"; "")),
+                cached_at: $now
+            }
+        else
+            {active: false, cached_at: $now}
+        end
+    ' 2>/dev/null)
+
+    [[ -z "$result" ]] && return 1
+    echo "$result" > "$cache_file"
+    echo "$result"
+}
+
+get_build_progress() {
+    local org="$1" project="$2" build_id="$3" pat="$4" start_time="$5"
+    local timeline
+    timeline=$(curl -sf -u ":$pat" \
+        "https://dev.azure.com/$org/$project/_apis/build/builds/$build_id/timeline?api-version=7.1") || return 1
+
+    local now
+    now=$(date +%s)
+
+    # Parse start_time (ISO 8601) to epoch
+    local start_epoch elapsed
+    start_epoch=$(date -d "$start_time" +%s 2>/dev/null)
+    elapsed=$((now - start_epoch))
+    local elapsed_min=$((elapsed / 60))
+    local elapsed_sec=$((elapsed % 60))
+    local elapsed_fmt
+    if (( elapsed_min > 0 )); then
+        elapsed_fmt="${elapsed_min}m ${elapsed_sec}s"
+    else
+        elapsed_fmt="${elapsed_sec}s"
+    fi
+
+    # Extract stage info and build output as JSON
+    echo "$timeline" | jq --arg elapsed "$elapsed_fmt" '
+        [.records[] | select(.type == "Stage") | {
+            name: .name,
+            state: .state,
+            result: (.result // ""),
+            order: .order
+        }] | sort_by(.order) |
+        . as $stages |
+        ($stages | length) as $total |
+        ([.[] | select(.state == "completed")] | length) as $completed |
+        ([.[] | select(.state == "inProgress")][0].name // "...") as $current |
+        {
+            stage_progress: "\($completed + 1)/\($total)",
+            current_stage: $current,
+            elapsed: $elapsed,
+            tooltip_stages: ([.[] |
+                (if .state == "completed" then
+                    (if .result == "succeeded" then "✓" else "✗" end)
+                elif .state == "inProgress" then "→"
+                else "·" end) + " " + .name
+            ] | join("\\n"))
+        }
+    ' 2>/dev/null
+}
+
 # ── State Management ─────────────────────────────────────────────
 
 save_state() {
@@ -283,6 +411,39 @@ main() {
         return
     fi
     log "auth: ok"
+
+    # Check for active builds first (takes precedence over deployments)
+    local build_info
+    if build_info=$(get_active_build "$org" "$project" "$repo_name" "$pat"); then
+        local has_build
+        has_build=$(echo "$build_info" | jq -r '.id // empty')
+        if [[ -n "$has_build" ]]; then
+            local build_id start_time build_number source_branch
+            build_id=$(echo "$build_info" | jq -r '.id')
+            start_time=$(echo "$build_info" | jq -r '.start_time')
+            build_number=$(echo "$build_info" | jq -r '.build_number')
+            source_branch=$(echo "$build_info" | jq -r '.source_branch')
+
+            local progress
+            progress=$(get_build_progress "$org" "$project" "$build_id" "$pat" "$start_time")
+
+            if [[ -n "$progress" ]]; then
+                local stage_progress current_stage elapsed_fmt tooltip_stages
+                stage_progress=$(echo "$progress" | jq -r '.stage_progress')
+                current_stage=$(echo "$progress" | jq -r '.current_stage')
+                elapsed_fmt=$(echo "$progress" | jq -r '.elapsed')
+                tooltip_stages=$(echo "$progress" | jq -r '.tooltip_stages')
+
+                local text="Building (${stage_progress}: ${current_stage}) - ${elapsed_fmt}"
+                local tooltip="Build #${build_number} - ${source_branch}\n${tooltip_stages}"
+
+                log "output (build): $text"
+                save_state "$text" "$tooltip"
+                jq -cn --arg text "$text" --arg tooltip "$tooltip" '{text: $text, tooltip: $tooltip, class: "building"}'
+                return
+            fi
+        fi
+    fi
 
     local env_info
     if ! env_info=$(discover_environments "$org" "$project" "$repo_name" "$pat"); then
