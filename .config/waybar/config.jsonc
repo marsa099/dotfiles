@@ -166,7 +166,7 @@
    "custom/devops": {
         "exec": "~/.scripts/waybar-devops/waybar-devops",
         "return-type": "json",
-        "interval": 5,
+        "interval": 1,
         "tooltip": true
    },
    "custom/cpu-temp": {

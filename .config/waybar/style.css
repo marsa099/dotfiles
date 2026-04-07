@@ -48,6 +48,22 @@ window#waybar {
   color: #f9e2af;
 }
 
+#custom-devops.build-failed {
+  color: #f38ba8;
+}
+
+#custom-devops.build-succeeded {
+  color: #a6e3a1;
+}
+
+#custom-devops.releasing {
+  color: #f9e2af;
+}
+
+#custom-devops.release-done {
+  color: #a6e3a1;
+}
+
 #cpu,
 #memory {
   padding: 6px 12px;
