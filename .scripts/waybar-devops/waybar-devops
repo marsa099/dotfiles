@@ -489,8 +489,8 @@ handle_lifecycle() {
 
                 if [[ "$build_result" == "succeeded" ]]; then
                     log "lifecycle: build succeeded"
-                    save_lifecycle "$(echo "$lc" | jq --argjson now "$now" \
-                        '.state = "build_succeeded" | .result = "succeeded" | .completed_at = $now')"
+                    save_lifecycle "$(echo "$lc" | jq --argjson now "$now" --arg be "$elapsed_fmt" \
+                        '.state = "build_succeeded" | .result = "succeeded" | .completed_at = $now | .build_elapsed = $be')"
                     local text="${repo_dir}: ✓ Build Succeeded - ${elapsed_fmt}"
                     local tooltip="Build #${build_number} - ${source_branch}\nSucceeded"
                     save_state "$text" "$tooltip"
@@ -509,8 +509,8 @@ handle_lifecycle() {
                             first | .name // "Unknown"')
                     fi
                     log "lifecycle: build failed at $failed_stage"
-                    save_lifecycle "$(echo "$lc" | jq --argjson now "$now" --arg fs "$failed_stage" \
-                        '.state = "build_failed" | .result = "failed" | .completed_at = $now | .failed_stage = $fs')"
+                    save_lifecycle "$(echo "$lc" | jq --argjson now "$now" --arg fs "$failed_stage" --arg be "$elapsed_fmt" \
+                        '.state = "build_failed" | .result = "failed" | .completed_at = $now | .failed_stage = $fs | .build_elapsed = $be')"
                     local text="${repo_dir}: ✗ Build Failed (${failed_stage}) - ${elapsed_fmt}"
                     local tooltip="Build #${build_number} - ${source_branch}\nFailed at: ${failed_stage}"
                     save_state "$text" "$tooltip"
@@ -556,10 +556,10 @@ handle_lifecycle() {
                 clear_lifecycle
                 return 1
             fi
-            local failed_stage elapsed_fmt
+            local failed_stage build_elapsed
             failed_stage=$(echo "$lc" | jq -r '.failed_stage // "Unknown"')
-            elapsed_fmt=$(format_elapsed "$started_at")
-            local text="${repo_dir}: ✗ Build Failed (${failed_stage}) - ${elapsed_fmt}"
+            build_elapsed=$(echo "$lc" | jq -r '.build_elapsed // "?"')
+            local text="${repo_dir}: ✗ Build Failed (${failed_stage}) - ${build_elapsed}"
             local tooltip="Build #${build_number} - ${source_branch}\nFailed at: ${failed_stage}"
             save_state "$text" "$tooltip"
             jq -cn --arg t "$text" --arg tt "$tooltip" \
@@ -606,9 +606,9 @@ handle_lifecycle() {
             fi
 
             # No release found yet, keep showing build succeeded
-            local elapsed_fmt
-            elapsed_fmt=$(format_elapsed "$started_at")
-            local text="${repo_dir}: ✓ Build Succeeded - ${elapsed_fmt}"
+            local build_elapsed
+            build_elapsed=$(echo "$lc" | jq -r '.build_elapsed // "?"')
+            local text="${repo_dir}: ✓ Build Succeeded - ${build_elapsed}"
             local tooltip="Build #${build_number} - ${source_branch}\nSucceeded"
             save_state "$text" "$tooltip"
             jq -cn --arg t "$text" --arg tt "$tooltip" \
@@ -661,18 +661,29 @@ handle_lifecycle() {
                     )] | length > 0')
             fi
 
+            local release_started_at release_elapsed release_min release_sec release_elapsed_fmt
+            release_started_at=$(echo "$lc" | jq -r '.release_started_at // 0')
+            release_elapsed=$(( now - release_started_at ))
+            release_min=$((release_elapsed / 60))
+            release_sec=$((release_elapsed % 60))
+            if (( release_min > 0 )); then
+                release_elapsed_fmt="${release_min}m ${release_sec}s"
+            else
+                release_elapsed_fmt="${release_sec}s"
+            fi
+
             local release_result text
             if [[ "$release_succeeded" == "true" ]]; then
                 release_result="succeeded"
-                text="${repo_dir}: ✓ Released ${source_branch} to ${release_env}"
+                text="${repo_dir}: ✓ Released ${source_branch} to ${release_env} - ${release_elapsed_fmt}"
             else
                 release_result="failed"
-                text="${repo_dir}: ✗ Release Failed (${release_env})"
+                text="${repo_dir}: ✗ Release Failed (${release_env}) - ${release_elapsed_fmt}"
             fi
             local tooltip="Build #${build_number} - ${source_branch}\nRelease to ${release_env}: ${release_result}"
             log "lifecycle: release $release_result"
-            save_lifecycle "$(echo "$lc" | jq --argjson now "$now" --arg rr "$release_result" \
-                '.state = "release_done" | .release_completed_at = $now | .release_result = $rr')"
+            save_lifecycle "$(echo "$lc" | jq --argjson now "$now" --arg rr "$release_result" --arg re "$release_elapsed_fmt" \
+                '.state = "release_done" | .release_completed_at = $now | .release_result = $rr | .release_elapsed = $re')"
             save_state "$text" "$tooltip"
             jq -cn --arg t "$text" --arg tt "$tooltip" \
                 '{text: $t, tooltip: $tt, class: "release-done"}'
@@ -691,11 +702,12 @@ handle_lifecycle() {
             release_env=$(echo "$lc" | jq -r '.release_env')
             release_result=$(echo "$lc" | jq -r '.release_result // "unknown"')
 
-            local text tooltip
+            local release_elapsed text tooltip
+            release_elapsed=$(echo "$lc" | jq -r '.release_elapsed // "?"')
             if [[ "$release_result" == "succeeded" ]]; then
-                text="${repo_dir}: ✓ Released ${source_branch} to ${release_env}"
+                text="${repo_dir}: ✓ Released ${source_branch} to ${release_env} - ${release_elapsed}"
             else
-                text="${repo_dir}: ✗ Release Failed (${release_env})"
+                text="${repo_dir}: ✗ Release Failed (${release_env}) - ${release_elapsed}"
             fi
             tooltip="Build #${build_number} - ${source_branch}\nRelease to ${release_env}: ${release_result}"
             save_state "$text" "$tooltip"
