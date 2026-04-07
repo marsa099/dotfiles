@@ -146,7 +146,7 @@
     fd # fast file finder used by telescope.nvim
     unzip # needed by mason to extract packages
     cargo # needed by mason to build nil (Nix LSP)
-    nixfmt-rfc-style # formatter used by nil (Nix LSP)
+    nixfmt # formatter used by nil (Nix LSP)
     fzf # fuzzy finder used by nvim-bqf quickfix filtering
     television # fuzzy finder TUI
     bat # cat clone with syntax highlighting, used by television for previews
