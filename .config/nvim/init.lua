@@ -4,6 +4,7 @@ vim.g.maplocalleader = " "
 -- Load core options early
 require("config.options")
 require("config.keymaps")
+require("config.nuget-check")
 
 -- Bootstrap lazy.nvim
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
