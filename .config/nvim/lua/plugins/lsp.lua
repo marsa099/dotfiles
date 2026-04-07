@@ -75,7 +75,31 @@ return {
 			})
 
 			-- Configure Roslyn for C# (server lifecycle managed by roslyn.nvim)
+			-- NixOS workaround: Roslyn 5.6.0's BuildHost (dotnet/roslyn#79494) derives
+			-- the dotnet binary path via ../../dotnet relative to the MSBuild location.
+			-- On NixOS, MSBuildLocator 1.10.2 replaced libc realpath() with .NET's
+			-- File.ResolveLinkTarget() for symlink resolution, which can fail with
+			-- NixOS's Nix store symlink chains. We set DOTNET_HOST_PATH and explicit
+			-- MSBuild paths so the BuildHost can find the SDK without broken discovery.
+			local dotnet_cmd_env = nil
+			local dotnet_root = vim.env.DOTNET_ROOT
+			if dotnet_root then
+				local sdk_dir = vim.fs.joinpath(dotnet_root, "sdk")
+				for name, type in vim.fs.dir(sdk_dir) do
+					if type == "directory" and name:match("^%d") then
+						local sdk_base = vim.fs.joinpath(sdk_dir, name)
+						dotnet_cmd_env = {
+							DOTNET_ROOT = dotnet_root,
+							DOTNET_HOST_PATH = vim.fs.joinpath(dotnet_root, "dotnet"),
+							MSBUILD_EXE_PATH = vim.fs.joinpath(sdk_base, "MSBuild.dll"),
+							MSBuildSDKsPath = vim.fs.joinpath(sdk_base, "Sdks"),
+						}
+						break
+					end
+				end
+			end
 			vim.lsp.config("roslyn", {
+				cmd_env = dotnet_cmd_env,
 				settings = {
 					["csharp|background_analysis"] = {
 						dotnet_analyzer_diagnostics_scope = "openFiles",
@@ -105,6 +129,24 @@ return {
 					bicep = "bicep",
 					bicepparam = "bicep",
 				},
+			})
+
+			-- NixOS workaround: When Roslyn starts, files are briefly analyzed in a
+			-- "misc" workspace (before the real project loads), causing all usings to
+			-- appear unused. After the project finishes loading, we reload .cs buffers
+			-- so Roslyn re-analyzes them in the correct project context.
+			vim.api.nvim_create_autocmd("User", {
+				pattern = "RoslynInitialized",
+				group = vim.api.nvim_create_augroup("CSharpReloadAfterProjectInit", { clear = true }),
+				callback = function()
+					for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+						if vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].filetype == "cs" then
+							vim.api.nvim_buf_call(buf, function()
+								vim.cmd.edit()
+							end)
+						end
+					end
+				end,
 			})
 
 			-- Remove unused usings on save for C# via Roslyn's proprietary codeAction/resolve
