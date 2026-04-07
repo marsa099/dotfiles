@@ -1,7 +1,7 @@
-// US keyboard layout with Swedish characters on ; ' [ keys
-// ; → ö  : → Ö
-// ' → ä  " → Ä
-// [ → å  { → Å
+// US keyboard layout with Swedish characters on numpad 1/2/3 keys
+// KP_1 → å  Shift+KP_1 → Å
+// KP_2 → ä  Shift+KP_2 → Ä
+// KP_3 → ö  Shift+KP_3 → Ö
 
 default partial alphanumeric_keys
 xkb_symbols "basic" {
@@ -9,7 +9,7 @@ xkb_symbols "basic" {
     include "us(basic)"
     name[Group1] = "English (US, Swedish chars)";
 
-    key <AC10> { [ odiaeresis, Odiaeresis ] }; // ; → ö/Ö
-    key <AC11> { [ adiaeresis, Adiaeresis ] }; // ' → ä/Ä
-    key <AD11> { [ aring,      Aring      ] }; // [ → å/Å
+    key <KP1> { [ aring,      Aring      ] }; // KP_1 → å/Å
+    key <KP2> { [ adiaeresis, Adiaeresis ] }; // KP_2 → ä/Ä
+    key <KP3> { [ odiaeresis, Odiaeresis ] }; // KP_3 → ö/Ö
 };
