@@ -20,7 +20,7 @@ return {
 				group = vim.api.nvim_create_augroup("UserLspConfig", { clear = true }),
 				callback = function(ev)
 					local function map(mode, lhs, rhs, desc)
-						vim.keymap.set(mode, lhs, rhs, { buffer = ev.buf, desc = desc })
+						vim.keymap.set(mode, lhs, rhs, { buf = ev.buf, desc = desc })
 					end
 
 					-- Navigation
