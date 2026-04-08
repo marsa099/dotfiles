@@ -5,11 +5,15 @@
 # If not running interactively, don't do anything
 [[ $- != *i* ]] && return
 
-# Niri creates a new socket file each time it starts, but old shells (like tmux
-# sessions) remember the old socket path. This grabs the current one so commands
-# like "niri msg action spawn" always work, even in old terminals.
+# tmux's long-lived server keeps a stale NIRI_SOCKET when niri restarts.
+# Re-resolve the current socket and push it into tmux's global env so all
+# panes (new and existing after source) get the right path.
 NIRI_SOCKET=$(ls /run/user/${UID}/niri*.sock 2>/dev/null | head -1)
-[[ -n "$NIRI_SOCKET" ]] && export NIRI_SOCKET
+if [[ -n "$NIRI_SOCKET" ]]; then
+    export NIRI_SOCKET
+    # Push into tmux global env so new and existing panes pick it up
+    command -v tmux &>/dev/null && tmux set-environment -g NIRI_SOCKET "$NIRI_SOCKET" 2>/dev/null
+fi
 
 # Make sure ^[[200~ is not a part of the paste output from the clipboard
 bind 'set enable-bracketed-paste off'
