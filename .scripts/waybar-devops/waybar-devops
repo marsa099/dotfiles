@@ -110,8 +110,47 @@ parse_devops_remote() {
 
 # ── Azure DevOps Auth ──────────────────────────────────────────
 
+PAT_STATUS_FILE="$CACHE_DIR/pat_status"
+PAT_CHECK_TTL=300  # recheck expired PAT every 5 minutes
+
 get_pat() {
     secret-tool lookup service azure-devops type pat 2>/dev/null || return 1
+}
+
+pat_error_output() {
+    local msg="$1" tooltip="$2"
+    jq -cn --arg t "$msg" --arg tt "$tooltip" \
+        '{text: $t, tooltip: $tt, class: "pat-error"}'
+}
+
+# Check if PAT is known to be invalid (cached from a previous 401).
+# Returns 0 if OK to proceed, 1 if known invalid (prints waybar JSON).
+check_pat_cache() {
+    local pat="$1"
+    local now pat_hash
+    now=$(date +%s)
+    pat_hash=$(echo -n "$pat" | md5sum | cut -d' ' -f1)
+
+    if [[ -f "$PAT_STATUS_FILE" ]]; then
+        local cached_at cached_hash
+        read -r cached_at cached_hash < "$PAT_STATUS_FILE"
+        if [[ "$cached_hash" == "$pat_hash" ]] && (( now - cached_at < PAT_CHECK_TTL )); then
+            log "auth: PAT known invalid (age=$((now - cached_at))s), skipping API calls"
+            pat_error_output "DevOps: PAT Expired" "PAT is expired or invalid\nUpdate: secret-tool store --label='Azure DevOps PAT' service azure-devops type pat"
+            return 1
+        fi
+    fi
+    return 0
+}
+
+# Call after any API curl that returned 401/403 to cache the failure.
+mark_pat_invalid() {
+    local pat="$1" http_code="$2"
+    local now pat_hash
+    now=$(date +%s)
+    pat_hash=$(echo -n "$pat" | md5sum | cut -d' ' -f1)
+    log "auth: PAT invalid (HTTP $http_code), caching failure for ${PAT_CHECK_TTL}s"
+    echo "$now $pat_hash" > "$PAT_STATUS_FILE"
 }
 
 # ── Release Definition Discovery ────────────────────────────────
@@ -133,9 +172,16 @@ discover_environments() {
     fi
 
     log "discovery: fetching from API..."
-    local release_defs
-    release_defs=$(curl -sf -u ":$pat" \
-        "https://vsrm.dev.azure.com/$org/$project/_apis/release/definitions?\$expand=artifacts,environments&api-version=7.1") || return 1
+    local release_defs http_code
+    release_defs=$(curl -s -u ":$pat" -w '\n%{http_code}' \
+        "https://vsrm.dev.azure.com/$org/$project/_apis/release/definitions?\$expand=artifacts,environments&api-version=7.1")
+    http_code=$(echo "$release_defs" | tail -1)
+    release_defs=$(echo "$release_defs" | sed '$d')
+    if [[ "$http_code" == "401" || "$http_code" == "403" ]]; then
+        mark_pat_invalid "$pat" "$http_code"
+        return 1
+    fi
+    [[ "$http_code" != 2* ]] && return 1
 
     # Match all definitions whose artifact name starts with the repo name,
     # then for each environment name, prefer the definition where it's the
@@ -252,6 +298,10 @@ get_repo_guid() {
     http_code=$(echo "$repo_info" | tail -1)
     repo_info=$(echo "$repo_info" | sed '$d')
     log "build: repo lookup http=$http_code"
+    if [[ "$http_code" == "401" || "$http_code" == "403" ]]; then
+        mark_pat_invalid "$pat" "$http_code"
+        return 1
+    fi
     [[ "$http_code" != 2* ]] && { log "build: repo lookup error: $(echo "$repo_info" | head -c 200)"; return 1; }
 
     local guid
@@ -459,9 +509,13 @@ handle_lifecycle() {
 
     local pat
     if ! pat=$(get_pat); then
-        log "lifecycle: failed to get PAT"
-        clear_lifecycle
-        return 1
+        log "lifecycle: no PAT"
+        pat_error_output "DevOps: No PAT" "No PAT configured\nAdd: secret-tool store --label='Azure DevOps PAT' service azure-devops type pat"
+        return 0
+    fi
+
+    if ! check_pat_cache "$pat"; then
+        return 0
     fi
 
     local now
@@ -768,8 +822,12 @@ main() {
 
     local pat
     if ! pat=$(get_pat); then
-        log "ERROR: failed to get PAT from keyring"
-        empty_output
+        log "ERROR: no PAT in keyring"
+        pat_error_output "DevOps: No PAT" "No PAT configured\nAdd: secret-tool store --label='Azure DevOps PAT' service azure-devops type pat"
+        return
+    fi
+
+    if ! check_pat_cache "$pat"; then
         return
     fi
     log "auth: ok"
@@ -813,8 +871,17 @@ main() {
         fi
     fi
 
+    # If an API call above marked the PAT invalid, stop and show error
+    if [[ -f "$PAT_STATUS_FILE" ]] && ! check_pat_cache "$pat"; then
+        return
+    fi
+
     local env_info
     if ! env_info=$(discover_environments "$org" "$project" "$repo_name" "$pat"); then
+        # Check again - discover may have detected expired PAT
+        if [[ -f "$PAT_STATUS_FILE" ]] && ! check_pat_cache "$pat"; then
+            return
+        fi
         log "no release definition found for $repo_name"
         empty_output
         return
