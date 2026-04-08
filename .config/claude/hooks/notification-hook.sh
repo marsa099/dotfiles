@@ -151,14 +151,16 @@ if [ "$TYPE" = "permission_prompt" ]; then
     if is_terminal_focused && [ "$PANE_VISIBLE" = true ]; then
         echo "$(ts) [notification] skipped: terminal is focused" >> "$LOG"
     else
+        REPLACE_ID_FILE="$STATE_DIR/notif-id-${PANE_NUM}"
+        REPLACE_ARGS=()
+        [ -f "$REPLACE_ID_FILE" ] && REPLACE_ARGS=(-r "$(cat "$REPLACE_ID_FILE")")
         NOTIF_ID=$(dunstify "Claude - $LABEL" "$BODY" \
-            --stack-tag "claude-perm-$PANE_NUM" \
+            "${REPLACE_ARGS[@]}" \
             -u critical -I "$ICON" -t 0 -p)
-        echo "$NOTIF_ID" > "$STATE_DIR/notif-id-${PANE_NUM}"
+        echo "$NOTIF_ID" > "$REPLACE_ID_FILE"
     fi
 else
     dunstify "$TITLE" "$MESSAGE" \
-        --stack-tag "claude-stop-${TMUX_PANE#%}" \
         -u normal -I "$ICON"
     echo "$(ts) [notification] dunst sent: $TITLE - $MESSAGE" >> "$LOG"
 fi
