@@ -3,6 +3,25 @@ return {
 		"neovim/nvim-lspconfig",
 		lazy = false,
 		config = function()
+			-- Fix markdown escape sequences in hover (Roslyn escapes dots etc.)
+			-- and add border so the popup is visually distinct
+			local orig_hover = vim.lsp.handlers["textDocument/hover"]
+			vim.lsp.handlers["textDocument/hover"] = function(err, result, ctx, config)
+				if result and result.contents then
+					if type(result.contents) == "table" and result.contents.value then
+						result.contents.value = result.contents.value:gsub("\\(%p)", "%1")
+					end
+				end
+				config = vim.tbl_extend("force", config or {}, { border = "rounded" })
+				return orig_hover(err, result, ctx, config)
+			end
+
+			local orig_sig = vim.lsp.handlers["textDocument/signatureHelp"]
+			vim.lsp.handlers["textDocument/signatureHelp"] = function(err, result, ctx, config)
+				config = vim.tbl_extend("force", config or {}, { border = "rounded" })
+				return orig_sig(err, result, ctx, config)
+			end
+
 			-- Enable line highlighting for diagnostics
 			vim.diagnostic.config({
 				signs = {
@@ -32,7 +51,7 @@ return {
 					-- Information
 					map("n", "K", vim.lsp.buf.hover, "Hover documentation")
 					map("i", "<C-k>", vim.lsp.buf.signature_help, "Signature help")
-					map("n", "<leader>e", vim.diagnostic.open_float, "Show diagnostic")
+					map("n", "<leader>e", function() vim.diagnostic.open_float({ border = "rounded" }) end, "Show diagnostic")
 
 					-- Actions
 					map("n", "<leader>rn", vim.lsp.buf.rename, "Rename symbol")
@@ -96,6 +115,7 @@ return {
 					"dotnet",
 					vim.fn.stdpath("data") .. "/mason/packages/bicep-lsp/extension/bicepLanguageServer/Bicep.LangServer.dll",
 				},
+				filetypes = { "bicep" },
 				root_markers = { ".git" },
 			})
 
@@ -103,6 +123,8 @@ return {
 				extension = {
 					bicep = "bicep",
 					bicepparam = "bicep",
+					razor = "razor",
+					cshtml = "razor",
 				},
 			})
 

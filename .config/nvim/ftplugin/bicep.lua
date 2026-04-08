@@ -1,0 +1,2 @@
+-- Registers bicep as a known filetype for LSP health check.
+-- Without this, :checkhealth vim.lsp shows: WARNING Unknown filetype 'bicep'.
