@@ -12,7 +12,7 @@
 {
   imports = [
     ./hardware-configuration.nix
-    ./modules/dotnet-devops-auth.nix
+    ./modules/dotnet-nuget-auth.nix
   ];
 
   # Use the systemd-boot EFI boot loader.
@@ -39,7 +39,6 @@
   # restores dead key composition without needing a full input method framework.
   # See: https://discourse.nixos.org/t/swedish-keyboard-layout-not-working-after-upgrade-to-25-11/72882/3
   environment.sessionVariables.GTK_IM_MODULE = "simple";
-
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";
   # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
@@ -146,7 +145,7 @@
     gcc # C compiler needed by tree-sitter to compile parsers
     nodejs # needed by mason to install typescript-language-server
     roslyn-ls # C# language server (Roslyn) - nixpkgs wrapper handles NixOS dotnet paths
-    dotnet-sdk_10 # needed by mason to install csharpier and bicep-lsp
+    # dotnet-sdk_10 provided by modules/dotnet-nuget-auth.nix (wrapped with libsecret for NuGet auth)
     fd # fast file finder used by telescope.nvim
     unzip # needed by mason to extract packages
     cargo # needed by mason to build nil (Nix LSP)
