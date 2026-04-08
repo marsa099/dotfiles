@@ -145,7 +145,8 @@
     tree-sitter # nvim-treesitter uses this CLI to download and build parsers
     gcc # C compiler needed by tree-sitter to compile parsers
     nodejs # needed by mason to install typescript-language-server
-    dotnet-sdk_10 # needed by mason to install roslyn, csharpier, and bicep-lsp
+    roslyn-ls # C# language server (Roslyn) - nixpkgs wrapper handles NixOS dotnet paths
+    dotnet-sdk_10 # needed by mason to install csharpier and bicep-lsp
     fd # fast file finder used by telescope.nvim
     unzip # needed by mason to extract packages
     cargo # needed by mason to build nil (Nix LSP)
@@ -164,6 +165,7 @@
     spotify-player
     wtype # To be able to send keystrokes to a terminal from dunst notification for claude notifications
     google-chrome
+    cloc # Count Lines Of Code
   ];
 
   # Some programs need SUID wrappers, can be configured further or are

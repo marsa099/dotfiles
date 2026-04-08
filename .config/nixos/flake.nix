@@ -2,7 +2,7 @@
   description = "NixOS configuration";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
     claude-code.url = "github:sadjow/claude-code-nix";
     # Community flake for Zen Browser (most actively maintained)
     # See: https://wiki.nixos.org/wiki/Zen_Browser

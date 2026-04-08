@@ -20,7 +20,7 @@ return {
 				group = vim.api.nvim_create_augroup("UserLspConfig", { clear = true }),
 				callback = function(ev)
 					local function map(mode, lhs, rhs, desc)
-						vim.keymap.set(mode, lhs, rhs, { buf = ev.buf, desc = desc })
+						vim.keymap.set(mode, lhs, rhs, { buffer = ev.buf, desc = desc })
 					end
 
 					-- Navigation
@@ -74,32 +74,7 @@ return {
 				root_markers = { "package.json", "tsconfig.json", "jsconfig.json", ".git" },
 			})
 
-			-- Configure Roslyn for C# (server lifecycle managed by roslyn.nvim)
-			-- NixOS workaround: Roslyn 5.6.0's BuildHost (dotnet/roslyn#79494) derives
-			-- the dotnet binary path via ../../dotnet relative to the MSBuild location.
-			-- On NixOS, MSBuildLocator 1.10.2 replaced libc realpath() with .NET's
-			-- File.ResolveLinkTarget() for symlink resolution, which can fail with
-			-- NixOS's Nix store symlink chains. We set DOTNET_HOST_PATH and explicit
-			-- MSBuild paths so the BuildHost can find the SDK without broken discovery.
-			local dotnet_cmd_env = nil
-			local dotnet_root = vim.env.DOTNET_ROOT
-			if dotnet_root then
-				local sdk_dir = vim.fs.joinpath(dotnet_root, "sdk")
-				for name, type in vim.fs.dir(sdk_dir) do
-					if type == "directory" and name:match("^%d") then
-						local sdk_base = vim.fs.joinpath(sdk_dir, name)
-						dotnet_cmd_env = {
-							DOTNET_ROOT = dotnet_root,
-							DOTNET_HOST_PATH = vim.fs.joinpath(dotnet_root, "dotnet"),
-							MSBUILD_EXE_PATH = vim.fs.joinpath(sdk_base, "MSBuild.dll"),
-							MSBuildSDKsPath = vim.fs.joinpath(sdk_base, "Sdks"),
-						}
-						break
-					end
-				end
-			end
 			vim.lsp.config("roslyn", {
-				cmd_env = dotnet_cmd_env,
 				settings = {
 					["csharp|background_analysis"] = {
 						dotnet_analyzer_diagnostics_scope = "openFiles",
@@ -131,10 +106,9 @@ return {
 				},
 			})
 
-			-- NixOS workaround: When Roslyn starts, files are briefly analyzed in a
-			-- "misc" workspace (before the real project loads), causing all usings to
-			-- appear unused. After the project finishes loading, we reload .cs buffers
-			-- so Roslyn re-analyzes them in the correct project context.
+			-- After Roslyn finishes loading the project, reload open .cs buffers so they
+			-- move from the "misc" workspace to the real project context. Without this,
+			-- usings appear unused until manually running :e.
 			vim.api.nvim_create_autocmd("User", {
 				pattern = "RoslynInitialized",
 				group = vim.api.nvim_create_augroup("CSharpReloadAfterProjectInit", { clear = true }),
