@@ -21,6 +21,9 @@ Cache/
 .env
 .local/share/
 
+# tmux plugins (managed by TPM)
+.config/tmux/plugins/
+
 # Backup files
 *.backup
 *.bak
