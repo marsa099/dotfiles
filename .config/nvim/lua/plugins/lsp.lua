@@ -3,25 +3,6 @@ return {
 		"neovim/nvim-lspconfig",
 		lazy = false,
 		config = function()
-			-- Fix markdown escape sequences in hover (Roslyn escapes dots etc.)
-			-- and add border so the popup is visually distinct
-			local orig_hover = vim.lsp.handlers["textDocument/hover"]
-			vim.lsp.handlers["textDocument/hover"] = function(err, result, ctx, config)
-				if result and result.contents then
-					if type(result.contents) == "table" and result.contents.value then
-						result.contents.value = result.contents.value:gsub("\\(%p)", "%1")
-					end
-				end
-				config = vim.tbl_extend("force", config or {}, { border = "rounded" })
-				return orig_hover(err, result, ctx, config)
-			end
-
-			local orig_sig = vim.lsp.handlers["textDocument/signatureHelp"]
-			vim.lsp.handlers["textDocument/signatureHelp"] = function(err, result, ctx, config)
-				config = vim.tbl_extend("force", config or {}, { border = "rounded" })
-				return orig_sig(err, result, ctx, config)
-			end
-
 			-- Enable line highlighting for diagnostics
 			vim.diagnostic.config({
 				signs = {
@@ -48,10 +29,32 @@ return {
 					-- gr mapped to Glance references (see glance.lua)
 					map("n", "gD", vim.lsp.buf.declaration, "Go to declaration")
 
-					-- Information
-					map("n", "K", vim.lsp.buf.hover, "Hover documentation")
+					-- Information (custom hover to fix Roslyn's escaped markdown)
+					map("n", "K", function()
+						local client = vim.lsp.get_clients({ bufnr = 0 })[1]
+						if not client then return end
+						local params = vim.lsp.util.make_position_params(0, client.offset_encoding)
+						local max_width = math.floor(vim.o.columns * 0.4)
+						vim.lsp.buf_request(0, "textDocument/hover", params, function(err, result, ctx)
+							if err or not result or not result.contents then return end
+							if type(result.contents) == "table" and result.contents.value then
+								result.contents.value = result.contents.value:gsub("\\(%p)", "%1")
+							end
+							local lines = vim.lsp.util.convert_input_to_markdown_lines(result.contents)
+							if vim.tbl_isempty(lines) then return end
+							vim.lsp.util.open_floating_preview(lines, "markdown", {
+								focus_id = ctx.method,
+								max_width = max_width,
+								border = "rounded",
+								pad_left = 1,
+								pad_right = 1,
+								pad_top = 1,
+								pad_bottom = 1,
+							})
+						end)
+					end, "Hover documentation")
 					map("i", "<C-k>", vim.lsp.buf.signature_help, "Signature help")
-					map("n", "<leader>e", function() vim.diagnostic.open_float({ border = "rounded" }) end, "Show diagnostic")
+					map("n", "<leader>e", vim.diagnostic.open_float, "Show diagnostic")
 
 					-- Actions
 					map("n", "<leader>rn", vim.lsp.buf.rename, "Rename symbol")

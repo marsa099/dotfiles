@@ -38,3 +38,6 @@ vim.opt.exrc = true
 -- Restricts dangerous operations (shell commands, autocmds, etc.) in untrusted project files
 -- Safe operations like setting variables (vim.g.disable_autoformat) are still allowed
 vim.opt.secure = true
+
+-- Default border for all floating windows (hover, signature help, diagnostics etc.)
+vim.o.winborder = "rounded"

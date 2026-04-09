@@ -86,9 +86,9 @@ end
 -- ************** UI **************
 -- Windows
 hl("Normal", { fg = c.fg, bg = c.bg })
-hl("NormalFloat", { fg = c.fg, bg = c.bg_surface })
-hl("FloatBorder", { fg = c.bg_overlay, bg = c.bg_surface })
-hl("FloatTitle", { fg = c.blue, bg = c.bg_surface })
+hl("NormalFloat", { fg = c.fg, bg = c.bg_overlay })
+hl("FloatBorder", { fg = c.highlight_med, bg = c.bg_overlay })
+hl("FloatTitle", { fg = c.blue, bg = c.bg_overlay })
 hl("WinSeparator", { fg = c.bg_secondary })
 
 -- Diff
@@ -223,11 +223,11 @@ hl("dosiniLabel", { link = "@property" })
 
 -- ************** TREESITTER **************
 hl("@constant.builtin", { link = "Constant" })
-hl("@function.call", { fg = c.fg })
-hl("@function.method.call", { fg = c.fg })
+hl("@function.call", { fg = c["function"] })
+hl("@function.method.call", { fg = c.method })
 hl("@markup.heading", { link = "Function" })
 hl("@markup.raw.block", { link = "markdownCodeBlock" })
-hl("@method.call", { fg = c.fg })
+hl("@method.call", { fg = c.method })
 hl("@module", { fg = c.fg })
 hl("@namespace", { fg = c.blue })
 hl("@number.comment", { link = "Comment" })
@@ -345,6 +345,7 @@ hl("@lsp.type.parameter", { fg = c.parameter })
 hl("@lsp.type.property", { link = "@property" })
 hl("@lsp.type.function", { link = "Function" })
 hl("@lsp.type.method", { link = "Function" })
+hl("@lsp.type.extensionMethod", { link = "Function" })
 hl("@lsp.type.keyword", { link = "Keyword" })
 hl("@lsp.type.comment", { link = "Comment" })
 hl("@lsp.type.string", { link = "String" })
