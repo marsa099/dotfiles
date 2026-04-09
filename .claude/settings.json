@@ -21,7 +21,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "PANE=\"${TMUX_PANE#%}\"; NID=\"/tmp/claude-permissions/notif-id-${PANE}\"; [ -f \"$NID\" ] && dunstify -C \"$(cat \"$NID\")\" 2>/dev/null; rm -f \"/tmp/claude-permissions/$PANE\" \"/tmp/claude-permissions/tool-info-${PANE}.json\" \"$NID\""
+            "command": "[ -z \"$TMUX_PANE\" ] && exit 0; PANE=\"${TMUX_PANE#%}\"; NID=\"/tmp/claude-permissions/notif-id-${PANE}\"; [ -f \"$NID\" ] && dunstify -C \"$(cat \"$NID\")\" 2>/dev/null; rm -f \"/tmp/claude-permissions/$PANE\" \"/tmp/claude-permissions/tool-info-${PANE}.json\" \"$NID\""
           }
         ]
       }
