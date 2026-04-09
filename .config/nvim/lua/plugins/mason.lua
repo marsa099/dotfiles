@@ -9,12 +9,7 @@ return {
 		dependencies = { "mason-org/mason.nvim" },
 		opts = {
 			ensure_installed = {
-				"lua-language-server",
-				"stylua",
-				"csharpier",
-				"typescript-language-server",
 				"bicep-lsp",
-				"nil",
 			},
 		},
 		lazy = false,

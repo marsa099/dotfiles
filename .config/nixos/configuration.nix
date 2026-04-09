@@ -99,6 +99,7 @@
 
   programs.niri.enable = true;
   programs.firefox.enable = true;
+  programs.thunderbird.enable = true;
 
   # XDG Portal for screen sharing on Wayland
   xdg.portal = {
@@ -145,12 +146,15 @@
     glib # provides gsettings - a CLI tool that reads/writes GNOME/GTK settings (e.g. dark/light mode preference that apps like Ghostty and Firefox listen to)
     tree-sitter # nvim-treesitter uses this CLI to download and build parsers
     gcc # C compiler needed by tree-sitter to compile parsers
-    nodejs # needed by mason to install typescript-language-server
-    # roslyn-ls provided by modules/roslyn-ls.nix (wrapped for correct DOTNET_ROOT + polling file watcher)
+    nodejs # needed by typescript-language-server runtime
+    nodePackages.typescript-language-server
+    lua-language-server # Lua LSP (Mason binary broken on NixOS due to dynamic linking)
+    stylua # Lua formatter (Mason binary broken on NixOS due to dynamic linking)
+    nil # Nix LSP
+    # roslyn-ls provided by modules/roslyn-ls.nix (wrapped for correct DOTNET_ROOT)
     # dotnet-sdk_10 provided by modules/dotnet-nuget-auth.nix (wrapped with libsecret for NuGet auth)
     fd # fast file finder used by telescope.nvim
     unzip # needed by mason to extract packages
-    cargo # needed by mason to build nil (Nix LSP)
     nixfmt # formatter used by nil (Nix LSP)
     fzf # fuzzy finder used by nvim-bqf quickfix filtering
     television # fuzzy finder TUI
