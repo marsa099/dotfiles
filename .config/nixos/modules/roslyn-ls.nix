@@ -5,7 +5,7 @@
 # so projects fail with "No .NET SDKs were found".
 #
 # Solution: bypass the nixpkgs wrapper and run the roslyn-ls DLL directly
-# with the system dotnet SDK (provided by dotnet-nuget-auth.nix).
+# with the system dotnet SDK (provided by dotnet.nix).
 #
 # Uses unstable nixpkgs because stable roslyn-ls (5.3.0) requires .NET 9
 # runtime which we don't have — we only have .NET 10.

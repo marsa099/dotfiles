@@ -13,7 +13,7 @@
 {
   imports = [
     ./hardware-configuration.nix
-    ./modules/dotnet-nuget-auth.nix
+    ./modules/dotnet.nix
     ./modules/roslyn-ls.nix
   ];
 
@@ -152,7 +152,7 @@
     stylua # Lua formatter (Mason binary broken on NixOS due to dynamic linking)
     nil # Nix LSP
     # roslyn-ls provided by modules/roslyn-ls.nix (wrapped for correct DOTNET_ROOT)
-    # dotnet-sdk_10 provided by modules/dotnet-nuget-auth.nix (wrapped with libsecret for NuGet auth)
+    # dotnet-sdk_10 provided by modules/dotnet.nix
     fd # fast file finder used by telescope.nvim
     unzip # needed by mason to extract packages
     nixfmt # formatter used by nil (Nix LSP)
