@@ -5,7 +5,8 @@
 # For other notifications: shows simple dunst notification
 # Saves per-instance state for multi-instance keybinding response
 #
-# Requires: jq, dunstify, tmux, niri
+# Supports both tmux and direct terminal (non-tmux) instances.
+# Requires: jq, dunstify, niri. Optional: tmux, wtype
 
 LOG="$HOME/.cache/claude/hooks.log"
 ts() { date '+%Y-%m-%dT%H:%M:%S.%3N'; }
@@ -20,12 +21,23 @@ TITLE=$(echo "$INPUT" | jq -r '.title // "Claude Code"')
 MESSAGE=$(echo "$INPUT" | jq -r '.message // "Needs attention"')
 TRANSCRIPT=$(echo "$INPUT" | jq -r '.transcript_path // empty')
 
-echo "$(ts) [notification] type=$TYPE" >> "$LOG"
+echo "$(ts) [notification] type=$TYPE title=$TITLE message=$MESSAGE" >> "$LOG"
+
+# Compute instance ID: tmux pane number or "d<PTS>" for direct terminals
+compute_instance_id() {
+    if [ -n "$TMUX_PANE" ]; then
+        echo "${TMUX_PANE#%}"
+    else
+        local pts_num
+        pts_num=$(ps -o tty= -p $$ 2>/dev/null | tr -d ' ' | grep -oP 'pts/\K\d+')
+        [ -n "$pts_num" ] && echo "d${pts_num}"
+    fi
+}
 
 # Extract tool details saved by PermissionRequest hook, fallback to transcript
 get_tool_info() {
-    local pane_num="${TMUX_PANE#%}"
-    local info_file="/tmp/claude-permissions/tool-info-${pane_num}.json"
+    local instance_id="$1"
+    local info_file="$STATE_DIR/tool-info-${instance_id}.json"
     if [ -f "$info_file" ]; then
         local tool_name
         tool_name=$(jq -r '.tool_name // empty' "$info_file" 2>/dev/null)
@@ -57,7 +69,6 @@ get_tool_info() {
 }
 
 # Check if Claude Code's terminal window (ghostty) is focused in niri
-# Walks from the tmux client PID up to find the ghostty window
 is_terminal_focused() {
     local focused_wid
     focused_wid=$(niri msg focused-window 2>/dev/null | awk '/^Window ID/ {print $3; exit}' | tr -d ':')
@@ -86,13 +97,48 @@ is_terminal_focused() {
     return 1
 }
 
+# Find niri window ID for the current process's terminal
+find_terminal_window() {
+    local windows
+    windows=$(niri msg windows 2>/dev/null)
+    local pid=$$
+    while [ "$pid" != "1" ] && [ -n "$pid" ] && [ "$pid" != "0" ]; do
+        local wid
+        wid=$(echo "$windows" | awk -v p="$pid" '
+            /^Window ID/ { id = $3; sub(/:$/, "", id) }
+            /PID:/ && $2 == p { print id; exit }
+        ')
+        if [ -n "$wid" ]; then
+            echo "$wid"
+            return 0
+        fi
+        pid=$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')
+    done
+    return 1
+}
+
 if [ "$TYPE" = "permission_prompt" ]; then
-    PANE="$TMUX_PANE"
-    PANE_NUM="${TMUX_PANE#%}"
-    SESSION=$(tmux display-message -p '#{session_name}' 2>/dev/null)
-    WINDOW_NAME=$(tmux display-message -t "$PANE" -p '#{window_name}' 2>/dev/null)
-    WINDOW_IDX=$(tmux display-message -t "$PANE" -p '#{window_index}' 2>/dev/null)
-    LABEL="${SESSION:-claude}:${WINDOW_IDX}"
+    INSTANCE_ID=$(compute_instance_id)
+    if [ -z "$INSTANCE_ID" ]; then
+        echo "$(ts) [notification] error: cannot determine instance ID" >> "$LOG"
+        exit 0
+    fi
+
+    # Determine instance type and label
+    if [ -n "$TMUX_PANE" ]; then
+        INSTANCE_TYPE="tmux"
+        PANE="$TMUX_PANE"
+        SESSION=$(tmux display-message -p '#{session_name}' 2>/dev/null)
+        WINDOW_IDX=$(tmux display-message -t "$PANE" -p '#{window_index}' 2>/dev/null)
+        LABEL="${SESSION:-claude}:${WINDOW_IDX}"
+    else
+        INSTANCE_TYPE="direct"
+        PANE=""
+        SESSION=""
+        CWD_NAME=$(basename "$PWD" 2>/dev/null)
+        LABEL="${CWD_NAME:-direct}"
+        TERMINAL_WID=$(find_terminal_window)
+    fi
 
     # Detect prompt type: Yes/No vs Allow/Always Allow/Deny
     PROMPT_TYPE="permission"
@@ -101,13 +147,17 @@ if [ "$TYPE" = "permission_prompt" ]; then
     fi
 
     # Save per-instance state file
-    if [ -n "$TMUX" ] && [ -n "$PANE_NUM" ]; then
-        printf 'pane=%s\nsession=%s\nlabel=%s\nprompt_type=%s\n' "$PANE" "$SESSION" "$LABEL" "$PROMPT_TYPE" > "$STATE_DIR/$PANE_NUM"
-        echo "$(ts) [notification] saved state: pane=$PANE session=$SESSION prompt_type=$PROMPT_TYPE" >> "$LOG"
-    fi
+    {
+        printf 'instance_type=%s\n' "$INSTANCE_TYPE"
+        printf 'label=%s\n' "$LABEL"
+        printf 'prompt_type=%s\n' "$PROMPT_TYPE"
+        [ "$INSTANCE_TYPE" = "tmux" ] && printf 'pane=%s\nsession=%s\n' "$PANE" "$SESSION"
+        [ "$INSTANCE_TYPE" = "direct" ] && printf 'window_id=%s\n' "$TERMINAL_WID"
+    } > "$STATE_DIR/$INSTANCE_ID"
+    echo "$(ts) [notification] saved state: id=$INSTANCE_ID type=$INSTANCE_TYPE prompt_type=$PROMPT_TYPE" >> "$LOG"
 
     # Extract tool details
-    TOOL_JSON=$(get_tool_info)
+    TOOL_JSON=$(get_tool_info "$INSTANCE_ID")
     TOOL_NAME=$(echo "$TOOL_JSON" | jq -r '.name // empty' 2>/dev/null)
     TOOL_CMD=$(echo "$TOOL_JSON" | jq -r '.command // empty' 2>/dev/null)
     TOOL_FILE=$(echo "$TOOL_JSON" | jq -r '.file_path // empty' 2>/dev/null)
@@ -122,6 +172,11 @@ if [ "$TYPE" = "permission_prompt" ]; then
     TOOL_DESC="${TOOL_DESC//\\/\\\\}"
     TOOL_PATTERN="${TOOL_PATTERN//\\/\\\\}"
     TOOL_PROMPT="${TOOL_PROMPT//\\/\\\\}"
+
+    # Truncate long commands - notification is for context, full cmd is in terminal
+    if [ -n "$TOOL_CMD" ] && [ ${#TOOL_CMD} -gt 200 ]; then
+        TOOL_CMD="${TOOL_CMD:0:200}..."
+    fi
 
     # Build notification body
     if [ -n "$TOOL_SUBTYPE" ]; then
@@ -145,20 +200,23 @@ if [ "$TYPE" = "permission_prompt" ]; then
         BODY="$BODY\n\nAllow <b>(Ctrl+Super+Y)</b>\nAlways Allow <b>(Ctrl+Super+A)</b>\nDeny <b>(Ctrl+Super+N)</b>\nGo to <b>(Ctrl+Super+P)</b>"
     fi
 
-    echo "$(ts) [notification] permission: tool=$TOOL_NAME cmd=\"$TOOL_CMD\" file=\"$TOOL_FILE\" desc=\"$TOOL_DESC\" pending=$PENDING" >> "$LOG"
+    echo "$(ts) [notification] permission: id=$INSTANCE_ID tool=$TOOL_NAME cmd=\"$TOOL_CMD\" file=\"$TOOL_FILE\" desc=\"$TOOL_DESC\"" >> "$LOG"
 
-    # Check if our pane is the one the user is currently looking at
+    # Check if the user is looking at this instance
     PANE_VISIBLE=false
-    if [ -n "$TMUX" ] && [ -n "$PANE" ]; then
+    if [ "$INSTANCE_TYPE" = "tmux" ] && [ -n "$PANE" ]; then
         CLIENT_ACTIVE_PANE=$(tmux list-clients -F '#{pane_id}' 2>/dev/null | head -1)
         [ "$CLIENT_ACTIVE_PANE" = "$PANE" ] && PANE_VISIBLE=true
         echo "$(ts) [notification] our_pane=$PANE client_active=$CLIENT_ACTIVE_PANE visible=$PANE_VISIBLE" >> "$LOG"
+    else
+        # Non-tmux: terminal shows only this instance
+        PANE_VISIBLE=true
     fi
 
     if is_terminal_focused && [ "$PANE_VISIBLE" = true ]; then
         echo "$(ts) [notification] skipped: terminal is focused" >> "$LOG"
     else
-        REPLACE_ID_FILE="$STATE_DIR/notif-id-${PANE_NUM}"
+        REPLACE_ID_FILE="$STATE_DIR/notif-id-${INSTANCE_ID}"
         REPLACE_ARGS=()
         [ -f "$REPLACE_ID_FILE" ] && REPLACE_ARGS=(-r "$(cat "$REPLACE_ID_FILE")")
         NOTIF_ID=$(dunstify "Claude - $LABEL" "$BODY" \

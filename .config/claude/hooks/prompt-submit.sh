@@ -5,19 +5,27 @@
 
 LOG="$HOME/.cache/claude/hooks.log"
 STATE_DIR="/tmp/claude-permissions"
-PANE_NUM="${TMUX_PANE#%}"
+
+if [ -n "$TMUX_PANE" ]; then
+    INSTANCE_ID="${TMUX_PANE#%}"
+else
+    INSTANCE_ID="d$(ps -o tty= -p $$ 2>/dev/null | tr -d ' ' | grep -oP 'pts/\K\d+')"
+    [ "$INSTANCE_ID" = "d" ] && INSTANCE_ID=""
+fi
 
 echo "$(date '+%Y-%m-%dT%H:%M:%S.%3N') [submit] Prompt submitted" >> "$LOG"
 
-# Clean up any pending permission state for this pane
-if [ -n "$PANE_NUM" ]; then
-    [ -f "$STATE_DIR/notif-id-${PANE_NUM}" ] && dunstify -C "$(cat "$STATE_DIR/notif-id-${PANE_NUM}")" 2>/dev/null
-    rm -f "$STATE_DIR/$PANE_NUM" "$STATE_DIR/tool-info-${PANE_NUM}.json" "$STATE_DIR/notif-id-${PANE_NUM}"
+# Clean up any pending permission state for this instance
+if [ -n "$INSTANCE_ID" ]; then
+    [ -f "$STATE_DIR/notif-id-${INSTANCE_ID}" ] && dunstify -C "$(cat "$STATE_DIR/notif-id-${INSTANCE_ID}")" 2>/dev/null
+    rm -f "$STATE_DIR/$INSTANCE_ID" "$STATE_DIR/tool-info-${INSTANCE_ID}.json" "$STATE_DIR/notif-id-${INSTANCE_ID}"
 fi
 
 if [ -n "$TMUX" ]; then
-    printf '\033]2;Claude: Processing... 🤔\033\\'
+    printf '\033]2;Claude: Processing... \xf0\x9f\xa4\x94\033\\'
 fi
 
-[ -f "$STATE_DIR/stop-notif-id-${PANE_NUM}" ] && dunstify -C "$(cat "$STATE_DIR/stop-notif-id-${PANE_NUM}")" 2>/dev/null
-rm -f "$STATE_DIR/stop-notif-id-${PANE_NUM}"
+if [ -n "$INSTANCE_ID" ]; then
+    [ -f "$STATE_DIR/stop-notif-id-${INSTANCE_ID}" ] && dunstify -C "$(cat "$STATE_DIR/stop-notif-id-${INSTANCE_ID}")" 2>/dev/null
+    rm -f "$STATE_DIR/stop-notif-id-${INSTANCE_ID}"
+fi

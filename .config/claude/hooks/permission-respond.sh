@@ -2,7 +2,7 @@
 
 # Claude Code Permission Response (multi-instance)
 # Called by niri global keybindings to respond to the most recent permission prompt
-# Sends keystroke to Claude Code's tmux pane without changing focus
+# Sends keystroke via tmux send-keys or wtype (direct terminal)
 #
 # Usage: permission-respond.sh <1|2|3>
 #   1 = Allow, 2 = Always Allow, 3 = Deny
@@ -27,26 +27,40 @@ if [ -z "$LATEST" ]; then
 fi
 
 STATE_FILE="$STATE_DIR/$LATEST"
-PANE=$(grep '^pane=' "$STATE_FILE" 2>/dev/null | cut -d= -f2)
-
-if [ -z "$PANE" ]; then
-    echo "$(ts) [respond] error: empty pane in state file $LATEST" >> "$LOG"
-    rm -f "$STATE_FILE"
-    exit 1
-fi
+INSTANCE_TYPE=$(grep '^instance_type=' "$STATE_FILE" 2>/dev/null | cut -d= -f2)
 
 # Remap keys for Yes/No prompts (No=2, not 3)
 PROMPT_TYPE=$(grep '^prompt_type=' "$STATE_FILE" 2>/dev/null | cut -d= -f2)
 SEND_KEY="$KEY"
 if [ "$PROMPT_TYPE" = "yesno" ]; then
     case "$KEY" in
-        2) SEND_KEY="2" ;;  # Always Allow → No
-        3) SEND_KEY="2" ;;  # Deny → No
+        2) SEND_KEY="2" ;;  # Always Allow -> No
+        3) SEND_KEY="2" ;;  # Deny -> No
     esac
 fi
 
-tmux send-keys -t "$PANE" "$SEND_KEY" 2>>"$LOG"
-RESULT=$?
+# Send keystroke to Claude instance
+if [ "$INSTANCE_TYPE" = "tmux" ]; then
+    PANE=$(grep '^pane=' "$STATE_FILE" 2>/dev/null | cut -d= -f2)
+    if [ -z "$PANE" ]; then
+        echo "$(ts) [respond] error: empty pane in state file $LATEST" >> "$LOG"
+        rm -f "$STATE_FILE"
+        exit 1
+    fi
+    tmux send-keys -t "$PANE" "$SEND_KEY" 2>>"$LOG"
+    RESULT=$?
+else
+    WINDOW_ID=$(grep '^window_id=' "$STATE_FILE" 2>/dev/null | cut -d= -f2)
+    if [ -z "$WINDOW_ID" ]; then
+        echo "$(ts) [respond] error: no window_id in state file $LATEST" >> "$LOG"
+        rm -f "$STATE_FILE"
+        exit 1
+    fi
+    niri msg action focus-window --id "$WINDOW_ID" 2>/dev/null
+    sleep 0.1
+    wtype "$SEND_KEY"
+    RESULT=$?
+fi
 
 # Close this instance's notification by ID (avoids flash from -t 1 replacement)
 NOTIF_ID_FILE="$STATE_DIR/notif-id-${LATEST}"
@@ -58,9 +72,9 @@ rm -f "$STATE_FILE" "$STATE_DIR/tool-info-${LATEST}.json" "$NOTIF_ID_FILE"
 LABELS=("" "Allow" "Always Allow" "Deny")
 YESNO_LABELS=("" "Yes" "No" "No")
 if [ "$PROMPT_TYPE" = "yesno" ]; then
-    echo "$(ts) [respond] sent key=$SEND_KEY (${YESNO_LABELS[$KEY]}) to pane=$PANE exit=$RESULT [yesno]" >> "$LOG"
+    echo "$(ts) [respond] sent key=$SEND_KEY (${YESNO_LABELS[$KEY]}) to=$LATEST type=$INSTANCE_TYPE exit=$RESULT [yesno]" >> "$LOG"
 else
-    echo "$(ts) [respond] sent key=$SEND_KEY (${LABELS[$KEY]}) to pane=$PANE exit=$RESULT" >> "$LOG"
+    echo "$(ts) [respond] sent key=$SEND_KEY (${LABELS[$KEY]}) to=$LATEST type=$INSTANCE_TYPE exit=$RESULT" >> "$LOG"
 fi
 
 # Notify if more prompts remain
