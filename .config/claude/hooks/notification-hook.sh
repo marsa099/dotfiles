@@ -116,6 +116,13 @@ if [ "$TYPE" = "permission_prompt" ]; then
     TOOL_PROMPT=$(echo "$TOOL_JSON" | jq -r '.prompt // empty' 2>/dev/null)
     TOOL_SUBTYPE=$(echo "$TOOL_JSON" | jq -r '.subagent_type // empty' 2>/dev/null)
 
+    # Escape backslashes so dunst doesn't interpret sequences like \0 as null
+    TOOL_CMD="${TOOL_CMD//\\/\\\\}"
+    TOOL_FILE="${TOOL_FILE//\\/\\\\}"
+    TOOL_DESC="${TOOL_DESC//\\/\\\\}"
+    TOOL_PATTERN="${TOOL_PATTERN//\\/\\\\}"
+    TOOL_PROMPT="${TOOL_PROMPT//\\/\\\\}"
+
     # Build notification body
     if [ -n "$TOOL_SUBTYPE" ]; then
         BODY="<b>${TOOL_NAME:-Tool}</b> (${TOOL_SUBTYPE})"
