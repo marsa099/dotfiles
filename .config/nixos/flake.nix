@@ -3,6 +3,7 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     claude-code.url = "github:sadjow/claude-code-nix";
     # Community flake for Zen Browser (most actively maintained)
     # See: https://wiki.nixos.org/wiki/Zen_Browser
@@ -14,19 +15,25 @@
     {
       self,
       nixpkgs,
+      nixpkgs-unstable,
       claude-code,
       zen-browser,
       ...
     }:
+    let
+      system = "x86_64-linux";
+      unstable = import nixpkgs-unstable { inherit system; config.allowUnfree = true; };
+    in
     {
       nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
+        inherit system;
+        specialArgs = { inherit unstable; };
         modules = [
           ./configuration.nix
           {
             environment.systemPackages = [
-              claude-code.packages.x86_64-linux.default
-              zen-browser.packages.x86_64-linux.default
+              claude-code.packages.${system}.default
+              zen-browser.packages.${system}.default
             ];
           }
         ];

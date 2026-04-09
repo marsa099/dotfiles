@@ -6,6 +6,7 @@
   config,
   lib,
   pkgs,
+  unstable,
   ...
 }:
 
@@ -13,6 +14,7 @@
   imports = [
     ./hardware-configuration.nix
     ./modules/dotnet-nuget-auth.nix
+    ./modules/roslyn-ls.nix
   ];
 
   # Use the systemd-boot EFI boot loader.
@@ -144,7 +146,7 @@
     tree-sitter # nvim-treesitter uses this CLI to download and build parsers
     gcc # C compiler needed by tree-sitter to compile parsers
     nodejs # needed by mason to install typescript-language-server
-    roslyn-ls # C# language server (Roslyn) - nixpkgs wrapper handles NixOS dotnet paths
+    # roslyn-ls provided by modules/roslyn-ls.nix (wrapped for correct DOTNET_ROOT + polling file watcher)
     # dotnet-sdk_10 provided by modules/dotnet-nuget-auth.nix (wrapped with libsecret for NuGet auth)
     fd # fast file finder used by telescope.nvim
     unzip # needed by mason to extract packages
