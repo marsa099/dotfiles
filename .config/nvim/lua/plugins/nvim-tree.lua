@@ -10,6 +10,9 @@ return {
 	},
 	config = function()
 		require("nvim-tree").setup({
+			filesystem_watchers = {
+				ignore_dirs = { "bin", "obj", "node_modules", ".git" },
+			},
 			update_focused_file = {
 				enable = true,
 				update_root = false,
