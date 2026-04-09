@@ -18,8 +18,9 @@
 let
   # Wrap dotnet so it can find libsecret at runtime (for MSAL keyring access).
   # This is equivalent to: LD_LIBRARY_PATH=.../libsecret/lib exec dotnet "$@"
-  # DOTNET_ROLL_FORWARD=LatestMajor allows net8.0 apps to run on .NET 10 runtime,
-  # avoiding NixOS combinePackages symlink issues with hostfxr path resolution.
+  # DOTNET_ROLL_FORWARD=LatestMajor allows net8.0 apps (tests etc.) to run on
+  # the .NET 10 runtime. NixOS combinePackages can't solve this because hostfxr
+  # resolves through symlinks to the original single-SDK package.
   dotnet-wrapped = pkgs.symlinkJoin {
     name = "dotnet-sdk-wrapped";
     paths = [ pkgs.dotnet-sdk_10 ];

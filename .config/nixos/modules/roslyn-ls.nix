@@ -1,18 +1,14 @@
 # Roslyn LSP wrapper for NixOS.
 #
-# Two problems with the nixpkgs roslyn-ls on NixOS:
+# Problem: the nixpkgs roslyn-ls wrapper runs the DLL with dotnet-runtime,
+# not the full SDK. Roslyn's MSBuild host needs the SDK to load projects,
+# so projects fail with "No .NET SDKs were found".
 #
-# 1. The wrapper's dotnetFromEnv function resolves DOTNET_ROOT to the
-#    dotnet-sdk-wrapped/bin/ directory instead of share/dotnet/, so
-#    Roslyn's MSBuild host can't find the SDK ("No .NET SDKs were found").
+# Solution: bypass the nixpkgs wrapper and run the roslyn-ls DLL directly
+# with the system dotnet SDK (provided by dotnet-nuget-auth.nix).
 #
-# 2. .NET's FileSystemWatcher recursively watches SDK/runtime paths
-#    which on NixOS point into /nix/store (660K+ directories), causing
-#    500K+ inotify watches and exhausting the kernel limit.
-#
-# Solution: wrap roslyn-ls to use the system dotnet (which has correct
-# DOTNET_ROOT from dotnet-nuget-auth.nix) and enable polling file watcher
-# to avoid the inotify explosion.
+# Uses unstable nixpkgs because stable roslyn-ls (5.3.0) requires .NET 9
+# runtime which we don't have — we only have .NET 10.
 
 { pkgs, unstable, ... }:
 
