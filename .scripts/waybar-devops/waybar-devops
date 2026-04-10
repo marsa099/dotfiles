@@ -250,9 +250,16 @@ get_deployments() {
         env_name=$(echo "$env" | jq -r '.name')
         def_id=$(echo "$env" | jq -r '.def_id')
 
-        local deploy_data branch
-        deploy_data=$(curl -sf -u ":$pat" \
+        local deploy_data http_code branch
+        deploy_data=$(curl -s -u ":$pat" -w '\n%{http_code}' \
             "https://vsrm.dev.azure.com/$org/$project/_apis/release/deployments?definitionId=$def_id&definitionEnvironmentId=$env_id&deploymentStatus=succeeded&\$top=1&api-version=7.1")
+        http_code=$(echo "$deploy_data" | tail -1)
+        deploy_data=$(echo "$deploy_data" | sed '$d')
+
+        if [[ "$http_code" == "401" || "$http_code" == "403" ]]; then
+            mark_pat_invalid "$pat" "$http_code"
+            return 1
+        fi
 
         branch=$(echo "$deploy_data" | jq -r '.value[0].release.artifacts[0].definitionReference.branch.name // empty' 2>/dev/null)
 
