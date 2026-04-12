@@ -28,15 +28,6 @@
     ],
     "Notification": [
       {
-        "matcher": "permission_prompt",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ~/.config/claude/hooks/notification-hook.sh"
-          }
-        ]
-      },
-      {
         "matcher": "idle_prompt",
         "hooks": [
           {
