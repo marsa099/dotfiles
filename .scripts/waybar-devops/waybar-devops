@@ -16,6 +16,10 @@
 # Cache: ~/.cache/waybar-devops/ (discovery 1h, deployments 60s, builds 10s)
 # Log:   ~/.cache/waybar-devops/waybar-devops.log
 
+# Exclude specific release definition IDs per repo (def IDs are per-project)
+declare -A EXCLUDE_DEFS
+EXCLUDE_DEFS["SIS.CommitteePortal"]="11"
+
 CACHE_DIR="$HOME/.cache/waybar-devops"
 STATE_FILE="$CACHE_DIR/state.json"
 LIFECYCLE_FILE="$CACHE_DIR/build_lifecycle.json"
@@ -172,8 +176,27 @@ discover_environments() {
         fi
     fi
 
-    log "discovery: fetching from API..."
-    local release_defs http_code
+    log "discovery: resolving repo to build definitions..."
+    local repo_guid
+    repo_guid=$(get_repo_guid "$org" "$project" "$repo_name" "$pat") || return 1
+
+    local build_defs http_code
+    build_defs=$(curl -s -u ":$pat" -w '\n%{http_code}' \
+        "https://dev.azure.com/$org/$project/_apis/build/definitions?repositoryId=$repo_guid&repositoryType=TfsGit&api-version=7.1")
+    http_code=$(echo "$build_defs" | tail -1)
+    build_defs=$(echo "$build_defs" | sed '$d')
+    if [[ "$http_code" == "401" || "$http_code" == "403" ]]; then
+        mark_pat_invalid "$pat" "$http_code"
+        return 1
+    fi
+    [[ "$http_code" != 2* ]] && return 1
+
+    local build_def_ids
+    build_def_ids=$(echo "$build_defs" | jq '[.value[].id | tostring]' 2>/dev/null)
+    log "discovery: build defs for repo: $build_def_ids"
+
+    log "discovery: fetching release definitions..."
+    local release_defs
     release_defs=$(curl -s -u ":$pat" -w '\n%{http_code}' \
         "https://vsrm.dev.azure.com/$org/$project/_apis/release/definitions?\$expand=artifacts,environments&api-version=7.1")
     http_code=$(echo "$release_defs" | tail -1)
@@ -184,16 +207,20 @@ discover_environments() {
     fi
     [[ "$http_code" != 2* ]] && return 1
 
-    # Match all definitions whose artifact name starts with the repo name,
-    # then for each environment name, prefer the definition where it's the
-    # final stage (filters out gate stages like Test in a prod pipeline).
+    # Match release definitions whose artifact references a build definition
+    # that targets this repo, then for each environment name, prefer the
+    # definition where it's the final stage.
+    local excluded="${EXCLUDE_DEFS[$repo_name]:-}"
+    local exclude_json
+    exclude_json=$(echo "$excluded" | jq -R 'split(" ") | map(select(. != "") | tonumber)' 2>/dev/null || echo "[]")
+    log "discovery: excluding release defs: $exclude_json"
+
     local result
-    result=$(echo "$release_defs" | jq --arg repo "$repo_name" --argjson now "$now" '
-        ($repo | ascii_downcase) as $rl |
+    result=$(echo "$release_defs" | jq --argjson bids "$build_def_ids" --argjson now "$now" --argjson excl "$exclude_json" '
         [.value[] |
+         select(.id as $did | $excl | index($did) | not) |
          select(any(.artifacts[]?;
-           .definitionReference.definition.name | ascii_downcase |
-           startswith($rl))) |
+           .definitionReference.definition.id as $id | $bids | index($id))) |
          . as $def |
          (.environments | length) as $total |
          .environments | to_entries[] |
