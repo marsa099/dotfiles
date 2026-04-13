@@ -81,9 +81,10 @@ for pane_num in "${PANES[@]}"; do
     prompt_type=$(grep '^prompt_type=' "$local_state" 2>/dev/null | cut -d= -f2)
     body=$(build_body "$pane_num")
 
-    # Close existing notification by ID (stack-tag replacement doesn't work cross-context)
+    # Replace existing notification atomically (avoids close+create race)
     old_id_file="$STATE_DIR/notif-id-${pane_num}"
-    [ -f "$old_id_file" ] && dunstify -C "$(cat "$old_id_file")" 2>/dev/null
+    REPLACE_ARGS=()
+    [ -f "$old_id_file" ] && REPLACE_ARGS=(-r "$(cat "$old_id_file")")
 
     if [ "$pane_num" = "$TARGET" ]; then
         # Selected: accent border, full keybindings
@@ -93,14 +94,14 @@ for pane_num in "${PANES[@]}"; do
             body="$body\n\nAllow <b>(Ctrl+Super+Y)</b>\nAlways Allow <b>(Ctrl+Super+A)</b>\nDeny <b>(Ctrl+Super+N)</b>\nNext <b>(Ctrl+Super+P)</b>"
         fi
         notif_id=$(dunstify "> Claude - $label" "$body" \
-            --stack-tag "claude-perm-$pane_num" \
+            "${REPLACE_ARGS[@]}" \
             -u critical -I "$ICON" -t 0 -p)
     else
-        # Non-selected: muted text, low urgency = gray border
+        # Non-selected: muted text, gray border via dim foreground
         body="<span foreground='#616e88'>$body</span>"
         notif_id=$(dunstify "Claude - $label" "$body" \
-            --stack-tag "claude-perm-$pane_num" \
-            -u low -I "$ICON" -t 0 -p)
+            "${REPLACE_ARGS[@]}" \
+            -u critical -I "$ICON" -t 0 -p)
     fi
     echo "$notif_id" > "$STATE_DIR/notif-id-${pane_num}"
 done
