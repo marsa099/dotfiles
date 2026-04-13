@@ -9,7 +9,7 @@
 LOG="$HOME/.cache/claude/hooks.log"
 ts() { date '+%Y-%m-%dT%H:%M:%S.%3N'; }
 STATE_DIR="/tmp/claude-permissions"
-ICON="$HOME/.config/claude/icons/claude-code.svg"
+ICON="$HOME/.config/claude/icons/claude-code.png"
 LAST_NAV_FILE="$STATE_DIR/.last-navigate"
 
 # Get pending instance IDs sorted by most recent first
@@ -17,7 +17,7 @@ mapfile -t PANES < <(find "$STATE_DIR" -maxdepth 1 -type f ! -name '.*' ! -name 
 
 if [ ${#PANES[@]} -eq 0 ]; then
     dunstify "Claude Code" "No pending permissions" \
-        --stack-tag claude-nav -u low -t 3000
+        --stack-tag claude-nav -I "$ICON" -u low -t 3000
     echo "$(ts) [navigate] no pending permissions" >> "$LOG"
     exit 0
 fi
@@ -98,14 +98,14 @@ for pane_num in "${PANES[@]}"; do
         fi
         notif_id=$(dunstify "> Claude - $label" "$body" \
             "${REPLACE_ARGS[@]}" \
-            -u critical -t 0 -p 2>>"$LOG")
+            -I "$ICON" -u critical -t 0 -p 2>>"$LOG")
         echo "$(ts) [navigate] dunstify selected pane=$pane_num id='$notif_id' replace='${REPLACE_ARGS[*]}' exit=$?" >> "$LOG"
     else
         # Non-selected: muted text, gray border
         body="<span foreground='#616e88'>$body</span>"
         notif_id=$(dunstify "Claude - $label" "$body" \
             "${REPLACE_ARGS[@]}" \
-            -u critical -t 0 -p 2>>"$LOG")
+            -I "$ICON" -u critical -t 0 -p 2>>"$LOG")
         echo "$(ts) [navigate] dunstify other pane=$pane_num id='$notif_id' replace='${REPLACE_ARGS[*]}' exit=$?" >> "$LOG"
     fi
     [ -n "$notif_id" ] && echo "$notif_id" > "$STATE_DIR/notif-id-${pane_num}"

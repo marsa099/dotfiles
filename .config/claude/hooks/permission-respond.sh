@@ -10,7 +10,7 @@
 LOG="$HOME/.cache/claude/hooks.log"
 ts() { date '+%Y-%m-%dT%H:%M:%S.%3N'; }
 STATE_DIR="/tmp/claude-permissions"
-ICON="$HOME/.config/claude/icons/claude-code.svg"
+ICON="$HOME/.config/claude/icons/claude-code.png"
 KEY="$1"
 
 if [ -z "$KEY" ]; then

@@ -9,7 +9,7 @@
 LOG="$HOME/.cache/claude/hooks.log"
 ts() { date '+%Y-%m-%dT%H:%M:%S.%3N'; }
 STATE_DIR="/tmp/claude-permissions"
-ICON="$HOME/.config/claude/icons/claude-code.svg"
+ICON="$HOME/.config/claude/icons/claude-code.png"
 LAST_NAV_FILE="$STATE_DIR/.last-navigate"
 
 # Use navigated selection if available, otherwise most recent
@@ -24,7 +24,7 @@ fi
 
 if [ -z "$TARGET" ]; then
     dunstify "Claude Code" "No pending permissions" \
-        --stack-tag claude-nav -u low -t 3000
+        --stack-tag claude-nav -I "$ICON" -u low -t 3000
     echo "$(ts) [goto] no pending permissions" >> "$LOG"
     exit 0
 fi

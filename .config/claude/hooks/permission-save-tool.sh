@@ -10,7 +10,7 @@
 LOG="$HOME/.cache/claude/hooks.log"
 ts() { date '+%Y-%m-%dT%H:%M:%S.%3N'; }
 STATE_DIR="/tmp/claude-permissions"
-ICON="$HOME/.config/claude/icons/claude-code.svg"
+ICON="$HOME/.config/claude/icons/claude-code.png"
 
 mkdir -p "$STATE_DIR"
 
@@ -172,14 +172,14 @@ else
         # First notification: active styling, auto-select
         NOTIF_ID=$(dunstify "> Claude - $LABEL" "$BODY" \
             "${REPLACE_ARGS[@]}" \
-            -u critical -t 0 -p 2>>"$LOG")
+            -I "$ICON" -u critical -t 0 -p 2>>"$LOG")
         echo "$INSTANCE_ID" > "$STATE_DIR/.last-navigate"
     else
         # Additional notification: dimmed styling
         DIMMED="<span foreground='#616e88'>$BODY</span>"
         NOTIF_ID=$(dunstify "Claude - $LABEL" "$DIMMED" \
             "${REPLACE_ARGS[@]}" \
-            -u critical -t 0 -p 2>>"$LOG")
+            -I "$ICON" -u critical -t 0 -p 2>>"$LOG")
     fi
     echo "$(ts) [permission-request] dunstify returned id='$NOTIF_ID' exit=$?" >> "$LOG"
     [ -n "$NOTIF_ID" ] && echo "$NOTIF_ID" > "$REPLACE_ID_FILE"

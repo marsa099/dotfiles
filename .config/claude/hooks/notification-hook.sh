@@ -4,7 +4,7 @@
 # Permission prompts are handled by the PermissionRequest hook (permission-save-tool.sh)
 # for instant delivery, bypassing the ~8s Notification delay bug.
 
-ICON="$HOME/.config/claude/icons/claude-code.svg"
+ICON="$HOME/.config/claude/icons/claude-code.png"
 
 INPUT=$(cat)
 TITLE=$(echo "$INPUT" | jq -r '.title // "Claude Code"')
