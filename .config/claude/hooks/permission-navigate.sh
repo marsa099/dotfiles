@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Claude Code Permission Navigate (multi-instance)
-# Called by niri keybinding to focus the Claude instance asking for permission
-# Repeated presses cycle through pending prompts and update notification visuals
+# Called by niri keybinding to cycle through pending permission notifications
+# Only updates notification visuals and saves selection — does NOT focus terminal
 #
 # Usage: permission-navigate.sh
 
@@ -13,11 +13,11 @@ ICON="$HOME/.config/claude/icons/claude-code.svg"
 LAST_NAV_FILE="$STATE_DIR/.last-navigate"
 
 # Get pending instance IDs sorted by most recent first
-mapfile -t PANES < <(find "$STATE_DIR" -maxdepth 1 -type f ! -name '.*' ! -name '*-*' ! -name '*.json' -printf '%T@ %f\n' 2>/dev/null | sort -rn | awk '{print $2}')
+mapfile -t PANES < <(find "$STATE_DIR" -maxdepth 1 -type f ! -name '.*' ! -name '*-*' ! -name '*.json' -printf '%T@ %f\n' 2>/dev/null | sort -n | awk '{print $2}')
 
 if [ ${#PANES[@]} -eq 0 ]; then
     dunstify "Claude Code" "No pending permissions" \
-        --stack-tag claude-nav -u low -I "$ICON" -t 3000
+        --stack-tag claude-nav -u low -t 3000
     echo "$(ts) [navigate] no pending permissions" >> "$LOG"
     exit 0
 fi
@@ -84,7 +84,10 @@ for pane_num in "${PANES[@]}"; do
     # Replace existing notification atomically (avoids close+create race)
     old_id_file="$STATE_DIR/notif-id-${pane_num}"
     REPLACE_ARGS=()
-    [ -f "$old_id_file" ] && REPLACE_ARGS=(-r "$(cat "$old_id_file")")
+    if [ -f "$old_id_file" ]; then
+        old_id=$(cat "$old_id_file")
+        [ -n "$old_id" ] && REPLACE_ARGS=(-r "$old_id")
+    fi
 
     if [ "$pane_num" = "$TARGET" ]; then
         # Selected: accent border, full keybindings
@@ -95,45 +98,17 @@ for pane_num in "${PANES[@]}"; do
         fi
         notif_id=$(dunstify "> Claude - $label" "$body" \
             "${REPLACE_ARGS[@]}" \
-            -u critical -I "$ICON" -t 0 -p)
+            -u critical -t 0 -p 2>>"$LOG")
+        echo "$(ts) [navigate] dunstify selected pane=$pane_num id='$notif_id' replace='${REPLACE_ARGS[*]}' exit=$?" >> "$LOG"
     else
-        # Non-selected: muted text, gray border via dim foreground
+        # Non-selected: muted text, gray border
         body="<span foreground='#616e88'>$body</span>"
         notif_id=$(dunstify "Claude - $label" "$body" \
             "${REPLACE_ARGS[@]}" \
-            -u critical -I "$ICON" -t 0 -p)
+            -u critical -t 0 -p 2>>"$LOG")
+        echo "$(ts) [navigate] dunstify other pane=$pane_num id='$notif_id' replace='${REPLACE_ARGS[*]}' exit=$?" >> "$LOG"
     fi
-    echo "$notif_id" > "$STATE_DIR/notif-id-${pane_num}"
+    [ -n "$notif_id" ] && echo "$notif_id" > "$STATE_DIR/notif-id-${pane_num}"
 done
 
-# Focus the target instance's terminal
-STATE_FILE="$STATE_DIR/$TARGET"
-INSTANCE_TYPE=$(grep '^instance_type=' "$STATE_FILE" 2>/dev/null | cut -d= -f2)
-
-if [ "$INSTANCE_TYPE" = "tmux" ]; then
-    PANE=$(grep '^pane=' "$STATE_FILE" 2>/dev/null | cut -d= -f2)
-    if [ -z "$PANE" ]; then
-        echo "$(ts) [navigate] error: empty pane in state file $TARGET" >> "$LOG"
-        rm -f "$STATE_FILE"
-        exit 1
-    fi
-    # Focus the ghostty terminal window in niri
-    GHOSTTY_WID=$(niri msg windows 2>/dev/null | awk '
-        /^Window ID/ { id = $3; sub(/:$/, "", id) }
-        /App ID:.*com\.mitchellh\.ghostty/ { print id; exit }
-    ')
-    [ -n "$GHOSTTY_WID" ] && niri msg action focus-window --id "$GHOSTTY_WID"
-    # Switch tmux to the target pane
-    tmux select-pane -t "$PANE" 2>/dev/null
-    tmux select-window -t "$PANE" 2>/dev/null
-    echo "$(ts) [navigate] focused pane=$PANE target=$TARGET (${#PANES[@]} pending) [tmux]" >> "$LOG"
-else
-    WINDOW_ID=$(grep '^window_id=' "$STATE_FILE" 2>/dev/null | cut -d= -f2)
-    if [ -z "$WINDOW_ID" ]; then
-        echo "$(ts) [navigate] error: no window_id in state file $TARGET" >> "$LOG"
-        rm -f "$STATE_FILE"
-        exit 1
-    fi
-    niri msg action focus-window --id "$WINDOW_ID" 2>/dev/null
-    echo "$(ts) [navigate] focused window=$WINDOW_ID target=$TARGET (${#PANES[@]} pending) [direct]" >> "$LOG"
-fi
+echo "$(ts) [navigate] selected target=$TARGET (${#PANES[@]} pending)" >> "$LOG"

@@ -116,7 +116,7 @@ if [ -n "$TOOL_PROMPT" ]; then
     [ ${#TOOL_PROMPT} -gt 200 ] && truncated="${truncated}..."
     BODY="$BODY\n${truncated}"
 fi
-BODY="$BODY\n\nAllow <b>(Ctrl+Super+Y)</b>\nAlways Allow <b>(Ctrl+Super+A)</b>\nDeny <b>(Ctrl+Super+N)</b>\nGo to <b>(Ctrl+Super+P)</b>"
+BODY="$BODY\n\nAllow <b>(Ctrl+Super+Y)</b>\nAlways Allow <b>(Ctrl+Super+A)</b>\nDeny <b>(Ctrl+Super+N)</b>\nNext <b>(Ctrl+Super+P)</b>\nGo to <b>(Ctrl+Super+O)</b>"
 
 echo "$(ts) [permission-request] notification: tool=$TOOL_NAME cmd=\"$TOOL_CMD\" file=\"$TOOL_FILE\"" >> "$LOG"
 
@@ -164,9 +164,23 @@ if is_terminal_focused && [ "$PANE_VISIBLE" = true ]; then
 else
     REPLACE_ID_FILE="$STATE_DIR/notif-id-${INSTANCE_ID}"
     REPLACE_ARGS=()
-    [ -f "$REPLACE_ID_FILE" ] && REPLACE_ARGS=(-r "$(cat "$REPLACE_ID_FILE")")
-    NOTIF_ID=$(dunstify "Claude - $LABEL" "$BODY" \
-        "${REPLACE_ARGS[@]}" \
-        -u critical -I "$ICON" -t 0 -p)
-    echo "$NOTIF_ID" > "$REPLACE_ID_FILE"
+    if [ -f "$REPLACE_ID_FILE" ]; then
+        old_id=$(cat "$REPLACE_ID_FILE")
+        [ -n "$old_id" ] && REPLACE_ARGS=(-r "$old_id")
+    fi
+    if [ ! -f "$STATE_DIR/.last-navigate" ]; then
+        # First notification: active styling, auto-select
+        NOTIF_ID=$(dunstify "> Claude - $LABEL" "$BODY" \
+            "${REPLACE_ARGS[@]}" \
+            -u critical -t 0 -p 2>>"$LOG")
+        echo "$INSTANCE_ID" > "$STATE_DIR/.last-navigate"
+    else
+        # Additional notification: dimmed styling
+        DIMMED="<span foreground='#616e88'>$BODY</span>"
+        NOTIF_ID=$(dunstify "Claude - $LABEL" "$DIMMED" \
+            "${REPLACE_ARGS[@]}" \
+            -u critical -t 0 -p 2>>"$LOG")
+    fi
+    echo "$(ts) [permission-request] dunstify returned id='$NOTIF_ID' exit=$?" >> "$LOG"
+    [ -n "$NOTIF_ID" ] && echo "$NOTIF_ID" > "$REPLACE_ID_FILE"
 fi

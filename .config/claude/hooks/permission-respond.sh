@@ -26,7 +26,7 @@ if [ -f "$LAST_NAV_FILE" ]; then
     [ -f "$STATE_DIR/$NAV_TARGET" ] && LATEST="$NAV_TARGET"
 fi
 if [ -z "$LATEST" ]; then
-    LATEST=$(find "$STATE_DIR" -maxdepth 1 -type f ! -name '.*' ! -name '*-*' -printf '%T@ %f\n' 2>/dev/null | sort -rn | head -1 | awk '{print $2}')
+    LATEST=$(find "$STATE_DIR" -maxdepth 1 -type f ! -name '.*' ! -name '*-*' -printf '%T@ %f\n' 2>/dev/null | sort -n | head -1 | awk '{print $2}')
 fi
 
 if [ -z "$LATEST" ]; then
@@ -70,9 +70,15 @@ else
     RESULT=$?
 fi
 
-# Close this instance's notification by ID (avoids flash from -t 1 replacement)
+# Close this instance's notification by ID
 NOTIF_ID_FILE="$STATE_DIR/notif-id-${LATEST}"
-[ -f "$NOTIF_ID_FILE" ] && dunstify -C "$(cat "$NOTIF_ID_FILE")" 2>/dev/null
+if [ -f "$NOTIF_ID_FILE" ]; then
+    CLOSE_ID=$(cat "$NOTIF_ID_FILE")
+    echo "$(ts) [respond] closing notification id=$CLOSE_ID for instance=$LATEST" >> "$LOG"
+    dunstify -C "$CLOSE_ID" 2>>"$LOG"
+else
+    echo "$(ts) [respond] no notif-id file for instance=$LATEST" >> "$LOG"
+fi
 
 # Clean up state
 rm -f "$STATE_FILE" "$STATE_DIR/tool-info-${LATEST}.json" "$NOTIF_ID_FILE" "$LAST_NAV_FILE"
@@ -85,10 +91,8 @@ else
     echo "$(ts) [respond] sent key=$SEND_KEY (${LABELS[$KEY]}) to=$LATEST type=$INSTANCE_TYPE exit=$RESULT" >> "$LOG"
 fi
 
-# Notify if more prompts remain
-REMAINING=$(find "$STATE_DIR" -maxdepth 1 -type f ! -name '.*' 2>/dev/null | wc -l)
-if [ "$REMAINING" -gt 0 ]; then
-    dunstify "Claude Code" "${REMAINING} permission prompt(s) pending" \
-        --stack-tag claude-pending-count -u normal -I "$ICON" -t 5000
-    echo "$(ts) [respond] $REMAINING prompts still pending" >> "$LOG"
+# Re-render remaining notifications with auto-selection
+REMAINING_STATE=$(find "$STATE_DIR" -maxdepth 1 -type f ! -name '.*' ! -name '*-*' ! -name '*.json' 2>/dev/null)
+if [ -n "$REMAINING_STATE" ]; then
+    bash "$HOME/.config/claude/hooks/permission-navigate.sh" </dev/null 2>/dev/null
 fi
