@@ -167,7 +167,9 @@
         "exec": "~/.scripts/waybar-devops/waybar-devops",
         "return-type": "json",
         "interval": 1,
-        "tooltip": true
+        "tooltip": true,
+        "format": "{}",
+        "markup": "pango"
    },
    "custom/cpu-temp": {
         "exec": "sensors k10temp-pci-00c3 | awk '/Tccd1:/ {gsub(/[^0-9.]/, \"\", $2); printf \"%.0f\", $2}'",

@@ -25,6 +25,7 @@ DISCOVERY_TTL=3600
 BUILD_TTL=10
 STALE_TIMEOUT=10
 PERSIST_TIMEOUT=60
+MERGE_CHECK_TTL=300
 LOG_MAX_LINES=500
 
 mkdir -p "$CACHE_DIR"
@@ -427,6 +428,50 @@ format_elapsed() {
         echo "$((elapsed / 60))m $((elapsed % 60))s"
     else
         echo "$((elapsed % 60))s"
+    fi
+}
+
+# ── Release Branch Merge Check ──────────────────────────────────
+
+do_git_fetch() {
+    local git_root="$1"
+    local cache_key
+    cache_key=$(echo -n "$git_root" | md5sum | cut -d' ' -f1)
+    local fetch_ts_file="$CACHE_DIR/fetch_${cache_key}.txt"
+    local now
+    now=$(date +%s)
+
+    if [[ -f "$fetch_ts_file" ]]; then
+        local cached_at
+        read -r cached_at < "$fetch_ts_file"
+        if (( now - cached_at < MERGE_CHECK_TTL )); then
+            return
+        fi
+    fi
+
+    log "fetch: refreshing remote refs"
+    timeout 10 git -C "$git_root" fetch origin --quiet 2>/dev/null
+    echo "$now" > "$fetch_ts_file"
+}
+
+check_release_merged() {
+    local git_root="$1" branch="$2"
+    local release_branch="release/$branch"
+
+    do_git_fetch "$git_root"
+
+    if ! git -C "$git_root" rev-parse "origin/$release_branch" &>/dev/null; then
+        log "merge-check: origin/$release_branch not found"
+        echo "unknown"
+        return
+    fi
+
+    if git -C "$git_root" merge-base --is-ancestor "origin/$release_branch" origin/main 2>/dev/null; then
+        log "merge-check: $release_branch merged"
+        echo "merged"
+    else
+        log "merge-check: $release_branch NOT merged"
+        echo "unmerged"
     fi
 }
 
@@ -918,9 +963,32 @@ main() {
         return
     fi
 
+    # Check merge status of deployed release branches
+    local checked="" unmerged_branches=""
+    while IFS= read -r env; do
+        local branch
+        branch=$(echo "$env" | jq -r '.branch')
+        [[ " $checked " == *" $branch "* ]] && continue
+        checked+=" $branch"
+        if [[ "$branch" =~ ^[0-9]+\.[0-9]+ ]]; then
+            local merge_status
+            merge_status=$(check_release_merged "$git_root" "$branch")
+            if [[ "$merge_status" == "unmerged" ]]; then
+                [[ -n "$unmerged_branches" ]] && unmerged_branches+=", "
+                unmerged_branches+="$branch"
+            fi
+        fi
+    done < <(echo "$deployments" | jq -c '.environments[]' 2>/dev/null)
+
+    if [[ -n "$unmerged_branches" ]]; then
+        text+="  <span color='#fab387'>⚠</span>"
+        tooltip+="\n\n⚠ Not merged to main: ${unmerged_branches}"
+    fi
+
     log "output: $text"
     save_state "$text" "$tooltip"
-    jq -cn --arg text "$text" --arg tooltip "$tooltip" '{text: $text, tooltip: $tooltip, class: "active"}'
+    jq -cn --arg text "$text" --arg tooltip "$tooltip" \
+        '{text: $text, tooltip: $tooltip, class: "active"}'
 }
 
 main

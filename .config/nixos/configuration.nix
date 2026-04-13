@@ -171,6 +171,7 @@
     wtype # To be able to send keystrokes to a terminal from dunst notification for claude notifications
     google-chrome
     cloc # Count Lines Of Code
+    sqlcmd # MS SQL CLI client
   ];
 
   # Some programs need SUID wrappers, can be configured further or are
