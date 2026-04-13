@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Claude Code Permission Navigate (multi-instance)
-# Called by niri keybinding to cycle through pending permission notifications
-# Only updates notification visuals and saves selection — does NOT focus terminal
+# Called by niri keybinding to cycle through pending permission prompts
+# Only ONE notification is visible at a time — cycles which one is shown
 #
 # Usage: permission-navigate.sh
 
@@ -12,7 +12,7 @@ STATE_DIR="/tmp/claude-permissions"
 ICON="$HOME/.config/claude/icons/claude-code.png"
 LAST_NAV_FILE="$STATE_DIR/.last-navigate"
 
-# Get pending instance IDs sorted by most recent first
+# Get pending instance IDs sorted oldest first
 mapfile -t PANES < <(find "$STATE_DIR" -maxdepth 1 -type f ! -name '.*' ! -name '*-*' ! -name '*.json' -printf '%T@ %f\n' 2>/dev/null | sort -n | awk '{print $2}')
 
 if [ ${#PANES[@]} -eq 0 ]; then
@@ -22,7 +22,7 @@ if [ ${#PANES[@]} -eq 0 ]; then
     exit 0
 fi
 
-# Determine target: cycle if already navigated, otherwise most recent
+# Determine target: cycle from current selection
 LAST_NAV=$(cat "$LAST_NAV_FILE" 2>/dev/null)
 TARGET="${PANES[0]}"
 
@@ -38,12 +38,21 @@ fi
 
 echo "$TARGET" > "$LAST_NAV_FILE"
 
+# Close ALL existing notifications
+for pane_num in "${PANES[@]}"; do
+    old_id_file="$STATE_DIR/notif-id-${pane_num}"
+    if [ -f "$old_id_file" ]; then
+        old_id=$(cat "$old_id_file")
+        [ -n "$old_id" ] && dunstify -C "$old_id" 2>/dev/null
+        rm -f "$old_id_file"
+    fi
+done
+
 # Build notification body from tool-info
 build_body() {
     local pane_num="$1"
     local info_file="$STATE_DIR/tool-info-${pane_num}.json"
     local tool_name="" tool_cmd="" tool_file="" tool_desc="" tool_pattern="" tool_prompt="" tool_subtype=""
-
     if [ -f "$info_file" ]; then
         tool_name=$(jq -r '.tool_name // empty' "$info_file" 2>/dev/null)
         tool_cmd=$(jq -r '.tool_input.command // empty' "$info_file" 2>/dev/null)
@@ -53,7 +62,10 @@ build_body() {
         tool_prompt=$(jq -r '.tool_input.prompt // empty' "$info_file" 2>/dev/null)
         tool_subtype=$(jq -r '.tool_input.subagent_type // empty' "$info_file" 2>/dev/null)
     fi
-
+    tool_cmd="${tool_cmd//\\/\\\\}"; tool_file="${tool_file//\\/\\\\}"
+    tool_desc="${tool_desc//\\/\\\\}"; tool_pattern="${tool_pattern//\\/\\\\}"
+    tool_prompt="${tool_prompt//\\/\\\\}"
+    [ -n "$tool_cmd" ] && [ ${#tool_cmd} -gt 200 ] && tool_cmd="${tool_cmd:0:200}..."
     local body
     if [ -n "$tool_subtype" ]; then
         body="<b>${tool_name:-Tool}</b> (${tool_subtype})"
@@ -69,46 +81,28 @@ build_body() {
         [ ${#tool_prompt} -gt 200 ] && truncated="${truncated}..."
         body="$body\n${truncated}"
     fi
-
     echo "$body"
 }
 
-# Re-render all notifications: highlight selected, dim others
-for pane_num in "${PANES[@]}"; do
-    local_state="$STATE_DIR/$pane_num"
-    label=$(grep '^label=' "$local_state" 2>/dev/null | cut -d= -f2)
-    [ -z "$label" ] && label="claude:?"
-    prompt_type=$(grep '^prompt_type=' "$local_state" 2>/dev/null | cut -d= -f2)
-    body=$(build_body "$pane_num")
+# Show only the target notification
+local_state="$STATE_DIR/$TARGET"
+label=$(grep '^label=' "$local_state" 2>/dev/null | cut -d= -f2)
+[ -z "$label" ] && label="claude:?"
+prompt_type=$(grep '^prompt_type=' "$local_state" 2>/dev/null | cut -d= -f2)
 
-    # Replace existing notification atomically (avoids close+create race)
-    old_id_file="$STATE_DIR/notif-id-${pane_num}"
-    REPLACE_ARGS=()
-    if [ -f "$old_id_file" ]; then
-        old_id=$(cat "$old_id_file")
-        [ -n "$old_id" ] && REPLACE_ARGS=(-r "$old_id")
-    fi
+body=$(build_body "$TARGET")
+if [ "$prompt_type" = "yesno" ]; then
+    body="$body\n\nYes <b>(Ctrl+Super+Y)</b>\nNo <b>(Ctrl+Super+N)</b>\nNext <b>(Ctrl+Super+P)</b>\nGo to <b>(Ctrl+Super+O)</b>"
+else
+    body="$body\n\nAllow <b>(Ctrl+Super+Y)</b>\nAlways Allow <b>(Ctrl+Super+A)</b>\nDeny <b>(Ctrl+Super+N)</b>\nNext <b>(Ctrl+Super+P)</b>\nGo to <b>(Ctrl+Super+O)</b>"
+fi
 
-    if [ "$pane_num" = "$TARGET" ]; then
-        # Selected: accent border, full keybindings
-        if [ "$prompt_type" = "yesno" ]; then
-            body="$body\n\nYes <b>(Ctrl+Super+Y)</b>\nNo <b>(Ctrl+Super+N)</b>\nNext <b>(Ctrl+Super+P)</b>"
-        else
-            body="$body\n\nAllow <b>(Ctrl+Super+Y)</b>\nAlways Allow <b>(Ctrl+Super+A)</b>\nDeny <b>(Ctrl+Super+N)</b>\nNext <b>(Ctrl+Super+P)</b>"
-        fi
-        notif_id=$(dunstify "> Claude - $label" "$body" \
-            "${REPLACE_ARGS[@]}" \
-            -I "$ICON" -u critical -t 0 -p 2>>"$LOG")
-        echo "$(ts) [navigate] dunstify selected pane=$pane_num id='$notif_id' replace='${REPLACE_ARGS[*]}' exit=$?" >> "$LOG"
-    else
-        # Non-selected: muted text, gray border
-        body="<span foreground='#616e88'>$body</span>"
-        notif_id=$(dunstify "Claude - $label" "$body" \
-            "${REPLACE_ARGS[@]}" \
-            -I "$ICON" -u critical -t 0 -p 2>>"$LOG")
-        echo "$(ts) [navigate] dunstify other pane=$pane_num id='$notif_id' replace='${REPLACE_ARGS[*]}' exit=$?" >> "$LOG"
-    fi
-    [ -n "$notif_id" ] && echo "$notif_id" > "$STATE_DIR/notif-id-${pane_num}"
-done
+# Add pending count
+EXTRA=$(( ${#PANES[@]} - 1 ))
+[ "$EXTRA" -gt 0 ] && body="$body\n\n<i>+${EXTRA} more pending</i>"
 
-echo "$(ts) [navigate] selected target=$TARGET (${#PANES[@]} pending)" >> "$LOG"
+notif_id=$(dunstify "> Claude - $label" "$body" \
+    -I "$ICON" -u critical -t 0 -p 2>>"$LOG")
+[ -n "$notif_id" ] && echo "$notif_id" > "$STATE_DIR/notif-id-${TARGET}"
+
+echo "$(ts) [navigate] selected target=$TARGET (${#PANES[@]} pending) id='$notif_id'" >> "$LOG"
