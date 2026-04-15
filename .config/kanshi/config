@@ -42,6 +42,13 @@ profile work_micke_b {
     output "California Institute of Technology 0x1404 Unknown" mode 1920x1200@60Hz position 5120,0 scale 1.0
 }
 
+# Office wall window setup - Laptop + Dual Dell monitors
+profile office_wall_window {
+    output "California Institute of Technology 0x1404 Unknown" mode 1920x1200@60Hz position 0,0 scale 1.25
+    output "Dell Inc. DELL U2515H 9X2VY58L028L" mode 2560x1440@60Hz position 1536,0 scale 1.0
+    output "Dell Inc. DELL U2515H 9X2VY58L023L" mode 2560x1440@60Hz position 4096,0 scale 1.0
+}
+
 # Add more profiles below as you connect to different monitor setups
 # Example:
 # profile work_dual {

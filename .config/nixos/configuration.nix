@@ -172,11 +172,16 @@
     google-chrome
     cloc # Count Lines Of Code
     sqlcmd # MS SQL CLI client
+    swaylock-effects # screen locker for Wayland (fork with blur/screenshot support)
+    kanshi # dynamic monitor configuration
   ];
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
   # programs.mtr.enable = true;
+  # PAM service for swaylock (required for password authentication)
+  security.pam.services.swaylock = {};
+
   programs.gnupg.agent = {
     enable = true;
     enableSSHSupport = true;
