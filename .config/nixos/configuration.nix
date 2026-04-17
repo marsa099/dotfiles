@@ -161,7 +161,7 @@
     bat # cat clone with syntax highlighting, used by television for previews
     wev # tool to see keycodes for key input etc
     brightnessctl # brightness control via keyboard brightness keys
-    swayosd # on-screen display for brightness/volume changes
+    unstable.swayosd # on-screen display for brightness/volume changes (unstable for v0.3.1 monitor hot-plug crash fix)
     dunst # notification daemon
     libnotify # provides notify-send for sending desktop notifications
     pass # password manager (pass)
