@@ -40,6 +40,10 @@ in
     pkgs.libsecret # provides libsecret-1.so for MSAL keyring access
   ];
 
+  # nix-ld provides a dynamic linker stub so dotnet-compiled binaries
+  # (which are dynamically linked) can run without patchelf
+  programs.nix-ld.enable = true;
+
   # gnome-keyring stores the auth tokens, PAM auto-unlocks it at login
   services.gnome.gnome-keyring.enable = true;
   security.pam.services.greetd.enableGnomeKeyring = true;
