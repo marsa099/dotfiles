@@ -91,11 +91,14 @@
       "wheel"
       "networkmanager"
       "video"
+      "docker"
     ]; # wheel = sudo, video = brightnessctl without sudo
     packages = with pkgs; [
       tree
     ];
   };
+
+  virtualisation.docker.enable = true;
 
   programs.niri.enable = true;
   programs.firefox.enable = true;
