@@ -158,7 +158,7 @@
     dunst # notification daemon
     libnotify # provides notify-send for sending desktop notifications
     pass # password manager (pass)
-    unstable.azure-cli
+    (unstable.azure-cli.withExtensions [ unstable.azure-cli.extensions.azure-devops ]) # unstable: fix broken deployment commands (nixpkgs#490035)
     terraform
     spotify-player
     wtype # To be able to send keystrokes to a terminal from dunst notification for claude notifications

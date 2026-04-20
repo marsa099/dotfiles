@@ -34,9 +34,17 @@ shopt -s histappend
 export QT_QPA_PLATFORM=wayland
 
 
-# Sets az devops PAT to env var
-# Need to move. This requires auth which is very annoying as soon as you open a terminal
-#export AZURE_DEVOPS_EXT_PAT=$(pass sis/devops/pat)
+# az devops: NixOS azure-cli can't install the Python keyring package, so
+# `az devops login` fails. This wrapper reads the PAT from GNOME Keyring
+# (via secret-tool) on demand and passes it only to the az devops process.
+# PAT stored with: secret-tool store --label="Azure DevOps PAT" service azure-devops type pat
+az() {
+    if [[ "$1" == "devops" ]]; then
+        AZURE_DEVOPS_EXT_PAT=$(secret-tool lookup service azure-devops type pat) command az "$@"
+    else
+        command az "$@"
+    fi
+}
 
 alias PAGER=less
 
