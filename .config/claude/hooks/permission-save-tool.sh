@@ -94,8 +94,10 @@ build_body() {
         tpt=$(jq -r '.tool_input.prompt // empty' "$info" 2>/dev/null)
         ts=$(jq -r '.tool_input.subagent_type // empty' "$info" 2>/dev/null)
     fi
-    tc="${tc//\\/\\\\}"; tf="${tf//\\/\\\\}"; td="${td//\\/\\\\}"
-    tp="${tp//\\/\\\\}"; tpt="${tpt//\\/\\\\}"
+    # HTML-escape to prevent < > & breaking dunst markup
+    _esc() { local s="${1//&/&amp;}"; s="${s//</&lt;}"; s="${s//>/&gt;}"; echo "$s"; }
+    tc=$(_esc "$tc"); tf=$(_esc "$tf"); td=$(_esc "$td")
+    tp=$(_esc "$tp"); tpt=$(_esc "$tpt")
     [ -n "$tc" ] && [ ${#tc} -gt 200 ] && tc="${tc:0:200}..."
     local b
     if [ -n "$ts" ]; then b="<b>${tn:-Tool}</b> (${ts})"; else b="<b>${tn:-Tool}</b>"; fi
@@ -132,7 +134,7 @@ is_terminal_focused() {
     focused_wid=$(niri msg focused-window 2>/dev/null | awk '/^Window ID/ {print $3; exit}' | tr -d ':')
     [ -z "$focused_wid" ] && return 1
     local start_pid=$$
-    [ -n "$TMUX" ] && start_pid=$(tmux display-message -p '#{client_pid}' 2>/dev/null)
+    [ -n "$TMUX" ] && start_pid=$(tmux display-message -t "$TMUX_PANE" -p '#{client_pid}' 2>/dev/null)
     [ -z "$start_pid" ] && return 1
     local windows
     windows=$(niri msg windows 2>/dev/null)
@@ -155,7 +157,7 @@ is_terminal_focused() {
 # Check pane visibility (tmux only)
 PANE_VISIBLE=false
 if [ "$INSTANCE_TYPE" = "tmux" ] && [ -n "$PANE" ]; then
-    CLIENT_ACTIVE_PANE=$(tmux list-clients -F '#{pane_id}' 2>/dev/null | head -1)
+    CLIENT_ACTIVE_PANE=$(tmux list-clients -t "$SESSION" -F '#{pane_id}' 2>/dev/null | head -1)
     [ "$CLIENT_ACTIVE_PANE" = "$PANE" ] && PANE_VISIBLE=true
 else
     PANE_VISIBLE=true
@@ -198,4 +200,26 @@ else
         [ -n "$NOTIF_ID" ] && echo "$NOTIF_ID" > "$REPLACE_ID_FILE"
         echo "$(ts) [permission-request] updated active count id='$NOTIF_ID' active=$ACTIVE_ID" >> "$LOG"
     fi
+fi
+
+# Background watcher: detect when permission prompt disappears (denial or accept)
+# and clean up. Handles denial case where PostToolUse never fires.
+if [ "$INSTANCE_TYPE" = "tmux" ] && [ -n "$PANE" ]; then
+    WATCHER_PID_FILE="$STATE_DIR/watcher-${INSTANCE_ID}.pid"
+    [ -f "$WATCHER_PID_FILE" ] && kill "$(cat "$WATCHER_PID_FILE")" 2>/dev/null
+    (
+        # Wait for the permission prompt to appear (up to 10s)
+        for _ in $(seq 1 10); do
+            tmux capture-pane -t "$PANE" -p 2>/dev/null | grep -q "Esc to cancel" && break
+            sleep 1
+        done
+        # Poll until prompt disappears (no timeout — keeps watching)
+        while tmux capture-pane -t "$PANE" -p 2>/dev/null | grep -q "Esc to cancel"; do
+            sleep 2
+        done
+        # Prompt is gone — clean up if state still exists
+        [ -f "$STATE_DIR/$INSTANCE_ID" ] && bash ~/.config/claude/hooks/cleanup-instance.sh "$INSTANCE_ID"
+        rm -f "$WATCHER_PID_FILE"
+    ) &>/dev/null &
+    echo $! > "$WATCHER_PID_FILE"
 fi

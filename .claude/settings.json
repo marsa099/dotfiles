@@ -1,5 +1,4 @@
 {
-  "effortLevel": "high",
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   },
@@ -28,7 +27,7 @@
     ],
     "Notification": [
       {
-        "matcher": "idle_prompt",
+        "matcher": "",
         "hooks": [
           {
             "type": "command",
@@ -37,5 +36,6 @@
         ]
       }
     ]
-  }
+  },
+  "effortLevel": "high"
 }
