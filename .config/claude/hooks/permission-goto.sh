@@ -38,16 +38,18 @@ if [ "$INSTANCE_TYPE" = "tmux" ]; then
         echo "$(ts) [goto] error: empty pane in state file $TARGET" >> "$LOG"
         exit 1
     fi
+    SESSION=$(grep '^session=' "$STATE_FILE" 2>/dev/null | cut -d= -f2)
     # Focus the ghostty terminal window in niri
     GHOSTTY_WID=$(niri msg windows 2>/dev/null | awk '
         /^Window ID/ { id = $3; sub(/:$/, "", id) }
         /App ID:.*com\.mitchellh\.ghostty/ { print id; exit }
     ')
     [ -n "$GHOSTTY_WID" ] && niri msg action focus-window --id "$GHOSTTY_WID"
-    # Switch tmux to the target pane
-    tmux select-pane -t "$PANE" 2>/dev/null
+    # Switch to the correct session, then select window and pane
+    [ -n "$SESSION" ] && tmux switch-client -t "$SESSION" 2>/dev/null
     tmux select-window -t "$PANE" 2>/dev/null
-    echo "$(ts) [goto] focused pane=$PANE target=$TARGET [tmux]" >> "$LOG"
+    tmux select-pane -t "$PANE" 2>/dev/null
+    echo "$(ts) [goto] focused pane=$PANE session=$SESSION target=$TARGET [tmux]" >> "$LOG"
 else
     WINDOW_ID=$(grep '^window_id=' "$STATE_FILE" 2>/dev/null | cut -d= -f2)
     if [ -z "$WINDOW_ID" ]; then
