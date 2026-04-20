@@ -208,17 +208,23 @@ if [ "$INSTANCE_TYPE" = "tmux" ] && [ -n "$PANE" ]; then
     WATCHER_PID_FILE="$STATE_DIR/watcher-${INSTANCE_ID}.pid"
     [ -f "$WATCHER_PID_FILE" ] && kill "$(cat "$WATCHER_PID_FILE")" 2>/dev/null
     (
-        # Wait for the permission prompt to appear (up to 10s)
-        for _ in $(seq 1 10); do
-            tmux capture-pane -t "$PANE" -p 2>/dev/null | grep -q "Esc to cancel" && break
+        # Wait for the permission prompt to appear (up to 30s)
+        SEEN=false
+        for _ in $(seq 1 30); do
+            if tmux capture-pane -t "$PANE" -p 2>/dev/null | grep -q "Esc to cancel"; then
+                SEEN=true
+                break
+            fi
             sleep 1
         done
-        # Poll until prompt disappears (no timeout — keeps watching)
-        while tmux capture-pane -t "$PANE" -p 2>/dev/null | grep -q "Esc to cancel"; do
-            sleep 2
-        done
-        # Prompt is gone — clean up if state still exists
-        [ -f "$STATE_DIR/$INSTANCE_ID" ] && bash ~/.config/claude/hooks/cleanup-instance.sh "$INSTANCE_ID"
+        # Only watch for disappearance if we actually saw the prompt
+        if [ "$SEEN" = true ]; then
+            while tmux capture-pane -t "$PANE" -p 2>/dev/null | grep -q "Esc to cancel"; do
+                sleep 2
+            done
+            # Prompt disappeared — clean up if state still exists
+            [ -f "$STATE_DIR/$INSTANCE_ID" ] && bash ~/.config/claude/hooks/cleanup-instance.sh "$INSTANCE_ID"
+        fi
         rm -f "$WATCHER_PID_FILE"
     ) &>/dev/null &
     echo $! > "$WATCHER_PID_FILE"

@@ -62,9 +62,10 @@ build_body() {
         tool_prompt=$(jq -r '.tool_input.prompt // empty' "$info_file" 2>/dev/null)
         tool_subtype=$(jq -r '.tool_input.subagent_type // empty' "$info_file" 2>/dev/null)
     fi
-    tool_cmd="${tool_cmd//\\/\\\\}"; tool_file="${tool_file//\\/\\\\}"
-    tool_desc="${tool_desc//\\/\\\\}"; tool_pattern="${tool_pattern//\\/\\\\}"
-    tool_prompt="${tool_prompt//\\/\\\\}"
+    _esc() { local s="${1//&/&amp;}"; s="${s//</&lt;}"; s="${s//>/&gt;}"; echo "$s"; }
+    tool_cmd=$(_esc "$tool_cmd"); tool_file=$(_esc "$tool_file")
+    tool_desc=$(_esc "$tool_desc"); tool_pattern=$(_esc "$tool_pattern")
+    tool_prompt=$(_esc "$tool_prompt")
     [ -n "$tool_cmd" ] && [ ${#tool_cmd} -gt 200 ] && tool_cmd="${tool_cmd:0:200}..."
     local body
     if [ -n "$tool_subtype" ]; then
