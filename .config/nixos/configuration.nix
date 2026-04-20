@@ -14,6 +14,7 @@
   imports = [
     ./hardware-configuration.nix
     ./modules/dotnet.nix
+    ./modules/neovim.nix
     ./modules/roslyn-ls.nix
   ];
 
@@ -130,7 +131,6 @@
   environment.systemPackages = with pkgs; [
     vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
     ghostty
-    neovim
     tmux
     git
     waybar
@@ -147,19 +147,9 @@
     jq
     python3
     glib # provides gsettings - a CLI tool that reads/writes GNOME/GTK settings (e.g. dark/light mode preference that apps like Ghostty and Firefox listen to)
-    tree-sitter # nvim-treesitter uses this CLI to download and build parsers
-    gcc # C compiler needed by tree-sitter to compile parsers
-    nodejs # needed by typescript-language-server runtime
-    nodePackages.typescript-language-server
-    lua-language-server # Lua LSP (Mason binary broken on NixOS due to dynamic linking)
-    stylua # Lua formatter (Mason binary broken on NixOS due to dynamic linking)
-    nil # Nix LSP
-    # roslyn-ls provided by modules/roslyn-ls.nix (wrapped for correct DOTNET_ROOT)
+    # neovim + LSPs/formatters/tools provided by modules/neovim.nix
+    # roslyn-ls provided by modules/roslyn-ls.nix
     # dotnet-sdk_10 provided by modules/dotnet.nix
-    fd # fast file finder used by telescope.nvim
-    unzip # needed by mason to extract packages
-    nixfmt # formatter used by nil (Nix LSP)
-    fzf # fuzzy finder used by nvim-bqf quickfix filtering
     television # fuzzy finder TUI
     bat # cat clone with syntax highlighting, used by television for previews
     wev # tool to see keycodes for key input etc
