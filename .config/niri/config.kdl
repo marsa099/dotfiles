@@ -293,6 +293,9 @@ spawn-at-startup "dunst"
 // Start kanshi for dynamic monitor configuration
 spawn-at-startup "kanshi"
 
+// Text expander (auto-wraps code keywords in backticks)
+spawn-at-startup "espanso" "daemon"
+
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
 // spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"
 
