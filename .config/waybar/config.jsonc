@@ -7,7 +7,7 @@
     "margin-top": 0,
     "margin-bottom": 0,
     "modules-left": ["group/hardware", "custom/devops"],
-    "modules-center": ["niri/workspaces"],
+    "modules-center": ["niri/workspaces", "custom/dnd"],
     "modules-right": ["tray", "group/system"],
     "niri/workspaces": {
          "disable-scroll": true,
@@ -161,7 +161,7 @@
    },
    "group/hardware": {
         "orientation": "inherit",
-        "modules": ["cpu", "memory", "custom/cpu-temp", "custom/gpu-temp", "custom/screencast", "custom/camera", "custom/dnd", "pulseaudio#mic", "pulseaudio#speaker"]
+        "modules": ["cpu", "memory", "custom/cpu-temp", "custom/gpu-temp", "custom/screencast", "custom/camera", "pulseaudio#mic", "pulseaudio#speaker"]
    },
    "custom/devops": {
         "exec": "~/.scripts/waybar-devops/waybar-devops",
