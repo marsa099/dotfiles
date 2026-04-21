@@ -16,6 +16,7 @@
     ./modules/dotnet.nix
     ./modules/neovim.nix
     ./modules/roslyn-ls.nix
+    ./modules/vercel.nix
   ];
 
   # Use the systemd-boot EFI boot loader.
