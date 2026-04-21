@@ -9,6 +9,7 @@
     # See: https://wiki.nixos.org/wiki/Zen_Browser
     # Alternative (wiki-recommended): zen-browser = { url = "github:youwen5/zen-browser-flake"; inputs.nixpkgs.follows = "nixpkgs"; };
     zen-browser.url = "github:0xc000022070/zen-browser-flake";
+    claude-code-notify.url = "github:marsa099/claude-code-notify";
   };
 
   outputs =
@@ -18,6 +19,7 @@
       nixpkgs-unstable,
       claude-code,
       zen-browser,
+      claude-code-notify,
       ...
     }:
     let
@@ -34,6 +36,7 @@
             environment.systemPackages = [
               claude-code.packages.${system}.default
               zen-browser.packages.${system}.default
+              claude-code-notify.packages.${system}.default
             ];
           }
         ];
