@@ -152,12 +152,12 @@
         "tooltip": true
    },
    "custom/dnd": {
-        "exec": "~/.local/bin/waybar-dnd",
+        "exec": "~/.scripts/waybar-dnd",
         "return-type": "json",
         "interval": "once",
         "signal": 10,
         "tooltip": true,
-        "on-click": "~/.local/bin/waybar-dnd-toggle"
+        "on-click": "~/.scripts/waybar-dnd-toggle"
    },
    "group/hardware": {
         "orientation": "inherit",

@@ -155,6 +155,18 @@ window#waybar {
   font-size: 16px;
 }
 
+#custom-dnd.active {
+  padding: 6px 12px;
+  color: #f38ba8;
+  font-size: 16px;
+}
+
+#custom-dnd.inactive {
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
 #custom-discord-notifications,
 #custom-teams-notifications {
   padding: 6px 12px;
