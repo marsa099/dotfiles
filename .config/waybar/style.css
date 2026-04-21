@@ -119,9 +119,14 @@ window#waybar {
 
 /* Center module */
 .modules-center {
+  background: transparent;
+  margin: 8px;
+  padding: 0;
+}
+
+#workspaces {
   background: alpha(#1B1B1B, 0.85);
   border-radius: 8px;
-  margin: 8px;
   padding: 0px 8px;
 }
 
@@ -158,8 +163,8 @@ window#waybar {
 #custom-dnd.active {
   background: alpha(#1B1B1B, 0.85);
   border-radius: 8px;
-  padding: 6px 12px;
-  margin-right: 12px;
+  padding: 6px 16px;
+  margin-left: 12px;
   color: #f38ba8;
   font-size: 16px;
 }

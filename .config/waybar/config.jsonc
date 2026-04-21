@@ -7,8 +7,8 @@
     "margin-top": 0,
     "margin-bottom": 0,
     "modules-left": ["group/hardware", "custom/devops"],
-    "modules-center": ["niri/workspaces"],
-    "modules-right": ["custom/dnd", "tray", "group/system"],
+    "modules-center": ["niri/workspaces", "custom/dnd"],
+    "modules-right": ["tray", "group/system"],
     "niri/workspaces": {
          "disable-scroll": true,
          "sort-by-name": true,
