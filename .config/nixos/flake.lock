@@ -24,11 +24,11 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1776750435,
-        "narHash": "sha256-5V5cPA17hrmAXHh1c2aQNNFrQAodA7736DorFuk3H9Q=",
+        "lastModified": 1776753399,
+        "narHash": "sha256-9iAGZFRi0z2p+2zmZBHUeT5lgWWZCtr4szl1LrYPNck=",
         "owner": "marsa099",
         "repo": "claude-code-notify",
-        "rev": "d8892e001152b520fc88082b88a56772a48f2d8a",
+        "rev": "cd5d2047fc4d9c914031d1032ad539c4e5d6c7f0",
         "type": "github"
       },
       "original": {
