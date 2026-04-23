@@ -27,10 +27,10 @@ PAT stored in the system keyring via `secret-tool`:
 
 ```sh
 # Store/update PAT
-secret-tool store --label='Azure DevOps PAT' service azure-devops type pat
+secret-tool store --label='Azure DevOps PAT (waybar)' service azure-devops type waybar
 
 # Verify it's stored
-secret-tool lookup service azure-devops type pat
+secret-tool lookup service azure-devops type waybar
 ```
 
 The PAT needs `Build (Read)` and `Release (Read)` scopes.

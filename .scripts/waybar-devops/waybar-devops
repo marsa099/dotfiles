@@ -12,7 +12,7 @@
 # Build:   "Building (3/6: Test) - 1m 23s" with stage breakdown tooltip
 # Deploy:  "T: test  P: 1.10.0" with env/branch tooltip
 #
-# Auth: PAT from system keyring via secret-tool (service=azure-devops, scope=release-read).
+# Auth: PAT from system keyring via secret-tool (service=azure-devops, type=waybar).
 # Cache: ~/.cache/waybar-devops/ (discovery 1h, deployments 60s, builds 10s)
 # Log:   ~/.cache/waybar-devops/waybar-devops.log
 
@@ -119,7 +119,7 @@ PAT_STATUS_FILE="$CACHE_DIR/pat_status"
 PAT_CHECK_TTL=300  # recheck expired PAT every 5 minutes
 
 get_pat() {
-    secret-tool lookup service azure-devops type pat 2>/dev/null || return 1
+    secret-tool lookup service azure-devops type waybar 2>/dev/null || return 1
 }
 
 pat_error_output() {
@@ -141,7 +141,7 @@ check_pat_cache() {
         read -r cached_at cached_hash < "$PAT_STATUS_FILE"
         if [[ "$cached_hash" == "$pat_hash" ]] && (( now - cached_at < PAT_CHECK_TTL )); then
             log "auth: PAT known invalid (age=$((now - cached_at))s), skipping API calls"
-            pat_error_output "DevOps: PAT Expired" "PAT is expired or invalid\nUpdate: secret-tool store --label='Azure DevOps PAT' service azure-devops type pat"
+            pat_error_output "DevOps: PAT Expired" "PAT is expired or invalid\nUpdate: secret-tool store --label='Azure DevOps PAT (waybar)' service azure-devops type waybar"
             return 1
         fi
     fi
@@ -589,7 +589,7 @@ handle_lifecycle() {
     local pat
     if ! pat=$(get_pat); then
         log "lifecycle: no PAT"
-        pat_error_output "DevOps: No PAT" "No PAT configured\nAdd: secret-tool store --label='Azure DevOps PAT' service azure-devops type pat"
+        pat_error_output "DevOps: No PAT" "No PAT configured\nAdd: secret-tool store --label='Azure DevOps PAT (waybar)' service azure-devops type waybar"
         return 0
     fi
 
@@ -902,7 +902,7 @@ main() {
     local pat
     if ! pat=$(get_pat); then
         log "ERROR: no PAT in keyring"
-        pat_error_output "DevOps: No PAT" "No PAT configured\nAdd: secret-tool store --label='Azure DevOps PAT' service azure-devops type pat"
+        pat_error_output "DevOps: No PAT" "No PAT configured\nAdd: secret-tool store --label='Azure DevOps PAT (waybar)' service azure-devops type waybar"
         return
     fi
 

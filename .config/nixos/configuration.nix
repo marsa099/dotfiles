@@ -17,6 +17,7 @@
     ./modules/neovim.nix
     ./modules/roslyn-ls.nix
     ./modules/vercel.nix
+    ./modules/azure-cli.nix
   ];
 
   # Use the systemd-boot EFI boot loader.
@@ -43,6 +44,7 @@
   # restores dead key composition without needing a full input method framework.
   # See: https://discourse.nixos.org/t/swedish-keyboard-layout-not-working-after-upgrade-to-25-11/72882/3
   environment.sessionVariables.GTK_IM_MODULE = "simple";
+
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";
   # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
@@ -159,7 +161,6 @@
     dunst # notification daemon
     libnotify # provides notify-send for sending desktop notifications
     pass # password manager (pass)
-    (unstable.azure-cli.withExtensions [ unstable.azure-cli.extensions.azure-devops ]) # unstable: fix broken deployment commands (nixpkgs#490035)
     terraform
     spotify-player
     wtype # To be able to send keystrokes to a terminal from dunst notification for claude notifications

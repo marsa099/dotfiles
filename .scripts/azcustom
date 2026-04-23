@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Wrapper for az CLI — injects Azure DevOps PAT from GNOME Keyring.
+# NixOS azure-cli can't use Python keyring, so `az devops login` fails.
+# This wrapper reads the PAT on demand.
+#
+# Currently not used — NixOS wraps az at the package level (modules/azure-cli.nix).
+# Kept as a portable fallback and as a reference for per-subcommand PAT routing
+# (e.g. different auth for devops/repos vs portal/resource commands).
+#
+# PATs stored in GNOME Keyring:
+#   waybar (build/release read):        secret-tool store --label="Azure DevOps PAT (waybar)" service azure-devops type waybar
+#   cli (code full + build/release read): secret-tool store --label="Azure DevOps PAT (cli)" service azure-devops type cli
+case "$1" in
+    devops|repos|pipelines)
+        AZURE_DEVOPS_EXT_PAT=$(secret-tool lookup service azure-devops type cli) \
+            exec /run/current-system/sw/bin/az "$@" ;;
+    *)
+        exec /run/current-system/sw/bin/az "$@" ;;
+esac
