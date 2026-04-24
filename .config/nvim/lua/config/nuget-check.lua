@@ -232,8 +232,10 @@ end
 
 vim.api.nvim_create_autocmd("VimEnter", {
   callback = function()
-    local csproj = vim.fn.glob("*.csproj")
-    if csproj == "" then return end
+    local has_project = vim.fn.glob("*.csproj") ~= ""
+      or vim.fn.glob("*.sln") ~= ""
+      or vim.fn.glob("*.slnx") ~= ""
+    if not has_project then return end
 
     vim.notify("Checking NuGet packages...", vim.log.levels.INFO)
 
