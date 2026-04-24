@@ -8,6 +8,11 @@
 # `az devops login` fails. This wrapper reads the PAT from GNOME Keyring
 # (via secret-tool) for devops/repos/pipelines commands.
 #
+# The azure-devops extension prefers MSAL tokens (az login) over PATs.
+# When az login uses a different account than the PAT, the extension picks
+# the wrong identity. AZURE_CONFIG_DIR is set to a temp dir so the extension
+# can't find the MSAL cache and falls through to the PAT.
+#
 # PATs stored in GNOME Keyring:
 #   cli (code full + build/release read):
 #     secret-tool store --label="Azure DevOps PAT (cli)" service azure-devops type cli
@@ -29,6 +34,7 @@ let
 case "$1" in
     devops|repos|pipelines)
         AZURE_DEVOPS_EXT_PAT=$(secret-tool lookup service azure-devops type cli) \
+        AZURE_CONFIG_DIR=$(mktemp -d) \
             exec ${az-unwrapped}/bin/az "$@" ;;
     *)
         exec ${az-unwrapped}/bin/az "$@" ;;
