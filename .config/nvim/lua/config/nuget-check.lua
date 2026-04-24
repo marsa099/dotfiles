@@ -1,3 +1,24 @@
+local function find_csproj_for_package(pkg_name)
+  local csprojs = vim.fn.glob("**/*.csproj", false, true)
+  for _, proj in ipairs(csprojs) do
+    for _, line in ipairs(vim.fn.readfile(proj)) do
+      if line:find(pkg_name, 1, true) then
+        return proj
+      end
+    end
+  end
+  if #csprojs > 0 then return csprojs[1] end
+  return nil
+end
+
+local function dotnet_add_cmd(pkg_name)
+  local csproj = find_csproj_for_package(pkg_name)
+  if csproj then
+    return "dotnet add " .. vim.fn.shellescape(csproj) .. " package " .. pkg_name
+  end
+  return "dotnet add package " .. pkg_name
+end
+
 local function open_nuget_popup(vulnerable, outdated)
   local buf = vim.api.nvim_create_buf(false, true)
   local ns = vim.api.nvim_create_namespace("nuget_check")
@@ -56,7 +77,7 @@ local function open_nuget_popup(vulnerable, outdated)
     table.insert(lines, "")
   end
 
-  table.insert(lines, "  u upgrade │ U upgrade all │ q close")
+  table.insert(lines, "  u upgrade │ U upgrade all │ r retry │ q close")
 
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
 
@@ -125,34 +146,58 @@ local function open_nuget_popup(vulnerable, outdated)
     end
   end
 
-  local function mark_upgraded(line_nr, pkg)
+  local failed_map = {}
+
+  local function set_line(line_nr, text, hl)
     vim.bo[buf].modifiable = true
-    local updated = string.format("  %-40s ✓ upgraded", pkg.name)
-    vim.api.nvim_buf_set_lines(buf, line_nr - 1, line_nr, false, { updated })
-    vim.api.nvim_buf_add_highlight(buf, ns, "DiagnosticOk", line_nr - 1, 0, -1)
+    vim.api.nvim_buf_set_lines(buf, line_nr - 1, line_nr, false, { text })
+    vim.api.nvim_buf_add_highlight(buf, ns, hl, line_nr - 1, 0, -1)
     vim.bo[buf].modifiable = false
+  end
+
+  local function mark_installing(line_nr, pkg)
+    set_line(line_nr, string.format("  %-40s ⟳ installing...", pkg.name), "DiagnosticInfo")
     pkg_map[line_nr] = nil
+  end
+
+  local function mark_installed(line_nr, pkg)
+    set_line(line_nr, string.format("  %-40s ✓ installed", pkg.name), "DiagnosticOk")
+    failed_map[line_nr] = nil
+  end
+
+  local function mark_failed(line_nr, pkg)
+    set_line(line_nr, string.format("  %-40s ✗ failed (r to retry)", pkg.name), "DiagnosticError")
+    failed_map[line_nr] = pkg
+  end
+
+  local function run_upgrade(line_nr, pkg, on_done)
+    mark_installing(line_nr, pkg)
+    vim.fn.jobstart(dotnet_add_cmd(pkg.name), {
+      on_exit = function(_, code)
+        vim.schedule(function()
+          if code == 0 then
+            mark_installed(line_nr, pkg)
+          else
+            mark_failed(line_nr, pkg)
+          end
+          if on_done then on_done() end
+        end)
+      end,
+    })
   end
 
   local function upgrade_package()
     local line_nr = vim.api.nvim_win_get_cursor(win)[1]
     local entry = pkg_map[line_nr]
     if not entry then return end
-    local pkg = entry.pkg
+    run_upgrade(line_nr, entry.pkg)
+  end
 
-    vim.notify("Upgrading " .. pkg.name .. "...", vim.log.levels.INFO)
-    vim.fn.jobstart("dotnet add package " .. pkg.name, {
-      on_exit = function(_, code)
-        vim.schedule(function()
-          if code == 0 then
-            mark_upgraded(line_nr, pkg)
-            vim.notify(pkg.name .. " upgraded", vim.log.levels.INFO)
-          else
-            vim.notify("Failed to upgrade " .. pkg.name, vim.log.levels.ERROR)
-          end
-        end)
-      end,
-    })
+  local function retry_package()
+    local line_nr = vim.api.nvim_win_get_cursor(win)[1]
+    local pkg = failed_map[line_nr]
+    if not pkg then return end
+    run_upgrade(line_nr, pkg)
   end
 
   local function upgrade_all()
@@ -162,29 +207,23 @@ local function open_nuget_popup(vulnerable, outdated)
     end
     if #queue == 0 then return end
 
+    -- Mark all as installing
+    for _, e in ipairs(queue) do
+      mark_installing(e.line_nr, e.pkg)
+    end
+
     local i = 0
     local function next_upgrade()
       i = i + 1
-      if i > #queue then
-        vim.schedule(function()
-          vim.notify("All packages upgraded!", vim.log.levels.INFO)
-        end)
-        return
-      end
+      if i > #queue then return end
       local e = queue[i]
-      vim.schedule(function()
-        vim.notify(
-          string.format("Upgrading %s (%d/%d)...", e.pkg.name, i, #queue),
-          vim.log.levels.INFO
-        )
-      end)
-      vim.fn.jobstart("dotnet add package " .. e.pkg.name, {
+      vim.fn.jobstart(dotnet_add_cmd(e.pkg.name), {
         on_exit = function(_, code)
           vim.schedule(function()
             if code == 0 then
-              mark_upgraded(e.line_nr, e.pkg)
+              mark_installed(e.line_nr, e.pkg)
             else
-              vim.notify("Failed to upgrade " .. e.pkg.name, vim.log.levels.ERROR)
+              mark_failed(e.line_nr, e.pkg)
             end
           end)
           next_upgrade()
@@ -199,6 +238,7 @@ local function open_nuget_popup(vulnerable, outdated)
   vim.keymap.set("n", "<Esc>", close, opts)
   vim.keymap.set("n", "u", upgrade_package, opts)
   vim.keymap.set("n", "<CR>", upgrade_package, opts)
+  vim.keymap.set("n", "r", retry_package, opts)
   vim.keymap.set("n", "U", upgrade_all, opts)
 end
 
