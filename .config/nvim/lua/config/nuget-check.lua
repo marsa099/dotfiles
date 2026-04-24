@@ -121,7 +121,12 @@ local function open_nuget_popup(vulnerable, outdated)
   vim.bo[buf].buftype = "nofile"
   vim.bo[buf].bufhidden = "wipe"
 
-  local width = 90
+  local width = 0
+  for _, line in ipairs(lines) do
+    local w = vim.fn.strdisplaywidth(line)
+    if w > width then width = w end
+  end
+  width = width + 2
   local height = #lines
   local win = vim.api.nvim_open_win(buf, true, {
     relative = "editor",
