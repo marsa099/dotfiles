@@ -818,8 +818,14 @@ handle_lifecycle() {
             save_lifecycle "$(echo "$lc" | jq --argjson now "$now" --arg rr "$release_result" --arg re "$release_elapsed_fmt" \
                 '.state = "release_done" | .release_completed_at = $now | .release_result = $rr | .release_elapsed = $re')"
             save_state "$text" "$tooltip"
-            jq -cn --arg t "$text" --arg tt "$tooltip" \
-                '{text: $t, tooltip: $tt, class: "release-done"}'
+            local release_class
+            if [[ "$release_result" == "succeeded" ]]; then
+                release_class="release-succeeded"
+            else
+                release_class="release-failed"
+            fi
+            jq -cn --arg t "$text" --arg tt "$tooltip" --arg c "$release_class" \
+                '{text: $t, tooltip: $tt, class: $c}'
             return 0
             ;;
 
@@ -844,8 +850,14 @@ handle_lifecycle() {
             fi
             tooltip="Build #${build_number} - ${source_branch}\nRelease to ${release_env}: ${release_result}"
             save_state "$text" "$tooltip"
-            jq -cn --arg t "$text" --arg tt "$tooltip" \
-                '{text: $t, tooltip: $tt, class: "release-done"}'
+            local release_class
+            if [[ "$release_result" == "succeeded" ]]; then
+                release_class="release-succeeded"
+            else
+                release_class="release-failed"
+            fi
+            jq -cn --arg t "$text" --arg tt "$tooltip" --arg c "$release_class" \
+                '{text: $t, tooltip: $tt, class: $c}'
             return 0
             ;;
 

@@ -1,3 +1,5 @@
+@import "colors.css";
+
 * {
   font-family: "Roboto", "JetBrainsMono NF", monospace;
   font-size: 16px;
@@ -45,23 +47,27 @@ window#waybar {
 }
 
 #custom-devops.building {
-  color: #f9e2af;
+  color: @base0A;
 }
 
 #custom-devops.build-failed {
-  color: #f38ba8;
+  color: @critical;
 }
 
 #custom-devops.build-succeeded {
-  color: #a6e3a1;
+  color: @success;
 }
 
 #custom-devops.releasing {
-  color: #f9e2af;
+  color: @base0A;
 }
 
-#custom-devops.release-done {
-  color: #a6e3a1;
+#custom-devops.release-succeeded {
+  color: @success;
+}
+
+#custom-devops.release-failed {
+  color: @critical;
 }
 
 #cpu,
