@@ -1,0 +1,21 @@
+// This configuration file allows you to pass permanent command line arguments to VS Code.
+// Only a subset of arguments is currently supported to reduce the likelihood of breaking
+// the installation.
+//
+// PLEASE DO NOT CHANGE WITHOUT UNDERSTANDING THE IMPACT
+//
+// NOTE: Changing this file requires a restart of VS Code.
+{
+	// Use software rendering instead of hardware accelerated rendering.
+	// This can help in cases where you see rendering issues in VS Code.
+	// "disable-hardware-acceleration": true,
+
+	// Disable sending crash reports to Microsoft telemetry.
+	"enable-crash-reporter": false,
+
+	// Force Electron to use libsecret (talks to gnome-keyring-daemon via the
+	// org.freedesktop.secrets D-Bus interface). Without this, on non-GNOME/KDE
+	// desktops (e.g. niri) Electron fails to auto-detect a keyring and prompts
+	// to fall back to weaker plaintext storage.
+	"password-store": "gnome-libsecret"
+}
