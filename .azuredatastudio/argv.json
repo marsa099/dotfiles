@@ -10,9 +10,8 @@
 	// This can help in cases where you see rendering issues in VS Code.
 	// "disable-hardware-acceleration": true,
 
-	// Send crash reports to Microsoft telemetry. (ADS auto-generates a
-	// crash-reporter-id on first run if this is true and the id is missing.)
-	"enable-crash-reporter": true,
+	// Disable sending crash reports to Microsoft telemetry.
+	"enable-crash-reporter": false,
 
 	// Force Electron to use libsecret instead of letting it auto-detect from
 	// XDG_CURRENT_DESKTOP. On niri (and any desktop that isn't GNOME/Unity/KDE)
