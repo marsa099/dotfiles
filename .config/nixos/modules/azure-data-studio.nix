@@ -6,19 +6,19 @@
 # to dlopen libsecret-1.so.0 and falls back to plaintext in-memory storage.
 # Tracked upstream as nixpkgs#294948. See REVIEW.md for the full analysis.
 
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 
 let
-  azuredatastudio-wrapped = pkgs.symlinkJoin {
-    name = "azuredatastudio-libsecret";
-    paths = [ pkgs.azuredatastudio ];
-    nativeBuildInputs = [ pkgs.makeBinaryWrapper ];
-    postBuild = ''
-      rm "$out/bin/azuredatastudio"
-      makeBinaryWrapper "${pkgs.azuredatastudio}/bin/azuredatastudio" "$out/bin/azuredatastudio" \
-        --prefix LD_LIBRARY_PATH : "${pkgs.libsecret}/lib"
-    '';
-  };
+  # An outer makeWrapper --prefix LD_LIBRARY_PATH does NOT work here because
+  # the nixpkgs ADS derivation's inner preFixup calls
+  #     makeWrapper ... --set LD_LIBRARY_PATH ${rpath}
+  # which clobbers whatever an outer wrapper injects. Instead, override the
+  # package and substitute the new rpath into the original preFixup string,
+  # so the inner --set itself includes libsecret.
+  azuredatastudio-wrapped = pkgs.azuredatastudio.overrideAttrs (old: rec {
+    rpath = "${old.rpath}:${lib.makeLibraryPath [ pkgs.libsecret ]}";
+    preFixup = lib.replaceStrings [ old.rpath ] [ rpath ] old.preFixup;
+  });
 in
 {
   nixpkgs.config.allowUnfree = true;
