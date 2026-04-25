@@ -10,12 +10,18 @@
 	// This can help in cases where you see rendering issues in VS Code.
 	// "disable-hardware-acceleration": true,
 
-	// Disable sending crash reports to Microsoft telemetry.
-	"enable-crash-reporter": false,
+	// Send crash reports to Microsoft telemetry. (ADS auto-generates a
+	// crash-reporter-id on first run if this is true and the id is missing.)
+	"enable-crash-reporter": true,
 
-	// Force Electron to use libsecret (talks to gnome-keyring-daemon via the
-	// org.freedesktop.secrets D-Bus interface). Without this, on non-GNOME/KDE
-	// desktops (e.g. niri) Electron fails to auto-detect a keyring and prompts
-	// to fall back to weaker plaintext storage.
+	// Force Electron to use libsecret instead of letting it auto-detect from
+	// XDG_CURRENT_DESKTOP. On niri (and any desktop that isn't GNOME/Unity/KDE)
+	// the auto-detection would otherwise fall back to "basic" plaintext storage
+	// — silently, with no popup to warn that secrets are no longer encrypted.
+	//
+	// Note: this setting alone is not sufficient on NixOS — the nixpkgs
+	// azuredatastudio derivation also needs libsecret added to its rpath
+	// (handled in modules/azure-data-studio.nix), otherwise Chromium's OSCrypt
+	// can't dlopen libsecret-1.so.0 and falls back anyway.
 	"password-store": "gnome-libsecret"
 }
