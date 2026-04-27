@@ -170,7 +170,6 @@
     sqlcmd # MS SQL CLI client
     swaylock-effects # screen locker for Wayland (fork with blur/screenshot support)
     kanshi # dynamic monitor configuration
-    espanso-wayland # text expander (auto-wraps C# keywords in backticks etc.)
     sox # audio recording, required by claude code /voice
   ];
 
