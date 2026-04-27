@@ -31,6 +31,7 @@ STALE_TIMEOUT=10
 PERSIST_TIMEOUT=60
 MERGE_CHECK_TTL=300
 LOG_MAX_LINES=500
+NL=$'\n'
 
 mkdir -p "$CACHE_DIR"
 
@@ -141,7 +142,7 @@ check_pat_cache() {
         read -r cached_at cached_hash < "$PAT_STATUS_FILE"
         if [[ "$cached_hash" == "$pat_hash" ]] && (( now - cached_at < PAT_CHECK_TTL )); then
             log "auth: PAT known invalid (age=$((now - cached_at))s), skipping API calls"
-            pat_error_output "DevOps: PAT Expired" "PAT is expired or invalid\nUpdate: secret-tool store --label='Azure DevOps PAT (waybar)' service azure-devops type waybar"
+            pat_error_output "DevOps: PAT Expired" "PAT is expired or invalid${NL}Update: secret-tool store --label='Azure DevOps PAT (waybar)' service azure-devops type waybar"
             return 1
         fi
     fi
@@ -290,6 +291,8 @@ get_deployments() {
         fi
 
         branch=$(echo "$deploy_data" | jq -r '.value[0].release.artifacts[0].definitionReference.branch.name // empty' 2>/dev/null)
+        local deployer
+        deployer=$(echo "$deploy_data" | jq -r '.value[0].requestedFor.displayName // .value[0].requestedBy.displayName // empty' 2>/dev/null)
 
         # Strip refs/heads/ and common prefixes
         branch="${branch#refs/heads/}"
@@ -299,7 +302,7 @@ get_deployments() {
         branch="${branch#hotfix/}"
 
         if [[ -n "$branch" ]]; then
-            result=$(echo "$result" | jq --arg n "$env_name" --arg b "$branch" '. + [{name: $n, branch: $b}]')
+            result=$(echo "$result" | jq --arg n "$env_name" --arg b "$branch" --arg d "$deployer" '. + [{name: $n, branch: $b, deployer: $d}]')
         fi
     done < <(echo "$env_info" | jq -c '.environments[]')
 
@@ -434,7 +437,7 @@ get_build_progress() {
                     (if .result == "succeeded" then "✓" else "✗" end)
                 elif .state == "inProgress" then "→"
                 else "·" end) + " " + .name
-            ] | join("\\n")),
+            ] | join("\n")),
             cached_at: $now
         }
     ' 2>/dev/null)
@@ -589,7 +592,7 @@ handle_lifecycle() {
     local pat
     if ! pat=$(get_pat); then
         log "lifecycle: no PAT"
-        pat_error_output "DevOps: No PAT" "No PAT configured\nAdd: secret-tool store --label='Azure DevOps PAT (waybar)' service azure-devops type waybar"
+        pat_error_output "DevOps: No PAT" "No PAT configured${NL}Add: secret-tool store --label='Azure DevOps PAT (waybar)' service azure-devops type waybar"
         return 0
     fi
 
@@ -625,7 +628,7 @@ handle_lifecycle() {
                     save_lifecycle "$(echo "$lc" | jq --argjson now "$now" --arg be "$elapsed_fmt" \
                         '.state = "build_succeeded" | .result = "succeeded" | .completed_at = $now | .build_elapsed = $be')"
                     local text="${repo_dir}: ✓ Build Succeeded - ${elapsed_fmt}"
-                    local tooltip="Build #${build_number} - ${source_branch}\nSucceeded"
+                    local tooltip="Build #${build_number} - ${source_branch}${NL}Succeeded"
                     save_state "$text" "$tooltip"
                     jq -cn --arg t "$text" --arg tt "$tooltip" \
                         '{text: $t, tooltip: $tt, class: "build-succeeded"}'
@@ -645,7 +648,7 @@ handle_lifecycle() {
                     save_lifecycle "$(echo "$lc" | jq --argjson now "$now" --arg fs "$failed_stage" --arg be "$elapsed_fmt" \
                         '.state = "build_failed" | .result = "failed" | .completed_at = $now | .failed_stage = $fs | .build_elapsed = $be')"
                     local text="${repo_dir}: ✗ Build Failed (${failed_stage}) - ${elapsed_fmt}"
-                    local tooltip="Build #${build_number} - ${source_branch}\nFailed at: ${failed_stage}"
+                    local tooltip="Build #${build_number} - ${source_branch}${NL}Failed at: ${failed_stage}"
                     save_state "$text" "$tooltip"
                     jq -cn --arg t "$text" --arg tt "$tooltip" \
                         '{text: $t, tooltip: $tt, class: "build-failed"}'
@@ -664,7 +667,7 @@ handle_lifecycle() {
                 tooltip_stages=$(echo "$progress" | jq -r '.tooltip_stages')
 
                 local text="${repo_dir}: Building (${stage_progress}: ${current_stage}) - ${elapsed_fmt}"
-                local tooltip="Build #${build_number} - ${source_branch}\n${tooltip_stages}"
+                local tooltip="Build #${build_number} - ${source_branch}${NL}${tooltip_stages}"
                 log "lifecycle: $text"
                 save_state "$text" "$tooltip"
                 jq -cn --arg t "$text" --arg tt "$tooltip" \
@@ -693,7 +696,7 @@ handle_lifecycle() {
             failed_stage=$(echo "$lc" | jq -r '.failed_stage // "Unknown"')
             build_elapsed=$(echo "$lc" | jq -r '.build_elapsed // "?"')
             local text="${repo_dir}: ✗ Build Failed (${failed_stage}) - ${build_elapsed}"
-            local tooltip="Build #${build_number} - ${source_branch}\nFailed at: ${failed_stage}"
+            local tooltip="Build #${build_number} - ${source_branch}${NL}Failed at: ${failed_stage}"
             save_state "$text" "$tooltip"
             jq -cn --arg t "$text" --arg tt "$tooltip" \
                 '{text: $t, tooltip: $tt, class: "build-failed"}'
@@ -730,7 +733,7 @@ handle_lifecycle() {
                         --arg rid "$release_id" --arg env "$release_env" --argjson rs "$now" \
                         '.state = "releasing" | .release_id = $rid | .release_env = $env | .release_started_at = $rs')"
                     local text="${repo_dir}: Releasing ${source_branch} to ${release_env}"
-                    local tooltip="Build #${build_number} - ${source_branch}\nReleasing to ${release_env}"
+                    local tooltip="Build #${build_number} - ${source_branch}${NL}Releasing to ${release_env}"
                     save_state "$text" "$tooltip"
                     jq -cn --arg t "$text" --arg tt "$tooltip" \
                         '{text: $t, tooltip: $tt, class: "releasing"}'
@@ -742,7 +745,7 @@ handle_lifecycle() {
             local build_elapsed
             build_elapsed=$(echo "$lc" | jq -r '.build_elapsed // "?"')
             local text="${repo_dir}: ✓ Build Succeeded - ${build_elapsed}"
-            local tooltip="Build #${build_number} - ${source_branch}\nSucceeded"
+            local tooltip="Build #${build_number} - ${source_branch}${NL}Succeeded"
             save_state "$text" "$tooltip"
             jq -cn --arg t "$text" --arg tt "$tooltip" \
                 '{text: $t, tooltip: $tt, class: "build-succeeded"}'
@@ -774,7 +777,7 @@ handle_lifecycle() {
                     elapsed_fmt="${release_sec}s"
                 fi
                 local text="${repo_dir}: Releasing ${source_branch} to ${release_env} - ${elapsed_fmt}"
-                local tooltip="Build #${build_number} - ${source_branch}\nReleasing to ${release_env}"
+                local tooltip="Build #${build_number} - ${source_branch}${NL}Releasing to ${release_env}"
                 save_state "$text" "$tooltip"
                 jq -cn --arg t "$text" --arg tt "$tooltip" \
                     '{text: $t, tooltip: $tt, class: "releasing"}'
@@ -813,7 +816,7 @@ handle_lifecycle() {
                 release_result="failed"
                 text="${repo_dir}: ✗ Release Failed (${release_env}) - ${release_elapsed_fmt}"
             fi
-            local tooltip="Build #${build_number} - ${source_branch}\nRelease to ${release_env}: ${release_result}"
+            local tooltip="Build #${build_number} - ${source_branch}${NL}Release to ${release_env}: ${release_result}"
             log "lifecycle: release $release_result"
             save_lifecycle "$(echo "$lc" | jq --argjson now "$now" --arg rr "$release_result" --arg re "$release_elapsed_fmt" \
                 '.state = "release_done" | .release_completed_at = $now | .release_result = $rr | .release_elapsed = $re')"
@@ -848,7 +851,7 @@ handle_lifecycle() {
             else
                 text="${repo_dir}: ✗ Release Failed (${release_env}) - ${release_elapsed}"
             fi
-            tooltip="Build #${build_number} - ${source_branch}\nRelease to ${release_env}: ${release_result}"
+            tooltip="Build #${build_number} - ${source_branch}${NL}Release to ${release_env}: ${release_result}"
             save_state "$text" "$tooltip"
             local release_class
             if [[ "$release_result" == "succeeded" ]]; then
@@ -914,7 +917,7 @@ main() {
     local pat
     if ! pat=$(get_pat); then
         log "ERROR: no PAT in keyring"
-        pat_error_output "DevOps: No PAT" "No PAT configured\nAdd: secret-tool store --label='Azure DevOps PAT (waybar)' service azure-devops type waybar"
+        pat_error_output "DevOps: No PAT" "No PAT configured${NL}Add: secret-tool store --label='Azure DevOps PAT (waybar)' service azure-devops type waybar"
         return
     fi
 
@@ -952,7 +955,7 @@ main() {
                 tooltip_stages=$(echo "$progress" | jq -r '.tooltip_stages')
 
                 local text="${repo_dir}: Building (${stage_progress}: ${current_stage}) - ${elapsed_fmt}"
-                local tooltip="Build #${build_number} - ${source_branch}\n${tooltip_stages}"
+                local tooltip="Build #${build_number} - ${source_branch}${NL}${tooltip_stages}"
 
                 log "output (build): $text"
                 save_state "$text" "$tooltip"
@@ -992,7 +995,7 @@ main() {
         [[ -n "$text" ]] && text+="    "
         text+="${initial}: ${branch}"
 
-        [[ -n "$tooltip" ]] && tooltip+="\n"
+        [[ -n "$tooltip" ]] && tooltip+="${NL}"
         tooltip+="${name}: ${branch}"
     done < <(echo "$deployments" | jq -c '.environments[]' 2>/dev/null)
 
@@ -1001,6 +1004,21 @@ main() {
         empty_output
         return
     fi
+
+    # Build branch -> "env by deployer" map, preferring prod env when a branch
+    # is deployed to multiple environments.
+    declare -A branch_deploy_info
+    while IFS= read -r env; do
+        local b n d info
+        b=$(echo "$env" | jq -r '.branch')
+        n=$(echo "$env" | jq -r '.name')
+        d=$(echo "$env" | jq -r '.deployer // empty')
+        [[ -z "$d" ]] && continue
+        info="${n} by ${d}"
+        if [[ "${n,,}" == prod* ]] || [[ -z "${branch_deploy_info[$b]:-}" ]]; then
+            branch_deploy_info[$b]="$info"
+        fi
+    done < <(echo "$deployments" | jq -c '.environments[]' 2>/dev/null)
 
     # Check merge status of deployed release branches
     local checked="" unmerged_branches=""
@@ -1013,15 +1031,18 @@ main() {
             local merge_status
             merge_status=$(check_release_merged "$git_root" "$branch")
             if [[ "$merge_status" == "unmerged" ]]; then
+                local entry="$branch"
+                local info="${branch_deploy_info[$branch]:-}"
+                [[ -n "$info" ]] && entry+=" (${info})"
                 [[ -n "$unmerged_branches" ]] && unmerged_branches+=", "
-                unmerged_branches+="$branch"
+                unmerged_branches+="$entry"
             fi
         fi
     done < <(echo "$deployments" | jq -c '.environments[]' 2>/dev/null)
 
     if [[ -n "$unmerged_branches" ]]; then
         text+="  <span color='#fab387'>⚠</span>"
-        tooltip+="\n\n⚠ Not merged to main: ${unmerged_branches}"
+        tooltip+="${NL}${NL}⚠ Not merged to main: ${unmerged_branches}"
     fi
 
     log "output: $text"
