@@ -124,3 +124,62 @@ When adding any Microsoft Electron / .NET / dlopen-heavy app:
 
 If we keep hitting this for new apps, consider promoting `pkgs.libsecret`
 into `programs.nix-ld.libraries` system-wide as a backstop.
+
+---
+
+## Bicep CLI: stale nixpkgs + libicu dlopen + single-file bundle
+
+### Symptoms
+
+| Date       | App           | Failure mode                                                                                       |
+| ---------- | ------------- | -------------------------------------------------------------------------------------------------- |
+| 2026-04-28 | `az bicep`    | `Couldn't find a valid ICU package installed` — az auto-downloaded bicep crashes immediately      |
+| 2026-04-28 | `pkgs.bicep`  | Works, but stuck at 0.36.177 in stable/unstable/master; floods 8× BCP081 on 2025-* API versions   |
+| 2026-04-28 | upstream bin + autoPatchelfHook | `Failure processing application bundle; arithmetic overflow while reading bundle` |
+
+Three faces of the same problem: **how do you run a recent Microsoft Bicep on NixOS?**
+
+1. **az self-install** drops a self-contained .NET binary in `~/.azure/bin/`. Like every Microsoft FHS-assuming Linux binary, it `dlopen`s `libicu` and dies because NixOS has no `/usr/lib`.
+2. **`pkgs.bicep`** is a proper Nix build, but nixpkgs hasn't bumped it past 0.36.177 — across stable, unstable, AND master. Every resource pinned to a 2025-* API version warns BCP081 because 0.36.177 lacks the type metadata.
+3. **autoPatchelfHook on upstream binary** seems like the obvious fix: download `bicep-linux-x64`, patchelf its RUNPATH against `pkgs.icu`, done. Except bicep is a **.NET single-file self-contained bundle** — a normal ELF with the bundle's payload appended after the ELF data. patchelf rewrites program headers, the file size shifts, the bundle's "where does my payload start?" offset becomes wrong, and bundle parsing fails with arithmetic overflow.
+
+### Fix
+
+`modules/bicep.nix` (commit `<pending>`, 2026-04-28) — keeps the upstream binary **byte-identical** and runs it inside a `buildFHSEnv` chroot that provides `icu`, `zlib`, `openssl`, `stdenv.cc.cc.lib` under `/usr/lib`. The binary's own `dlopen` then resolves naturally inside the FHS env.
+
+Cost: chroot setup adds tens of ms per invocation. Negligible for `az bicep build`.
+
+### Why the obvious fix doesn't work
+
+`autoPatchelfHook` is the standard nixpkgs answer for "foreign binary needs Nix libs." It works on stand-alone ELFs because patchelf's modifications stay within the ELF format. **It breaks on .NET single-file bundles** because the bundle reader computes its data offset from the file size (or a footer offset relative to file end), and patchelf changes that.
+
+This is upstream Microsoft's call: single-file bundling is a deployment convenience that's hostile to any post-build binary surgery. Other tools (Azure CLI itself uses Python; `dotnet` uses many separate files) don't hit this. Anything that ships as a single-file self-contained binary will.
+
+### Whose fault is it?
+
+**Microsoft (~50%).** Single-file bundle format is fragile by design — any post-build tool that touches the ELF risks invalidating the bundle. Tools that ship this way force consumers into either FHS envs or wholesale rebuilding.
+
+**nixpkgs (~30%).** Six minor versions behind upstream on a tool used heavily for Azure deployments. The blocker is that nixpkgs builds bicep from source via `buildDotnetModule`, which needs a NuGet deps lock regenerated for every version — a known maintenance pain point. No issue tracked yet (one could be filed).
+
+**NixOS itself (~20%).** No `/usr/lib` is the trigger; everything else flows from there. nix-ld doesn't help because the Microsoft binary doesn't go through nix-ld's loader stub.
+
+### On Arch Linux: would this happen?
+
+**No.** On Arch:
+
+- `pacman -S bicep` exists in AUR (`bicep-bin`) and tracks upstream within days, so 0.42.1 is available.
+- Even if you `az bicep install`, libicu and friends live at `/usr/lib/libicuuc.so` etc. and the loader finds them with no extra work.
+
+Class of problem (Microsoft self-contained binary + system lib `dlopen`) is invisible on Arch. Same root cause family as the ADS / libsecret issue — different lib, same FHS assumption.
+
+### Lesson
+
+For Microsoft `*.NET single-file self-contained binaries on NixOS, **default to `buildFHSEnv` rather than `autoPatchelfHook`**. The chroot cost is cheap; the patchelf failure mode is silent and confusing. autoPatchelfHook is the right tool for plain dynamically-linked ELFs, not for bundles with appended payloads.
+
+Reusable mental check: `file /path/to/binary` shows just `ELF 64-bit LSB executable...`. To detect single-file bundle, check for the `.NET` signature near end-of-file:
+
+```bash
+strings -a -n 8 ./bin | grep -i 'bundle\|netcoreapp\|microsoft'
+```
+
+If matches, assume bundled and skip patchelf.

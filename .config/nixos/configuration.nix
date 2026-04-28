@@ -18,6 +18,7 @@
     ./modules/roslyn-ls.nix
     ./modules/vercel.nix
     ./modules/azure-cli.nix
+    ./modules/bicep.nix
     ./modules/azure-data-studio.nix
   ];
 

@@ -50,6 +50,6 @@ in
 {
   environment.systemPackages = [
     az-wrapped
-    pkgs.bicep # use Nix-managed bicep so `az bicep build` doesn't self-download a non-patchelf'd binary (libicu crash)
+    # bicep is provided by ./bicep.nix (upstream binary, newer than nixpkgs)
   ];
 }
