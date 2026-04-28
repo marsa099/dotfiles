@@ -4,22 +4,38 @@ Waybar custom module that shows Azure DevOps deployment status for the git proje
 
 ## Output
 
-```
-● Test: test  ● Prod: 1.10.0
-```
+The module shows one of three things, in priority order:
 
-Shows the currently deployed branch per environment, with common prefixes stripped (`release/`, `feature/`, `bugfix/`, `hotfix/`).
+1. **Active build/release lifecycle** — when a CI build is in progress, the script tracks it through completion → triggered release → release outcome:
+   ```
+   sis.portal.api: Building (3/6: Test) - 1m 23s
+   sis.portal.api: ✓ Build Succeeded - 4m 12s
+   sis.portal.api: Releasing 1.10.0 to Test - 38s
+   sis.portal.api: ✓ Released 1.10.0 to Test - 2m 5s
+   sis.portal.api: ✗ Build Failed (Test) - 1m 47s
+   ```
+   Lifecycle state persists for 60s after completion and **across focus changes** — switching to another window won't drop the indicator.
+2. **Latest succeeded deployment per env** — when nothing's building:
+   ```
+   D: main    T: 1.10.0    P: 1.9.3
+   ```
+   Branch prefixes are stripped (`release/`, `feature/`, `bugfix/`, `hotfix/`). A `⚠` is appended if any deployed release branch (e.g. `1.10.0`) isn't merged to `origin/main`.
+3. **Empty / faded** — when not in an Azure DevOps repo, or no matching release definition. Last output stays visible for 10s with `class: stale` (CSS `opacity: 0.5`) before disappearing.
 
 ## How it works
 
 1. Detects the focused terminal's CWD (tmux pane via process tree walk, or bare terminal via niri IPC + `/proc`)
-2. Checks if it's a git repo with an Azure DevOps remote
-3. Parses the remote URL to extract org/project/repo
-4. Discovers the matching release definition via the Azure DevOps API (build def name matches repo name)
-5. Queries the latest successful deployment per environment
-6. Outputs waybar JSON (`{"text": "...", "tooltip": "...", "class": "active|stale|empty"}`)
+2. Checks if it's a git repo with an Azure DevOps remote, parses org/project/repo from the URL
+3. Resolves the repo GUID, finds build definitions targeting that repo, then matches release definitions whose artifact references one of those build defs
+4. **Lifecycle tracking** — if a build is in progress, saves it to `build_lifecycle.json` and walks the state machine: `building → build_succeeded → releasing → release_done` (or `build_failed`). Release matching pairs the in-progress deployment to the build via artifact id.
+5. **Fallback** — if no active lifecycle, queries the latest *succeeded* deployment per environment for display
+6. Outputs waybar JSON with `class` reflecting state: `building | build-succeeded | build-failed | releasing | release-succeeded | release-failed | active | stale | empty | pat-error`
 
-When you leave a git repo, the module fades (CSS `opacity: 0.5`) and disappears after 10 seconds.
+## Limitations
+
+- **Releases without a CI build are not tracked.** The lifecycle state machine only enters `releasing` by chaining off a build it observed (matching the deployment's artifact to the build id). Pipelines where the release pulls the repo as a **Git artifact** (e.g. classic release pipelines for Bicep/IaC, like `SIS.Portal.IaC`) have no parent build to latch onto, so an in-progress deploy is invisible — the module keeps showing the last *succeeded* deployment instead. Fixing this requires a separate path that polls `release/deployments?definitionId=<def_id>&deploymentStatus=inProgress` per discovered env, independent of `get_active_build`.
+- **One environment per name across all release definitions.** `discover_environments` deduplicates by env name, preferring the def where it's the final stage. If two release defs both have a `Dev` stage and neither is final, the lower def id wins.
+- **Exclude list is per repo, hardcoded.** Edit `EXCLUDE_DEFS` near the top of the script to skip specific release definition IDs (e.g. `EXCLUDE_DEFS["SIS.CommitteePortal"]="11"`).
 
 ## Auth
 
