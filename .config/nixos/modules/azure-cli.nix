@@ -31,6 +31,9 @@ let
       rm "$out/bin/az"
       cat > "$out/bin/az" <<'WRAPPER'
 #!/usr/bin/env bash
+# Use Nix-managed bicep (pkgs.bicep) instead of az's self-downloaded one;
+# avoids libicu crash because the nixpkgs build is properly patchelf'd.
+export AZURE_BICEP_USE_BINARY_FROM_PATH=true
 case "$1" in
     devops|repos|pipelines)
         AZURE_DEVOPS_EXT_PAT=$(secret-tool lookup service azure-devops type cli) \
@@ -47,5 +50,6 @@ in
 {
   environment.systemPackages = [
     az-wrapped
+    pkgs.bicep # use Nix-managed bicep so `az bicep build` doesn't self-download a non-patchelf'd binary (libicu crash)
   ];
 }
