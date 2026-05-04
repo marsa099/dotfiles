@@ -37,14 +37,17 @@
       }
     ]
   },
+  "statusLine": {
+    "type": "command",
+    "command": "~/.scripts/claude-statusline"
+  },
   "effortLevel": "high",
   "voice": {
     "enabled": true,
     "mode": "hold"
   },
   "voiceEnabled": true,
-  "statusLine": {
-    "type": "command",
-    "command": "~/.scripts/claude-statusline"
+  "permissions": {
+    "defaultMode": "auto"
   }
 }
