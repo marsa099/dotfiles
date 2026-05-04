@@ -17,6 +17,14 @@ case "$1" in
         AZURE_DEVOPS_EXT_PAT=$(secret-tool lookup service azure-devops type cli) \
         AZURE_CONFIG_DIR=$(mktemp -d) \
             exec /run/current-system/sw/bin/az "$@" ;;
+    rest)
+        shift
+        PAT=$(secret-tool lookup service azure-devops type cli)
+        AUTH=$(printf ':%s' "$PAT" | base64 -w0)
+        exec /run/current-system/sw/bin/az rest \
+            --skip-authorization-header \
+            --headers "Authorization=Basic $AUTH" \
+            "$@" ;;
     *)
         exec /run/current-system/sw/bin/az "$@" ;;
 esac
