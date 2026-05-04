@@ -1,22 +1,15 @@
-local function find_csproj_for_package(pkg_name)
+local function find_csprojs_for_package(pkg_name)
   local csprojs = vim.fn.glob("**/*.csproj", false, true)
+  local matches = {}
   for _, proj in ipairs(csprojs) do
     for _, line in ipairs(vim.fn.readfile(proj)) do
       if line:find(pkg_name, 1, true) then
-        return proj
+        table.insert(matches, proj)
+        break
       end
     end
   end
-  if #csprojs > 0 then return csprojs[1] end
-  return nil
-end
-
-local function dotnet_add_cmd(pkg_name)
-  local csproj = find_csproj_for_package(pkg_name)
-  if csproj then
-    return "dotnet add " .. vim.fn.shellescape(csproj) .. " package " .. pkg_name
-  end
-  return "dotnet add package " .. pkg_name
+  return matches
 end
 
 local function open_nuget_popup(vulnerable, outdated)
@@ -177,18 +170,40 @@ local function open_nuget_popup(vulnerable, outdated)
 
   local function run_upgrade(line_nr, pkg, on_done)
     mark_installing(line_nr, pkg)
-    vim.fn.jobstart(dotnet_add_cmd(pkg.name), {
-      on_exit = function(_, code)
-        vim.schedule(function()
-          if code == 0 then
-            mark_installed(line_nr, pkg)
-          else
-            mark_failed(line_nr, pkg)
-          end
-          if on_done then on_done() end
-        end)
-      end,
-    })
+
+    local csprojs = find_csprojs_for_package(pkg.name)
+    local commands = {}
+    if #csprojs == 0 then
+      table.insert(commands, "dotnet add package " .. pkg.name)
+    else
+      for _, proj in ipairs(csprojs) do
+        table.insert(commands, "dotnet add " .. vim.fn.shellescape(proj) .. " package " .. pkg.name)
+      end
+    end
+
+    local i = 0
+    local any_failed = false
+    local function next_one()
+      i = i + 1
+      if i > #commands then
+        if any_failed then
+          mark_failed(line_nr, pkg)
+        else
+          mark_installed(line_nr, pkg)
+        end
+        if on_done then on_done() end
+        return
+      end
+      vim.fn.jobstart(commands[i], {
+        on_exit = function(_, code)
+          vim.schedule(function()
+            if code ~= 0 then any_failed = true end
+            next_one()
+          end)
+        end,
+      })
+    end
+    next_one()
   end
 
   local function upgrade_package()
@@ -212,7 +227,6 @@ local function open_nuget_popup(vulnerable, outdated)
     end
     if #queue == 0 then return end
 
-    -- Mark all as installing
     for _, e in ipairs(queue) do
       mark_installing(e.line_nr, e.pkg)
     end
@@ -222,18 +236,7 @@ local function open_nuget_popup(vulnerable, outdated)
       i = i + 1
       if i > #queue then return end
       local e = queue[i]
-      vim.fn.jobstart(dotnet_add_cmd(e.pkg.name), {
-        on_exit = function(_, code)
-          vim.schedule(function()
-            if code == 0 then
-              mark_installed(e.line_nr, e.pkg)
-            else
-              mark_failed(e.line_nr, e.pkg)
-            end
-          end)
-          next_upgrade()
-        end,
-      })
+      run_upgrade(e.line_nr, e.pkg, next_upgrade)
     end
     next_upgrade()
   end
@@ -249,12 +252,17 @@ end
 
 local function parse_vulnerable(data)
   local packages = {}
+  local seen = {}
   if not data then return packages end
   for _, line in ipairs(data) do
     if line:match(">") then
       local name, resolved, severity, advisory = line:match("> (%S+)%s+(%S+)%s+(%S+)%s+(%S+)")
       if name then
-        table.insert(packages, { name = name, resolved = resolved, severity = severity, advisory = advisory })
+        local key = name .. "|" .. resolved
+        if not seen[key] then
+          seen[key] = true
+          table.insert(packages, { name = name, resolved = resolved, severity = severity, advisory = advisory })
+        end
       end
     end
   end
@@ -263,12 +271,17 @@ end
 
 local function parse_outdated(data)
   local packages = {}
+  local seen = {}
   if not data then return packages end
   for _, line in ipairs(data) do
     if line:match(">") then
       local name, _, current, latest = line:match("> (%S+)%s+(%S+)%s+(%S+)%s+(%S+)")
       if name then
-        table.insert(packages, { name = name, current = current, latest = latest })
+        local key = name .. "|" .. current .. "|" .. latest
+        if not seen[key] then
+          seen[key] = true
+          table.insert(packages, { name = name, current = current, latest = latest })
+        end
       end
     end
   end
