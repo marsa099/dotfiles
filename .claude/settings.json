@@ -38,9 +38,14 @@
     ]
   },
   "effortLevel": "high",
-  "voiceEnabled": true,
   "voice": {
     "enabled": true,
     "mode": "hold"
+  },
+  "voiceEnabled": true,
+  "skipAutoPermissionPrompt": true,
+  "statusLine": {
+    "type": "command",
+    "command": "~/.scripts/claude-statusline"
   }
 }

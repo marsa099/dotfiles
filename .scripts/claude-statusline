@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+input=$(cat)
+
+dim=$'\033[2m'
+rst=$'\033[0m'
+sep="${dim} · ${rst}"
+
+model=$(jq -r '.model.display_name // empty' <<<"$input")
+dir=$(jq -r '.workspace.current_dir // empty' <<<"$input" | sed "s|$HOME|~|")
+
+ctx_used_pct=$(jq -r '.context_window.used_percentage // empty' <<<"$input")
+ctx_total=$(jq -r '.context_window.context_window_size // empty' <<<"$input")
+ctx_cur=$(jq -r '
+  [ .context_window.current_usage.input_tokens
+  , .context_window.current_usage.cache_creation_input_tokens
+  , .context_window.current_usage.cache_read_input_tokens
+  ] | map(. // 0) | add
+' <<<"$input")
+
+rl_5h=$(jq -r '.rate_limits.five_hour.used_percentage // empty' <<<"$input")
+rl_7d=$(jq -r '.rate_limits.seven_day.used_percentage // empty' <<<"$input")
+
+parts=()
+[ -n "$model" ] && parts+=("$model")
+[ -n "$dir" ] && parts+=("${dim}${dir}${rst}")
+
+if [ -n "$ctx_cur" ] && [ "$ctx_cur" != "0" ] && [ -n "$ctx_total" ]; then
+    ctx=$(awk -v c="$ctx_cur" -v t="$ctx_total" -v p="$ctx_used_pct" -v d="$dim" -v r="$rst" \
+        'BEGIN{
+            printf "%.1fk%s/%.0fk%s", c/1000, d, t/1000, r
+            if (p != "") printf " %s(%.0f%%)%s", d, p, r
+        }')
+    parts+=("$ctx")
+fi
+
+[ -n "$rl_5h" ] && parts+=("$(printf '%s5h%s %.0f%%' "$dim" "$rst" "$rl_5h")")
+[ -n "$rl_7d" ] && parts+=("$(printf '%swk%s %.0f%%' "$dim" "$rst" "$rl_7d")")
+
+out=""
+for i in "${!parts[@]}"; do
+    [ "$i" -gt 0 ] && out+="$sep"
+    out+="${parts[$i]}"
+done
+printf '%s' "$out"

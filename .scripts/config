@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+exec git --git-dir="$HOME/.git/" --work-tree="$HOME" "$@"
