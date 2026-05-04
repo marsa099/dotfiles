@@ -7,6 +7,18 @@ dim=$'\033[2m'
 rst=$'\033[0m'
 sep="${dim} · ${rst}"
 
+# Color a percentage by severity. Tier thresholds are configurable per call.
+# Defaults: green < 50 < yellow < 75 < orange < 90 < red.
+pct_color() {
+    local p="$1" t1="${2:-50}" t2="${3:-75}" t3="${4:-90}"
+    awk -v p="$p" -v t1="$t1" -v t2="$t2" -v t3="$t3" 'BEGIN{
+        if (p < t1)      printf "\033[32m"
+        else if (p < t2) printf "\033[38;5;208m"
+        else if (p < t3) printf "\033[33m"
+        else             printf "\033[1;31m"
+    }'
+}
+
 model=$(jq -r '.model.display_name // empty' <<<"$input")
 dir=$(jq -r '.workspace.current_dir // empty' <<<"$input" | sed "s|$HOME|~|")
 
@@ -21,22 +33,42 @@ ctx_cur=$(jq -r '
 
 rl_5h=$(jq -r '.rate_limits.five_hour.used_percentage // empty' <<<"$input")
 rl_7d=$(jq -r '.rate_limits.seven_day.used_percentage // empty' <<<"$input")
+rl_7d_resets=$(jq -r '.rate_limits.seven_day.resets_at // empty' <<<"$input")
 
 parts=()
 [ -n "$model" ] && parts+=("$model")
 [ -n "$dir" ] && parts+=("${dim}${dir}${rst}")
 
 if [ -n "$ctx_cur" ] && [ "$ctx_cur" != "0" ] && [ -n "$ctx_total" ]; then
-    ctx=$(awk -v c="$ctx_cur" -v t="$ctx_total" -v p="$ctx_used_pct" -v d="$dim" -v r="$rst" \
-        'BEGIN{
-            printf "%.1fk%s/%.0fk%s", c/1000, d, t/1000, r
-            if (p != "") printf " %s(%.0f%%)%s", d, p, r
-        }')
+    k=$(awk -v c="$ctx_cur" 'BEGIN{ printf "%.1fk", c/1000 }')
+    tk=$(awk -v t="$ctx_total" 'BEGIN{ printf "%.0fk", t/1000 }')
+    if [ -n "$ctx_used_pct" ]; then
+        col=$(pct_color "$ctx_used_pct" 20 30 90)
+        ctx="${col}${k}${rst}${dim}/${tk}${rst} ${dim}(${rst}${col}$(printf '%.0f' "$ctx_used_pct")%${rst}${dim})${rst}"
+    else
+        ctx="${k}${dim}/${tk}${rst}"
+    fi
     parts+=("$ctx")
 fi
 
-[ -n "$rl_5h" ] && parts+=("$(printf '%s5h%s %.0f%%' "$dim" "$rst" "$rl_5h")")
-[ -n "$rl_7d" ] && parts+=("$(printf '%swk%s %.0f%%' "$dim" "$rst" "$rl_7d")")
+if [ -n "$rl_5h" ]; then
+    col=$(pct_color "$rl_5h")
+    parts+=("${dim}5h${rst} ${col}$(printf '%.0f' "$rl_5h")%${rst}")
+fi
+if [ -n "$rl_7d" ]; then
+    col=$(pct_color "$rl_7d")
+    wk="${dim}wk${rst} ${col}$(printf '%.0f' "$rl_7d")%${rst}"
+    if [ -n "$rl_7d_resets" ]; then
+        left=$(awk -v r="$rl_7d_resets" -v n="$(date +%s)" 'BEGIN{
+            s = r - n
+            if (s <= 0) exit
+            if (s < 86400) printf "%dh", (s + 1800) / 3600
+            else           printf "%dd", (s + 43200) / 86400
+        }')
+        [ -n "$left" ] && wk+=" ${dim}(${left})${rst}"
+    fi
+    parts+=("$wk")
+fi
 
 out=""
 for i in "${!parts[@]}"; do
