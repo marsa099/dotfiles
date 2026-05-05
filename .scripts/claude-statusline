@@ -4,8 +4,31 @@ set -euo pipefail
 input=$(cat)
 
 dim=$'\033[2m'
+bold=$'\033[1m'
 rst=$'\033[0m'
 sep="${dim} · ${rst}"
+
+# Colors come from themes-generator if available, with 256-color fallbacks.
+# See ~/repos/themes-generator/templates/claude-statusline.template
+ansi_fg() {
+    local hex="${1#\#}" fb="$2"
+    if [ "${#hex}" -eq 6 ]; then
+        printf '\033[38;2;%d;%d;%dm' "0x${hex:0:2}" "0x${hex:2:2}" "0x${hex:4:2}"
+    else
+        printf '%s' "$fb"
+    fi
+}
+
+cs_model_hex="" cs_path_hex="" cs_leaf_hex="" cs_branch_hex="" cs_count_hex=""
+theme_colors="${XDG_STATE_HOME:-$HOME/.local/state}/claude-statusline/colors.sh"
+# shellcheck disable=SC1090
+[ -f "$theme_colors" ] && . "$theme_colors"
+
+c_model=$(ansi_fg  "$cs_model_hex"  $'\033[38;5;208m')   # cursor orange
+c_path=$(ansi_fg   "$cs_path_hex"   $'\033[38;5;67m')    # steel blue (parents)
+c_leaf=$(ansi_fg   "$cs_leaf_hex"   $'\033[38;5;255m')   # near-white (current dir)
+c_branch=$(ansi_fg "$cs_branch_hex" $'\033[38;5;215m')   # warm gold
+c_count=$(ansi_fg  "$cs_count_hex"  $'\033[38;5;229m')   # pale amber
 
 # Color a percentage by severity. Tier thresholds are configurable per call.
 # Defaults: green < 50 < yellow < 75 < orange < 90 < red.
@@ -20,7 +43,36 @@ pct_color() {
 }
 
 model=$(jq -r '.model.display_name // empty' <<<"$input")
-dir=$(jq -r '.workspace.current_dir // empty' <<<"$input" | sed "s|$HOME|~|")
+cwd=$(jq -r '.workspace.current_dir // empty' <<<"$input")
+dir=$(printf '%s' "$cwd" | sed "s|$HOME|~|")
+
+git_segment=""
+if [ -n "$cwd" ]; then
+    if branch=$(git -C "$cwd" symbolic-ref --quiet --short HEAD 2>/dev/null); then
+        git_segment="${c_branch}${branch}${rst}"
+        if counts=$(git -C "$cwd" rev-list --left-right --count "@{upstream}...HEAD" 2>/dev/null); then
+            behind=${counts%%[[:space:]]*}
+            ahead=${counts##*[[:space:]]}
+            arrow_up=$'\xe2\x86\x91'
+            arrow_dn=$'\xe2\x86\x93'
+            [ "$ahead"  != "0" ] && git_segment+=" ${dim}${arrow_up}${rst}${c_count}${ahead}${rst}"
+            [ "$behind" != "0" ] && git_segment+=" ${dim}${arrow_dn}${rst}${c_count}${behind}${rst}"
+        else
+            git_segment+=" ${dim}(no upstream)${rst}"
+        fi
+    elif sha=$(git -C "$cwd" rev-parse --short HEAD 2>/dev/null); then
+        git_segment="${dim}detached@${rst}${c_branch}${sha}${rst}"
+    fi
+fi
+
+if [ -n "$dir" ]; then
+    case "$dir" in
+        */*) dir_pretty="${dim}${c_path}${dir%/*}/${rst}${c_leaf}${dir##*/}${rst}" ;;
+        *)   dir_pretty="${c_leaf}${dir}${rst}" ;;
+    esac
+else
+    dir_pretty=""
+fi
 
 ctx_used_pct=$(jq -r '.context_window.used_percentage // empty' <<<"$input")
 ctx_total=$(jq -r '.context_window.context_window_size // empty' <<<"$input")
@@ -36,8 +88,9 @@ rl_7d=$(jq -r '.rate_limits.seven_day.used_percentage // empty' <<<"$input")
 rl_7d_resets=$(jq -r '.rate_limits.seven_day.resets_at // empty' <<<"$input")
 
 parts=()
-[ -n "$model" ] && parts+=("$model")
-[ -n "$dir" ] && parts+=("${dim}${dir}${rst}")
+[ -n "$model" ] && parts+=("${bold}${c_model}${model}${rst}")
+[ -n "$dir_pretty" ] && parts+=("$dir_pretty")
+[ -n "$git_segment" ] && parts+=("$git_segment")
 
 if [ -n "$ctx_cur" ] && [ "$ctx_cur" != "0" ] && [ -n "$ctx_total" ]; then
     k=$(awk -v c="$ctx_cur" 'BEGIN{ printf "%.1fk", c/1000 }')
