@@ -89,7 +89,7 @@ hl("Normal", { fg = c.fg, bg = c.bg })
 hl("NormalFloat", { fg = c.fg, bg = c.bg_overlay })
 hl("FloatBorder", { fg = c.highlight_med, bg = c.bg_overlay })
 hl("FloatTitle", { fg = c.blue, bg = c.bg_overlay })
-hl("WinSeparator", { fg = c.fg_muted })
+hl("WinSeparator", { fg = c.bg_secondary })
 
 -- Diff
 hl("Added", { fg = c.green, bg = c.diff_add_bg })
