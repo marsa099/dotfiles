@@ -172,6 +172,8 @@
     swaylock-effects # screen locker for Wayland (fork with blur/screenshot support)
     kanshi # dynamic monitor configuration
     sox # audio recording, required by claude code /voice
+    pavucontrol # GUI mixer for PipeWire/PulseAudio (route apps between sinks/sources)
+    tcpdump # CLI packet capture/analyzer
   ];
 
   # Some programs need SUID wrappers, can be configured further or are
