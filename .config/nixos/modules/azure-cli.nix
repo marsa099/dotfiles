@@ -6,12 +6,16 @@
 #
 # NixOS azure-cli can't install the Python keyring package, so
 # `az devops login` fails. This wrapper reads the PAT from GNOME Keyring
-# (via secret-tool) for devops/repos/pipelines commands.
+# (via secret-tool) for devops/repos/pipelines/rest commands.
 #
 # The azure-devops extension prefers MSAL tokens (az login) over PATs.
 # When az login uses a different account than the PAT, the extension picks
 # the wrong identity. AZURE_CONFIG_DIR is set to a temp dir so the extension
 # can't find the MSAL cache and falls through to the PAT.
+#
+# `az rest` normally injects an MSAL bearer token from `az login`. We override
+# that with --skip-authorization-header and a Basic auth header built from the
+# PAT, so `az rest` hits Azure DevOps APIs as the PAT identity.
 #
 # PATs stored in GNOME Keyring:
 #   cli (code full + build/release read):
@@ -39,6 +43,14 @@ case "$1" in
         AZURE_DEVOPS_EXT_PAT=$(secret-tool lookup service azure-devops type cli) \
         AZURE_CONFIG_DIR=$(mktemp -d) \
             exec ${az-unwrapped}/bin/az "$@" ;;
+    rest)
+        shift
+        PAT=$(secret-tool lookup service azure-devops type cli)
+        AUTH=$(printf ':%s' "$PAT" | base64 -w0)
+        exec ${az-unwrapped}/bin/az rest \
+            --skip-authorization-header \
+            --headers "Authorization=Basic $AUTH" \
+            "$@" ;;
     *)
         exec ${az-unwrapped}/bin/az "$@" ;;
 esac
