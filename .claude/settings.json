@@ -35,6 +35,16 @@
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "p=$(jq -r '.prompt // \"\"'); name=$(echo \"$p\" | sed -nE 's|^/rename[[:space:]]+(.*[^[:space:]])[[:space:]]*$|\\1|p'); [ -n \"${TMUX:-}\" ] && [ -n \"$name\" ] && tmux rename-window \"$name\"; exit 0"
+          }
+        ]
+      }
     ]
   },
   "statusLine": {
@@ -47,5 +57,6 @@
     "mode": "hold"
   },
   "voiceEnabled": true,
-  "skipAutoPermissionPrompt": true
+  "skipAutoPermissionPrompt": true,
+  "theme": "custom:dotfiles"
 }
