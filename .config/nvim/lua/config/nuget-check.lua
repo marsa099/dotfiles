@@ -80,6 +80,7 @@ local function fetch_registration(pkg_name, on_result)
             version = ce.version,
             releaseNotes = ce.releaseNotes,
             published = ce.published,
+            projectUrl = ce.projectUrl,
           })
         end
       end
@@ -112,6 +113,87 @@ local function fetch_registration(pkg_name, on_result)
 
     maybe_done()
   end)
+end
+
+local function parse_github_repo(url)
+  if not url or url == vim.NIL then return nil end
+  local owner, repo = tostring(url):match("^https?://github%.com/([^/]+)/([^/#?]+)")
+  if not owner then return nil end
+  repo = repo:gsub("%.git$", "")
+  return owner, repo
+end
+
+local function fetch_nuspec_repo(pkg_name, version, on_result)
+  local lower_id = pkg_name:lower()
+  local lower_ver = version:lower()
+  local url = "https://api.nuget.org/v3-flatcontainer/" .. lower_id .. "/"
+    .. lower_ver .. "/" .. lower_id .. ".nuspec"
+  local stdout = {}
+  vim.fn.jobstart({ "curl", "--compressed", "-fsSL", url }, {
+    stdout_buffered = true,
+    on_stdout = function(_, data) stdout = data end,
+    on_exit = function(_, code)
+      vim.schedule(function()
+        if code ~= 0 then on_result(nil) return end
+        local body = table.concat(stdout, "\n")
+        local repo_url = body:match('<repository[^>]-url="([^"]+)"')
+          or body:match("<repository[^>]-url='([^']+)'")
+        on_result(repo_url)
+      end)
+    end,
+  })
+end
+
+local function fetch_github_releases(owner, repo, on_result)
+  local url = "https://api.github.com/repos/" .. owner .. "/" .. repo
+    .. "/releases?per_page=100"
+  fetch_json(url, function(data, err)
+    if err then on_result(nil, err) return end
+    local releases = {}
+    for _, r in ipairs(data or {}) do
+      local tag = r.tag_name or ""
+      local v = tostring(tag):gsub("^v", "")
+      table.insert(releases, {
+        version = v,
+        tag = tag,
+        body = r.body,
+        html_url = r.html_url,
+        published_at = r.published_at,
+      })
+    end
+    on_result(releases, nil)
+  end)
+end
+
+local function find_github_repo(pkg, entries, on_result)
+  for _, e in ipairs(entries) do
+    local o, r = parse_github_repo(e.projectUrl)
+    if o then on_result(o, r) return end
+  end
+  local probe = pkg.latest or pkg.resolved
+  if not probe then on_result(nil) return end
+  fetch_nuspec_repo(pkg.name, probe, function(repo_url)
+    local o, r = parse_github_repo(repo_url)
+    if o then on_result(o, r) else on_result(nil) end
+  end)
+end
+
+local function open_url_under_cursor()
+  local line = vim.api.nvim_get_current_line()
+  local col = vim.api.nvim_win_get_cursor(0)[2]
+  local s = 1
+  while true do
+    local us, _, url = line:find("(https?://[%w%-._~:/%?#%[%]@!%$&'%(%)%*%+,;=%%]+)", s)
+    if not us then break end
+    url = url:gsub("[%.,%);%]>]+$", "")
+    local ue = us + #url - 1
+    if col + 1 >= us and col + 1 <= ue then
+      vim.ui.open(url)
+      return
+    end
+    s = us + 1
+  end
+  vim.notify("No URL under cursor", vim.log.levels.WARN)
 end
 
 local function open_info_window(pkg, kind)
@@ -151,14 +233,144 @@ local function open_info_window(pkg, kind)
   local opts = { buffer = buf, nowait = true, silent = true }
   vim.keymap.set("n", "q", close, opts)
   vim.keymap.set("n", "<Esc>", close, opts)
+  vim.keymap.set("n", "gx", open_url_under_cursor, opts)
+  vim.keymap.set("n", "<CR>", open_url_under_cursor, opts)
 
   local function notes_to_lines(notes)
-    if not notes or notes == vim.NIL then return { "_(no release notes)_" } end
+    if not notes or notes == vim.NIL then return nil end
     local s = tostring(notes)
-    if s == "" then return { "_(no release notes)_" } end
-    local out = {}
+    if s == "" then return nil end
+    local lines = {}
     for line in (s .. "\n"):gmatch("([^\n]*)\n") do
-      table.insert(out, line)
+      table.insert(lines, line)
+    end
+    return lines
+  end
+
+  local function date_only(s)
+    if not s or s == vim.NIL then return "" end
+    return " (" .. tostring(s):sub(1, 10) .. ")"
+  end
+
+  local function render_nuget(entries)
+    local out = { "# " .. pkg.name, "" }
+    if kind == "vulnerable" then
+      table.insert(out, "**Resolved version:** " .. pkg.resolved)
+      table.insert(out, "**Severity:** " .. pkg.severity)
+      table.insert(out, "**Advisory:** " .. pkg.advisory)
+      table.insert(out, "")
+      table.insert(out, "## Release notes for " .. pkg.resolved)
+      table.insert(out, "")
+      local found
+      for _, e in ipairs(entries) do
+        if e.version == pkg.resolved then found = e break end
+      end
+      local lines = found and notes_to_lines(found.releaseNotes)
+      if lines then
+        for _, l in ipairs(lines) do table.insert(out, l) end
+      elseif found then
+        table.insert(out, "_(no release notes on NuGet)_")
+      else
+        table.insert(out, "_(version not found in registry)_")
+      end
+      return out, found and { found } or {}
+    end
+
+    local include_pre = is_prerelease(pkg.latest)
+    local matches = {}
+    for _, e in ipairs(entries) do
+      if include_pre or not is_prerelease(e.version) then
+        if compare_versions(e.version, pkg.current) > 0
+          and compare_versions(e.version, pkg.latest) <= 0 then
+          table.insert(matches, e)
+        end
+      end
+    end
+    table.sort(matches, function(a, b)
+      return compare_versions(a.version, b.version) > 0
+    end)
+
+    table.insert(out, string.format("**%s → %s** (%d release(s))",
+      pkg.current, pkg.latest, #matches))
+    table.insert(out, "")
+
+    if #matches == 0 then
+      table.insert(out, "_No releases found between current and latest._")
+    else
+      for _, e in ipairs(matches) do
+        table.insert(out, "## " .. e.version .. date_only(e.published))
+        table.insert(out, "")
+        local lines = notes_to_lines(e.releaseNotes)
+        if lines then
+          for _, l in ipairs(lines) do table.insert(out, l) end
+        else
+          table.insert(out, "_(no release notes)_")
+        end
+        table.insert(out, "")
+      end
+    end
+    return out, matches
+  end
+
+  local function any_has_notes(list)
+    for _, e in ipairs(list or {}) do
+      if notes_to_lines(e.releaseNotes) then return true end
+    end
+    return false
+  end
+
+  local function render_github(releases, owner, repo)
+    local out = { "# " .. pkg.name, "" }
+    table.insert(out, string.format("Source: https://github.com/%s/%s/releases", owner, repo))
+    table.insert(out, "_(NuGet metadata had no release notes — showing GitHub releases)_")
+    table.insert(out, "")
+
+    local include_pre, lo, hi
+    if kind == "vulnerable" then
+      lo, hi = pkg.resolved, pkg.resolved
+      include_pre = is_prerelease(pkg.resolved)
+      table.insert(out, "**Resolved version:** " .. pkg.resolved)
+      table.insert(out, "**Severity:** " .. pkg.severity)
+      table.insert(out, "**Advisory:** " .. pkg.advisory)
+      table.insert(out, "")
+    else
+      lo, hi = pkg.current, pkg.latest
+      include_pre = is_prerelease(pkg.latest)
+      table.insert(out, string.format("**%s → %s**", pkg.current, pkg.latest))
+      table.insert(out, "")
+    end
+
+    local matches = {}
+    for _, r in ipairs(releases) do
+      if include_pre or not is_prerelease(r.version) then
+        local lo_cmp = (kind == "vulnerable") and compare_versions(r.version, lo) >= 0
+          or compare_versions(r.version, lo) > 0
+        if lo_cmp and compare_versions(r.version, hi) <= 0 then
+          table.insert(matches, r)
+        end
+      end
+    end
+    table.sort(matches, function(a, b)
+      return compare_versions(a.version, b.version) > 0
+    end)
+
+    if #matches == 0 then
+      table.insert(out, "_No matching GitHub releases found in this version range._")
+    else
+      for _, r in ipairs(matches) do
+        table.insert(out, "## " .. r.version .. date_only(r.published_at))
+        if r.html_url and r.html_url ~= vim.NIL then
+          table.insert(out, r.html_url)
+        end
+        table.insert(out, "")
+        local lines = notes_to_lines(r.body)
+        if lines then
+          for _, l in ipairs(lines) do table.insert(out, l) end
+        else
+          table.insert(out, "_(empty release body)_")
+        end
+        table.insert(out, "")
+      end
     end
     return out
   end
@@ -178,64 +390,30 @@ local function open_info_window(pkg, kind)
       return
     end
 
-    local out = { "# " .. pkg.name, "" }
+    local nuget_out, considered = render_nuget(entries)
 
-    if kind == "vulnerable" then
-      table.insert(out, "**Resolved version:** " .. pkg.resolved)
-      table.insert(out, "**Severity:** " .. pkg.severity)
-      table.insert(out, "**Advisory:** " .. pkg.advisory)
-      table.insert(out, "")
-      table.insert(out, "## Release notes for " .. pkg.resolved)
-      table.insert(out, "")
-      local found
-      for _, e in ipairs(entries) do
-        if e.version == pkg.resolved then found = e break end
-      end
-      if found then
-        for _, l in ipairs(notes_to_lines(found.releaseNotes)) do
-          table.insert(out, l)
-        end
-      else
-        table.insert(out, "_(version not found in registry)_")
-      end
-    else
-      local include_pre = is_prerelease(pkg.latest)
-      local matches = {}
-      for _, e in ipairs(entries) do
-        if include_pre or not is_prerelease(e.version) then
-          if compare_versions(e.version, pkg.current) > 0
-            and compare_versions(e.version, pkg.latest) <= 0 then
-            table.insert(matches, e)
-          end
-        end
-      end
-      table.sort(matches, function(a, b)
-        return compare_versions(a.version, b.version) > 0
-      end)
-
-      table.insert(out, string.format("**%s → %s** (%d release(s))",
-        pkg.current, pkg.latest, #matches))
-      table.insert(out, "")
-
-      if #matches == 0 then
-        table.insert(out, "_No releases found between current and latest._")
-      else
-        for _, e in ipairs(matches) do
-          local date = ""
-          if e.published and e.published ~= vim.NIL then
-            date = " (" .. tostring(e.published):sub(1, 10) .. ")"
-          end
-          table.insert(out, "## " .. e.version .. date)
-          table.insert(out, "")
-          for _, l in ipairs(notes_to_lines(e.releaseNotes)) do
-            table.insert(out, l)
-          end
-          table.insert(out, "")
-        end
-      end
+    if any_has_notes(considered) then
+      set_lines(nuget_out)
+      return
     end
 
-    set_lines(out)
+    set_lines({ "Searching GitHub releases for " .. pkg.name .. "..." })
+
+    find_github_repo(pkg, entries, function(owner, repo)
+      if not vim.api.nvim_buf_is_valid(buf) then return end
+      if not owner then
+        set_lines(nuget_out)
+        return
+      end
+      fetch_github_releases(owner, repo, function(releases, gh_err)
+        if not vim.api.nvim_buf_is_valid(buf) then return end
+        if gh_err or not releases then
+          set_lines(nuget_out)
+          return
+        end
+        set_lines(render_github(releases, owner, repo))
+      end)
+    end)
   end)
 end
 
