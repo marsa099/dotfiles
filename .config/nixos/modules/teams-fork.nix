@@ -29,7 +29,16 @@
 {
   nixpkgs.overlays = [
     (final: prev: {
-      teams-for-linux-stock = prev.teams-for-linux;
+      # Symlink wrapper exposing the upstream stock build under a distinct
+      # binary name. Without renaming, both stock and fork would install
+      # `bin/teams-for-linux` and collide in buildEnv — fork would get
+      # silently dropped from the system closure.
+      teams-for-linux-stock = prev.runCommand "teams-for-linux-stock" {
+        meta.mainProgram = "teams-for-linux-stock";
+      } ''
+        mkdir -p $out/bin
+        ln -s ${prev.teams-for-linux}/bin/teams-for-linux $out/bin/teams-for-linux-stock
+      '';
 
       teams-for-linux = prev.buildNpmPackage {
         pname = "teams-for-linux";
