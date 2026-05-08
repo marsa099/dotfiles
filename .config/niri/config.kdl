@@ -415,8 +415,8 @@ binds {
     // Spawn-or-focus keybindings (focus existing window, cycle through instances, or spawn new)
     Mod+A { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus $TERMINAL_APP_ID $TERMINAL"; }
     Mod+Shift+A { spawn-sh "$TERMINAL"; }
-    Mod+T { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus teams-for-linux teams-for-linux"; }
-    Mod+Shift+T { spawn "teams-for-linux"; }
+    Mod+T { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus teams-for-linux $HOME/.scripts/teams-launcher"; }
+    Mod+Shift+T { spawn-sh "$HOME/.scripts/teams-launcher"; }
     Mod+D { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus vesktop vesktop"; }
     Mod+Shift+D { spawn "vesktop"; }
     Mod+S { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus $BROWSER_APP_ID $BROWSER"; }
