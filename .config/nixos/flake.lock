@@ -108,7 +108,25 @@
         "claude-code-notify": "claude-code-notify",
         "nixpkgs": "nixpkgs_2",
         "nixpkgs-unstable": "nixpkgs-unstable",
+        "teams-for-linux-fork": "teams-for-linux-fork",
         "zen-browser": "zen-browser"
+      }
+    },
+    "teams-for-linux-fork": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1778151979,
+        "narHash": "sha256-M7QNDyAGLcQ8PEk7bl4UqSlhwZv9aDwVW/TxcUjrMIA=",
+        "owner": "marsa099",
+        "repo": "teams-for-linux",
+        "rev": "8f0ee566b576e8472518da98ca1aad74f170fe8d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "marsa099",
+        "ref": "main",
+        "repo": "teams-for-linux",
+        "type": "github"
       }
     },
     "zen-browser": {

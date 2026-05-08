@@ -20,6 +20,7 @@
     ./modules/azure-cli.nix
     ./modules/bicep.nix
     ./modules/azure-data-studio.nix
+    ./modules/teams-fork.nix
   ];
 
   # Use the systemd-boot EFI boot loader.

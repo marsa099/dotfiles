@@ -9,6 +9,10 @@
     # Alternative (wiki-recommended): zen-browser = { url = "github:youwen5/zen-browser-flake"; inputs.nixpkgs.follows = "nixpkgs"; };
     zen-browser.url = "github:0xc000022070/zen-browser-flake";
     claude-code-notify.url = "github:marsa099/claude-code-notify";
+    teams-for-linux-fork = {
+      url = "github:marsa099/teams-for-linux/main";
+      flake = false;
+    };
   };
 
   outputs =
@@ -18,6 +22,7 @@
       nixpkgs-unstable,
       zen-browser,
       claude-code-notify,
+      teams-for-linux-fork,
       ...
     }:
     let
@@ -27,7 +32,7 @@
     {
       nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
         inherit system;
-        specialArgs = { inherit unstable; };
+        specialArgs = { inherit unstable teams-for-linux-fork; };
         modules = [
           ./configuration.nix
           {

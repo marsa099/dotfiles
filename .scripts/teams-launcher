@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Routes Super+T between the forked teams-for-linux (default) and
+# the upstream stock build (pkgs.teams-for-linux-stock).
+#
+# Toggle with `teams-fork on|off`. Both binaries are installed by
+# the NixOS overlay in modules/teams-fork.nix, so switching is
+# immediate — no rebuild required.
+
+set -euo pipefail
+
+FLAG="${XDG_CONFIG_HOME:-$HOME/.config}/teams-launcher/use-stock"
+
+if [ -f "$FLAG" ]; then
+    exec teams-for-linux-stock "$@"
+fi
+
+exec teams-for-linux "$@"
