@@ -13,9 +13,12 @@
 # the wrong identity. AZURE_CONFIG_DIR is set to a temp dir so the extension
 # can't find the MSAL cache and falls through to the PAT.
 #
-# `az rest` normally injects an MSAL bearer token from `az login`. We override
-# that with --skip-authorization-header and a Basic auth header built from the
-# PAT, so `az rest` hits Azure DevOps APIs as the PAT identity.
+# `az rest` normally injects an MSAL bearer token from `az login`. For ADO
+# URLs we override that with --skip-authorization-header and a Basic auth
+# header built from the PAT, so `az rest` hits Azure DevOps APIs as the PAT
+# identity. For everything else (Graph, ARM, etc.) we fall through to the
+# standard MSAL bearer behavior — injecting Basic auth there breaks Graph
+# with "JWT is not well formed" since Graph expects a bearer JWT.
 #
 # PATs stored in GNOME Keyring:
 #   cli (code full + build/release read):
@@ -45,12 +48,26 @@ case "$1" in
             exec ${az-unwrapped}/bin/az "$@" ;;
     rest)
         shift
-        PAT=$(secret-tool lookup service azure-devops type cli)
-        AUTH=$(printf ':%s' "$PAT" | base64 -w0)
-        exec ${az-unwrapped}/bin/az rest \
-            --skip-authorization-header \
-            --headers "Authorization=Basic $AUTH" \
-            "$@" ;;
+        # Inject PAT only for ADO URLs; let MSAL bearer flow through for everything else
+        # (Graph, ARM, etc. — they reject Basic auth with "JWT not well formed").
+        is_ado=false
+        for arg in "$@"; do
+            case "$arg" in
+                *dev.azure.com*|*visualstudio.com*|*vsrm.dev.azure.com*)
+                    is_ado=true; break ;;
+            esac
+        done
+        if $is_ado; then
+            PAT=$(secret-tool lookup service azure-devops type cli)
+            AUTH=$(printf ':%s' "$PAT" | base64 -w0)
+            exec ${az-unwrapped}/bin/az rest \
+                --skip-authorization-header \
+                --headers "Authorization=Basic $AUTH" \
+                "$@"
+        else
+            exec ${az-unwrapped}/bin/az rest "$@"
+        fi
+        ;;
     *)
         exec ${az-unwrapped}/bin/az "$@" ;;
 esac
