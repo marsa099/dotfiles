@@ -10,6 +10,7 @@
 
 window#waybar {
   background: transparent;
+  background-color: rgba(0, 0, 0, 0);
 }
 
 /* Left side modules */
@@ -156,10 +157,9 @@ window#waybar {
 }
 
 #custom-niri-minimap {
-  padding: 6px 12px;
+  padding: 0 12px;
   margin: 0;
   background: transparent;
-  color: #EDEDED;
   border-radius: 0;
   font-size: 16px;
 }
@@ -250,11 +250,11 @@ window#waybar {
 }
 
 #battery.charging {
-  color: #97B5A6;
+  color: #EDEDED;
 }
 
 #clock {
-  color: #CCD5E4;
+  color: #EDEDED;
 }
 
 #network.disconnected {

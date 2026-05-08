@@ -182,13 +182,13 @@ layout {
         // - CSS-like notation: "rgb(255, 127, 0)", rgba(), hsl() and a few others.
 
         // Color of the ring on the active monitor.
-        active-color "#7fc8ff"
+        active-color "#FF570D"
 
         // Color of the ring on inactive monitors.
         //
         // The focus ring only draws around the active window, so the only place
         // where you can see its inactive-color is on other monitors.
-        inactive-color "#505050"
+        inactive-color "#3A3A3A"
 
         // You can also use gradients. They take precedence over solid colors.
         // Gradients are rendered the same as CSS linear-gradient(angle, from, to).
@@ -213,7 +213,7 @@ layout {
 
         width 2
         active-gradient from="#C8A2E6" to="#8A9AA6" angle=135
-        inactive-color "#2a2a2a"
+        inactive-color "#3A3A3A"
 
         // Color of the border around windows that request your attention.
         urgent-color "#9b0000"
@@ -387,8 +387,8 @@ window-rule {
     match is-window-cast-target=true
 
     border {
-        active-color "#ff4444"
-        inactive-color "#aa2222"
+        active-color "#FF570D"
+        inactive-color "#3A3A3A"
     }
 }
 

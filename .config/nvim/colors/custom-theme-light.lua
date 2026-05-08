@@ -66,6 +66,9 @@ local c = {
   highlight_low = "#E8EAED",
   highlight_med = "#D5D8DD",
   highlight_high = "#C2C6CC",
+  highlight_succ = "#E2EAE4",
+  highlight_warn = "#D8D5C5",
+  highlight_err = "#EED8D0",
 
   -- Diff backgrounds
   diff_add_bg = "#d4edda",
@@ -241,6 +244,9 @@ hl("@text.literal", { fg = c.fg })
 hl("@text.reference", { link = "String" })
 hl("@text.uri", { fg = c.blue, underline = true })
 hl("@type.builtin", { link = "@type" })
+hl("@variable", { fg = c.fg })
+hl("@variable.parameter", { link = "@variable" })
+hl("@variable.member", { fg = c.fg })
 
 -- Variables
 hl("@variable", { fg = c.variable })
