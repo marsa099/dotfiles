@@ -20,6 +20,7 @@ ansi_fg() {
 }
 
 cs_model_hex="" cs_path_hex="" cs_leaf_hex="" cs_branch_hex="" cs_count_hex=""
+cs_dim_hex="" cs_pct_low_hex="" cs_pct_mid_hex="" cs_pct_high_hex="" cs_pct_crit_hex=""
 theme_colors="${XDG_STATE_HOME:-$HOME/.local/state}/claude-statusline/colors.sh"
 # shellcheck disable=SC1090
 [ -f "$theme_colors" ] && . "$theme_colors"
@@ -30,15 +31,26 @@ c_leaf=$(ansi_fg   "$cs_leaf_hex"   $'\033[38;5;255m')   # near-white (current d
 c_branch=$(ansi_fg "$cs_branch_hex" $'\033[38;5;215m')   # warm gold
 c_count=$(ansi_fg  "$cs_count_hex"  $'\033[38;5;229m')   # pale amber
 
+if [ -n "$cs_dim_hex" ]; then
+    dim=$(ansi_fg "$cs_dim_hex" $'\033[2m')
+fi
+sep="${dim} · ${rst}"
+
+c_pct_low=$(ansi_fg  "$cs_pct_low_hex"  $'\033[32m')
+c_pct_mid=$(ansi_fg  "$cs_pct_mid_hex"  $'\033[38;5;208m')
+c_pct_high=$(ansi_fg "$cs_pct_high_hex" $'\033[33m')
+c_pct_crit=$(ansi_fg "$cs_pct_crit_hex" $'\033[1;31m')
+
 # Color a percentage by severity. Tier thresholds are configurable per call.
-# Defaults: green < 50 < yellow < 75 < orange < 90 < red.
+# Defaults: low < 50 < mid < 75 < high < 90 < crit.
 pct_color() {
     local p="$1" t1="${2:-50}" t2="${3:-75}" t3="${4:-90}"
-    awk -v p="$p" -v t1="$t1" -v t2="$t2" -v t3="$t3" 'BEGIN{
-        if (p < t1)      printf "\033[32m"
-        else if (p < t2) printf "\033[38;5;208m"
-        else if (p < t3) printf "\033[33m"
-        else             printf "\033[1;31m"
+    awk -v p="$p" -v t1="$t1" -v t2="$t2" -v t3="$t3" \
+        -v low="$c_pct_low" -v mid="$c_pct_mid" -v high="$c_pct_high" -v crit="$c_pct_crit" 'BEGIN{
+        if (p < t1)      printf "%s", low
+        else if (p < t2) printf "%s", mid
+        else if (p < t3) printf "%s", high
+        else             printf "%s", crit
     }'
 }
 
