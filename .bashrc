@@ -141,6 +141,13 @@ fi
 
 eval "$(zoxide init bash)"
 
+# claudeck: auto-cd into the session's main repo when a new shell starts
+# inside a claudeck-managed niri workspace. `claudeck cd` reads the focused
+# niri workspace name, looks it up in ~/.local/state/claudeck/sessions.toml,
+# and prints the main repo path (or nothing if no match).
+__claudeck_dir=$(claudeck cd 2>/dev/null) && [ -n "$__claudeck_dir" ] && cd "$__claudeck_dir"
+unset __claudeck_dir
+
 # pnpm
 export PNPM_HOME="/home/martin/.local/share/pnpm"
 case ":$PATH:" in

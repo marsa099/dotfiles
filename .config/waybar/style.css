@@ -156,6 +156,37 @@ window#waybar {
   text-shadow: 0 0 4px #C8A2E6, 0 0 10px alpha(#C8A2E6, 0.5), 0 0 20px alpha(#C8A2E6, 0.2);
 }
 
+/* claudeck workspace pill — replaces niri/workspaces. Shows
+ * "<idx>: <ws_name>" for the focused workspace, with distinct styling
+ * for claudeck-managed workspaces vs. other named ones. The .empty
+ * class collapses the pill when the focused workspace is unnamed. */
+#custom-claudeck-workspace {
+  background: alpha(#1B1B1B, 0.85);
+  border-radius: 8px;
+  margin: 8px 0;
+  padding: 6px 14px;
+  color: #8A92A7;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+#custom-claudeck-workspace.other {
+  color: #707B84;
+  font-weight: 400;
+}
+
+#custom-claudeck-workspace.unnamed {
+  color: #C3C8C6;
+  font-weight: 400;
+}
+
+#custom-claudeck-workspace.empty {
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  background: transparent;
+}
+
 #custom-niri-minimap {
   padding: 0 12px;
   margin: 0;

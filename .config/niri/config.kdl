@@ -382,6 +382,16 @@ window-rule {
     opacity 0.95
 }
 
+// claudeck-spawned ghostty windows open un-focused so niri doesn't auto-scroll
+// to them. claudeck then either explicitly focuses (new session) or moves the
+// window to the target workspace silently (activate). Without this, activate
+// flickers — niri scrolls to the new column for ~50–200 ms before claudeck
+// can move it away.
+window-rule {
+    match app-id="^claudeck-"
+    open-focused false
+}
+
 // Highlight windows being screen shared with a red border
 window-rule {
     match is-window-cast-target=true
