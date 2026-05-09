@@ -21,6 +21,7 @@
     ./modules/bicep.nix
     ./modules/azure-data-studio.nix
     ./modules/teams-fork.nix
+    ./modules/rust.nix
   ];
 
   # Use the systemd-boot EFI boot loader.
