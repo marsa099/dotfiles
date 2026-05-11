@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+    cat <<EOF >&2
+Usage: $(basename "$0") <target>
+
+Updates PAT in GNOME Keyring (without trailing newline — that bites).
+
+Targets:
+  jira          Jira Cloud (sisswe.atlassian.net) — one PAT, two entries
+                  service=jira,        type=cli       (jira-read-issue skill)
+                  service=lazyjira,    username=sisswe (lazyjira TUI)
+
+  azure cli     Azure DevOps CLI PAT
+                  service=azure-devops, type=cli      (azcustom wrapper)
+
+  azure waybar  Azure DevOps waybar PAT
+                  service=azure-devops, type=waybar   (waybar-devops)
+EOF
+    exit 1
+}
+
+[ $# -ge 1 ] || usage
+
+case "$1" in
+    -h|--help) usage ;;
+    jira)
+        [ $# -eq 1 ] || usage
+        target="jira"
+        ;;
+    azure)
+        [ $# -eq 2 ] || usage
+        case "$2" in
+            cli)    target="azure-cli" ;;
+            waybar) target="azure-waybar" ;;
+            *)      usage ;;
+        esac
+        ;;
+    *) usage ;;
+esac
+
+read -rsp "Paste new $target PAT (input hidden): " PAT
+echo
+[ -n "$PAT" ] || { echo "Empty input, aborting." >&2; exit 1; }
+
+store() {
+    local label="$1"; shift
+    printf "%s" "$PAT" | secret-tool store --label="$label" "$@"
+    echo "  stored: $label  (${*})"
+}
+
+case "$target" in
+    jira)
+        store "Jira PAT (cli)"   service jira     type cli
+        store "LazyJira sisswe"  service lazyjira username sisswe
+        ;;
+    azure-cli)
+        store "Azure DevOps PAT (cli)"    service azure-devops type cli
+        ;;
+    azure-waybar)
+        store "Azure DevOps PAT (waybar)" service azure-devops type waybar
+        ;;
+esac
+
+echo "Done. ${#PAT} chars stored."
