@@ -432,8 +432,8 @@ binds {
     Mod+S { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus $BROWSER_APP_ID $BROWSER"; }
     Mod+Shift+S { spawn-sh "$BROWSER"; }
 
-    Mod+X { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus chrome-sisswe.atlassian.net__-Profile_3 'google-chrome-stable --profile-directory=\"Profile 3\" --app=\"https://sisswe.atlassian.net/\"'"; }
-    Mod+Shift+X { spawn "google-chrome-stable" "--profile-directory=Profile 3" "--app=https://sisswe.atlassian.net/"; }
+    Mod+X { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus org.lazyjira 'ghostty --class=org.lazyjira -e $HOME/.local/bin/lazyjira'"; }
+    Mod+Shift+X { spawn "ghostty" "--class=org.lazyjira" "-e" "/home/martin/.local/bin/lazyjira"; }
     Mod+C { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus chrome-dev.azure.com__swedishinstituteforstandards-Profile_2 'google-chrome-stable --profile-directory=\"Profile 2\" --app=\"https://dev.azure.com/swedishinstituteforstandards\"'"; }
     Mod+Shift+C { spawn "google-chrome-stable" "--profile-directory=Profile 2" "--app=https://dev.azure.com/swedishinstituteforstandards"; }
     Mod+Z { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus chrome-portal.azure.com__-Profile_4 'google-chrome-stable --profile-directory=\"Profile 4\" --app=\"https://portal.azure.com/\"'"; }
