@@ -8,7 +8,7 @@
     "margin-bottom": 0,
     "modules-left": ["group/hardware", "custom/devops"],
     "modules-center": ["custom/claudeck-workspace", "custom/dnd"],
-    "modules-right": ["tray", "custom/audio-output", "group/system"],
+    "modules-right": ["tray", "group/system"],
     "niri/workspaces": {
          "disable-scroll": true,
          "sort-by-name": true,
@@ -165,18 +165,6 @@
         "signal": 10,
         "tooltip": true,
         "on-click": "~/.scripts/waybar-dnd-toggle"
-   },
-   "custom/audio-output": {
-        "exec": "~/.scripts/waybar-audio-output",
-        "return-type": "json",
-        "interval": 5,
-        "signal": 11,
-        "tooltip": true,
-        "markup": "pango",
-        "on-click": "~/.scripts/waybar-audio-output toggle",
-        "on-click-right": "~/.scripts/waybar-audio-output menu",
-        "on-scroll-up": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+",
-        "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"
    },
    "group/hardware": {
         "orientation": "inherit",
