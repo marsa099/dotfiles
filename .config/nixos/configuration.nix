@@ -149,6 +149,7 @@
     vesktop
     xwayland-satellite # XWayland bridge for niri, needed by X11 apps like Discord
     teams-for-linux
+    signal-desktop
     swaybg
     wl-clipboard
     jq
