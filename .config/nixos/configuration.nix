@@ -16,7 +16,7 @@
     ./modules/dotnet.nix
     ./modules/neovim.nix
     ./modules/roslyn-ls.nix
-    ./modules/vercel.nix
+    ./modules/nodejs.nix
     ./modules/azure-cli.nix
     ./modules/bicep.nix
     ./modules/azure-data-studio.nix
@@ -176,6 +176,7 @@
     sox # audio recording, required by claude code /voice
     pavucontrol # GUI mixer for PipeWire/PulseAudio (route apps between sinks/sources)
     tcpdump # CLI packet capture/analyzer
+    postgresql # provides psql for connecting to Postgres (Vercel/Neon/Supabase etc.)
   ];
 
   # Some programs need SUID wrappers, can be configured further or are
