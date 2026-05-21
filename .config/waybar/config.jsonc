@@ -7,7 +7,7 @@
     "margin-top": 0,
     "margin-bottom": 0,
     "modules-left": ["group/hardware", "custom/devops"],
-    "modules-center": ["custom/claudeck-workspace", "custom/dnd"],
+    "modules-center": ["niri/workspaces", "custom/dnd"],
     "modules-right": ["tray", "group/system"],
     "niri/workspaces": {
          "disable-scroll": true,
@@ -19,13 +19,6 @@
              "default": "",
          },
      },
-    "custom/claudeck-workspace": {
-        "exec": "claudeck waybar",
-        "return-type": "json",
-        "interval": 1,
-        "format": "{}",
-        "tooltip": true
-    },
     "tray": {
         "icon-size": 16,
         "spacing": 16
