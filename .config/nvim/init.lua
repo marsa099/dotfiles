@@ -43,4 +43,12 @@ if not package.loaded["lazy"] then
 	})
 end
 
-vim.cmd.colorscheme("custom-theme-dark")
+local function read_theme_mode()
+	local f = io.open(vim.fn.expand("~/.config/theme_mode"), "r")
+	if not f then return "dark" end
+	local mode = (f:read("*l") or ""):gsub("%s+", "")
+	f:close()
+	return (mode == "light") and "light" or "dark"
+end
+
+vim.cmd.colorscheme("custom-theme-" .. read_theme_mode())
