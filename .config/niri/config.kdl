@@ -182,7 +182,7 @@ layout {
         // - CSS-like notation: "rgb(255, 127, 0)", rgba(), hsl() and a few others.
 
         // Color of the ring on the active monitor.
-        active-color "#d7827e"
+        active-color "#FF570D"
 
         // Color of the ring on inactive monitors.
         //
@@ -211,8 +211,8 @@ layout {
         // The settings are the same as for the focus ring.
         // If you enable the border, you probably want to disable the focus ring.
 
-        width 7
-        active-color "#d7827e"
+        width 5
+        active-color "#FF570D"
         inactive-color "#999999"
 
         // Color of the border around windows that request your attention.
@@ -405,7 +405,7 @@ window-rule {
     match is-window-cast-target=true
 
     border {
-        active-color "#d7827e"
+        active-color "#FF570D"
         inactive-color "#999999"
     }
 }
