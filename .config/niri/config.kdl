@@ -182,13 +182,13 @@ layout {
         // - CSS-like notation: "rgb(255, 127, 0)", rgba(), hsl() and a few others.
 
         // Color of the ring on the active monitor.
-        active-color "#FF570D"
+        active-color "#d7827e"
 
         // Color of the ring on inactive monitors.
         //
         // The focus ring only draws around the active window, so the only place
         // where you can see its inactive-color is on other monitors.
-        inactive-color "#3A3A3A"
+        inactive-color "#999999"
 
         // You can also use gradients. They take precedence over solid colors.
         // Gradients are rendered the same as CSS linear-gradient(angle, from, to).
@@ -211,9 +211,9 @@ layout {
         // The settings are the same as for the focus ring.
         // If you enable the border, you probably want to disable the focus ring.
 
-        width 2
-        active-gradient from="#C8A2E6" to="#8A9AA6" angle=135
-        inactive-color "#3A3A3A"
+        width 3
+        active-color "#d7827e"
+        inactive-color "#999999"
 
         // Color of the border around windows that request your attention.
         urgent-color "#9b0000"
@@ -392,13 +392,21 @@ window-rule {
     open-focused false
 }
 
+// niri-mail-chooser: small floating fzf popup
+window-rule {
+    match app-id="^mail-chooser$"
+    open-floating true
+    default-column-width { fixed 360; }
+    default-window-height { fixed 200; }
+}
+
 // Highlight windows being screen shared with a red border
 window-rule {
     match is-window-cast-target=true
 
     border {
-        active-color "#FF570D"
-        inactive-color "#3A3A3A"
+        active-color "#d7827e"
+        inactive-color "#999999"
     }
 }
 
@@ -438,8 +446,8 @@ binds {
     Mod+Shift+C { spawn "google-chrome-stable" "--profile-directory=Profile 2" "--app=https://dev.azure.com/swedishinstituteforstandards"; }
     Mod+Z { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus chrome-portal.azure.com__-Profile_4 'google-chrome-stable --profile-directory=\"Profile 4\" --app=\"https://portal.azure.com/\"'"; }
     Mod+Shift+Z { spawn "google-chrome-stable" "--profile-directory=Profile 4" "--app=https://portal.azure.com/"; }
-    Mod+M { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus chrome-outlook.office365.com__mail-Profile_3 'google-chrome-stable --profile-directory=\"Profile 3\" --app=\"https://outlook.office365.com/mail\"'"; }
-    Mod+Shift+M { spawn "google-chrome-stable" "--profile-directory=Profile 3" "--app=https://outlook.office365.com/mail"; }
+    Mod+M { spawn-sh "$HOME/.scripts/niri/niri-mail-chooser focus"; }
+    Mod+Shift+M { spawn-sh "$HOME/.scripts/niri/niri-mail-chooser choose"; }
 
     // Use spawn-sh to run a shell command. Do this if you need pipes, multiple commands, etc.
     // Note: the entire command goes as a single argument. It's passed verbatim to `sh -c`.
