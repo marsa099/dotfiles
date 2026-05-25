@@ -392,14 +392,6 @@ window-rule {
     open-focused false
 }
 
-// niri-mail-chooser: small floating fzf popup
-window-rule {
-    match app-id="^mail-chooser$"
-    open-floating true
-    default-column-width { fixed 360; }
-    default-window-height { fixed 200; }
-}
-
 // Highlight windows being screen shared with a red border
 window-rule {
     match is-window-cast-target=true
