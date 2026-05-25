@@ -21,12 +21,17 @@
     "type": "command",
     "command": "~/.scripts/claude-statusline"
   },
+  "enabledPlugins": {
+    "vercel@claude-plugins-official": true
+  },
   "effortLevel": "high",
   "voice": {
     "enabled": true,
     "mode": "hold"
   },
-  "voiceEnabled": true,
+  "theme": "light-ansi",
+  "agentPushNotifEnabled": true,
   "skipAutoPermissionPrompt": true,
-  "theme": "dark-ansi"
+  "voiceEnabled": true,
+  "awaySummaryEnabled": false
 }
