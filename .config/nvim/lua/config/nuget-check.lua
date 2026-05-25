@@ -23,6 +23,23 @@ local function fetch_json(url, on_result)
   })
 end
 
+local function format_published(iso)
+  if not iso or iso == "" or iso == vim.NIL then return "" end
+  iso = tostring(iso)
+  local y, mo, d, h, mi = iso:match("^(%d+)-(%d+)-(%d+)T(%d+):(%d+)")
+  if not y then return "" end
+  local t_as_local = os.time({
+    year = tonumber(y), month = tonumber(mo), day = tonumber(d),
+    hour = tonumber(h), min = tonumber(mi), sec = 0,
+  })
+  local sign, hh, mm = os.date("%z", t_as_local):match("([+-])(%d%d)(%d%d)")
+  local off = 0
+  if sign then
+    off = (tonumber(hh) * 3600 + tonumber(mm) * 60) * (sign == "+" and 1 or -1)
+  end
+  return os.date("%Y-%m-%d %H:%M", t_as_local + off)
+end
+
 local function compare_versions(a, b)
   local function strip_build(v) return (v:gsub("%+.*$", "")) end
   a, b = strip_build(a), strip_build(b)
@@ -472,15 +489,24 @@ local function open_nuget_popup(vulnerable, outdated)
     end
     name_width = name_width + 2
 
+    local ver_width = #"Current"
+    for _, pkg in ipairs(outdated) do
+      if #pkg.current > ver_width then ver_width = #pkg.current end
+      if #pkg.latest > ver_width then ver_width = #pkg.latest end
+    end
+
     table.insert(lines, "  Outdated Packages")
     table.insert(lines, "")
-    local hdr_fmt = "  %-" .. name_width .. "s %-10s    %-10s"
-    table.insert(lines, string.format(hdr_fmt, "Package", "Current", "Latest"))
-    table.insert(lines, "  " .. string.rep("─", name_width + 28))
+    local hdr_fmt = "  %-" .. name_width .. "s %-" .. ver_width .. "s  %-16s    %-" .. ver_width .. "s  %-16s"
+    table.insert(lines, string.format(hdr_fmt, "Package", "Current", "Released", "Latest", "Released"))
+    table.insert(lines, "  " .. string.rep("─", name_width + ver_width * 2 + 40))
 
-    local fmt = "  %-" .. name_width .. "s %-10s  → %-10s"
+    local fmt = "  %-" .. name_width .. "s %-" .. ver_width .. "s  %-16s  → %-" .. ver_width .. "s  %-16s"
     for _, pkg in ipairs(outdated) do
-      local line = string.format(fmt, pkg.name, pkg.current, pkg.latest)
+      local line = string.format(fmt,
+        pkg.name,
+        pkg.current, format_published(pkg.current_published),
+        pkg.latest, format_published(pkg.latest_published))
       table.insert(lines, line)
       pkg_map[#lines] = { kind = "outdated", pkg = pkg }
       if not first_pkg_line then first_pkg_line = #lines end
@@ -696,6 +722,23 @@ local function parse_vulnerable(data)
   return packages
 end
 
+local function fetch_outdated_dates(packages, on_done)
+  if #packages == 0 then on_done() return end
+  local pending = #packages
+  for _, pkg in ipairs(packages) do
+    fetch_registration(pkg.name, function(entries, _)
+      if entries then
+        for _, e in ipairs(entries) do
+          if e.version == pkg.current then pkg.current_published = e.published end
+          if e.version == pkg.latest then pkg.latest_published = e.published end
+        end
+      end
+      pending = pending - 1
+      if pending == 0 then on_done() end
+    end)
+  end
+end
+
 local function parse_outdated(data)
   local packages = {}
   local seen = {}
@@ -715,6 +758,53 @@ local function parse_outdated(data)
   return packages
 end
 
+local spinner_frames = { "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏" }
+local spinner_idx = 1
+local spinner_timer
+local spinner_msg
+local orig_statusline
+local orig_laststatus
+
+local function spinner_render()
+  if not spinner_msg then return end
+  local frame = spinner_frames[spinner_idx]
+  vim.o.statusline = "%#WarningMsg# " .. frame .. " " .. spinner_msg:gsub("%%", "%%%%") .. " %#StatusLine#%=%f"
+  spinner_idx = (spinner_idx % #spinner_frames) + 1
+  pcall(vim.cmd, "redrawstatus!")
+end
+
+local function spinner_start(msg)
+  if orig_statusline == nil then
+    orig_statusline = vim.o.statusline
+    orig_laststatus = vim.o.laststatus
+  end
+  if vim.o.laststatus < 2 then vim.o.laststatus = 2 end
+  spinner_msg = msg
+  spinner_render()
+  if not spinner_timer then
+    spinner_timer = vim.uv.new_timer()
+    spinner_timer:start(0, 100, vim.schedule_wrap(spinner_render))
+  end
+end
+
+local function spinner_update(msg) spinner_msg = msg end
+
+local function spinner_stop()
+  if spinner_timer then
+    spinner_timer:stop()
+    spinner_timer:close()
+    spinner_timer = nil
+  end
+  spinner_msg = nil
+  if orig_statusline ~= nil then
+    vim.o.statusline = orig_statusline
+    vim.o.laststatus = orig_laststatus
+    orig_statusline = nil
+    orig_laststatus = nil
+  end
+  pcall(vim.cmd, "redrawstatus!")
+end
+
 vim.api.nvim_create_autocmd("VimEnter", {
   callback = function()
     local has_project = vim.fn.glob("*.csproj") ~= ""
@@ -722,7 +812,7 @@ vim.api.nvim_create_autocmd("VimEnter", {
       or vim.fn.glob("*.slnx") ~= ""
     if not has_project then return end
 
-    vim.notify("Checking NuGet packages...", vim.log.levels.INFO)
+    spinner_start("NuGet: checking outdated + vulnerable packages...")
 
     local vulnerable = {}
     local outdated = {}
@@ -734,8 +824,13 @@ vim.api.nvim_create_autocmd("VimEnter", {
 
       vim.schedule(function()
         if #vulnerable > 0 or #outdated > 0 then
-          open_nuget_popup(vulnerable, outdated)
+          spinner_update("NuGet: fetching release dates...")
+          fetch_outdated_dates(outdated, function()
+            spinner_stop()
+            open_nuget_popup(vulnerable, outdated)
+          end)
         else
+          spinner_stop()
           vim.notify("All NuGet packages are up to date and secure", vim.log.levels.INFO)
         end
       end)
