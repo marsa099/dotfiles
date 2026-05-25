@@ -115,11 +115,11 @@
     "teams-for-linux-fork": {
       "flake": false,
       "locked": {
-        "lastModified": 1778254388,
-        "narHash": "sha256-d/jrxjRKwcokv3HeeP4GCCIDAg8NkPtHhCqSnIYa/DU=",
+        "lastModified": 1779713002,
+        "narHash": "sha256-/5KOTV4aQNf2uPFnn4Au1zzMqufcgjYmJYzumAM54iM=",
         "owner": "marsa099",
         "repo": "teams-for-linux",
-        "rev": "72e9d83d4d1e84d9d63cc04c9e6c9a64cb4f3d38",
+        "rev": "ab86f33cec64ef6740333171cf6709c2d44fe416",
         "type": "github"
       },
       "original": {
