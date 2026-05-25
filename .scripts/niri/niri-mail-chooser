@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 # Usage: niri-mail-chooser focus|choose
 #   focus  — focus/cycle existing mail windows; if none, open chooser
-#   choose — always open chooser
+#   choose — always open the rofi chooser
+# While the chooser is open, re-invoking the script (e.g. by tapping
+# Super+M / Super+Shift+M again) advances the highlight by injecting a
+# synthetic Down key via wtype. Enter accepts, Esc cancels. "Release Super
+# to confirm" isn't achievable on wayland (niri has no key-release events,
+# rofi has no idle-timeout).
 
 set -u
 
@@ -18,6 +23,16 @@ SPAWN_OR_FOCUS="$HOME/.scripts/niri/niri-spawn-or-focus"
 ROFI_THEME="$HOME/.config/rofi/theme.rasi"
 ICON_CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/niri-mail-chooser"
 ACCENT="#FF570D"
+
+# If a rofi popup is already open, any re-invocation just cycles the
+# selection: send a Down arrow to whatever has keyboard focus (rofi, since
+# it has the exclusive grab). This is needed because niri's Mod+M binding
+# fires before rofi gets the key — so the keypress reaches THIS script
+# rather than rofi's internal kb-row-down.
+if pgrep -x rofi >/dev/null 2>&1; then
+    wtype -k Down
+    exit 0
+fi
 
 # Render a composite PNG (64x80): base icon scaled to 64x64 on top, then 16px
 # strip below that contains an orange dot if open, or stays empty if closed.
@@ -116,8 +131,8 @@ show_chooser() {
             -theme "$ROFI_THEME" \
             -theme-str "$theme_overrides" \
             -show-icons \
-            -kb-row-down "Down,j" \
-            -kb-row-up "Up,k" \
+            -kb-row-down "Down" \
+            -kb-row-up "Up" \
             -no-custom
     )
     act_on_choice "$choice"
