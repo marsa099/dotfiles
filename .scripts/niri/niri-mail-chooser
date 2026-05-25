@@ -35,9 +35,8 @@ act_on_choice() {
 
 show_chooser() {
     # Horizontal pair of logo tiles. Icon fills the tile; clients with an open
-    # window get a small colored bottom-stripe (via the dmenu urgent flag) as
-    # the "open" indicator — no element-text needed, so no reserved vertical
-    # space below the logo.
+    # window get a colored bottom-stripe (via the dmenu urgent flag) as the
+    # "open" indicator — no extra widgets needed.
     local theme_overrides='
         window { width: 220px; padding: 10px; }
         mainbox { spacing: 0; children: ["listview"]; }
@@ -101,7 +100,6 @@ show_chooser() {
             if grep -qxF "$app_id" <<< "$open_ids"; then
                 urgent="true"
             fi
-            # dmenu protocol: <entry>\0icon\x1f<path>\x1furgent\x1f<bool>
             printf '%s\0icon\x1f%s\x1furgent\x1f%s\n' "$label" "$icon" "$urgent"
         done | rofi -dmenu \
             -theme "$ROFI_THEME" \
