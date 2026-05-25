@@ -16,6 +16,30 @@ MAILS=(
 
 SPAWN_OR_FOCUS="$HOME/.scripts/niri/niri-spawn-or-focus"
 ROFI_THEME="$HOME/.config/rofi/theme.rasi"
+ICON_CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/niri-mail-chooser"
+ACCENT="#FF570D"
+
+# Render a composite PNG (64x80): base icon scaled to 64x64 on top, then 16px
+# strip below that contains an orange dot if open, or stays empty if closed.
+# Result is cached in ICON_CACHE; only rebuilt if base icon is newer.
+make_composite() {
+    local base="$1" open="$2" out="$3"
+    mkdir -p "$ICON_CACHE"
+    if [ -f "$out" ] && [ "$out" -nt "$base" ]; then
+        return 0
+    fi
+    if [ "$open" = "true" ]; then
+        nix run nixpkgs#imagemagick -- \
+            \( "$base" -background none -density 300 -resize 64x64 -gravity center -extent 64x64 \) \
+            \( -size 64x16 xc:none -fill "$ACCENT" -draw "circle 32,8 32,3" \) \
+            -append "$out"
+    else
+        nix run nixpkgs#imagemagick -- \
+            \( "$base" -background none -density 300 -resize 64x64 -gravity center -extent 64x64 \) \
+            \( -size 64x16 xc:none \) \
+            -append "$out"
+    fi
+}
 
 act_on_choice() {
     local choice="$1" m label rest app_id cmd
@@ -34,9 +58,9 @@ act_on_choice() {
 }
 
 show_chooser() {
-    # Horizontal pair of logo tiles. Icon fills the tile; clients with an open
-    # window get a colored bottom-stripe (via the dmenu urgent flag) as the
-    # "open" indicator — no extra widgets needed.
+    # Horizontal pair of logo tiles. The "open" indicator (orange dot) is baked
+    # into the icon image itself via make_composite — that puts the dot fully
+    # outside the rofi element border, since rofi just sees one taller image.
     local theme_overrides='
         window { width: 220px; padding: 10px; }
         mainbox { spacing: 0; children: ["listview"]; }
@@ -56,30 +80,13 @@ show_chooser() {
             border: 2px solid;
             border-color: transparent;
         }
-        element normal.urgent {
-            background-color: transparent;
-            text-color: @fg-primary;
-            border: 0 0 3px 0 solid;
-            border-color: @accent-cursor;
-        }
-        element alternate.urgent {
-            background-color: transparent;
-            text-color: @fg-primary;
-            border: 0 0 3px 0 solid;
-            border-color: @accent-cursor;
-        }
         element selected.normal {
             background-color: @bg-selection;
             border: 2px solid;
             border-color: @accent-cursor;
         }
-        element selected.urgent {
-            background-color: @bg-selection;
-            border: 2px solid;
-            border-color: @accent-cursor;
-        }
         element-icon {
-            size: 56px;
+            size: 80px;
             horizontal-align: 0.5;
             expand: false;
         }
@@ -95,12 +102,16 @@ show_chooser() {
             local label="${m%%|*}"
             local rest="${m#*|}"
             local app_id="${rest%%|*}"
-            local icon="${m##*|}"
-            local urgent="false"
+            local base_icon="${m##*|}"
+            local open="false"
             if grep -qxF "$app_id" <<< "$open_ids"; then
-                urgent="true"
+                open="true"
             fi
-            printf '%s\0icon\x1f%s\x1furgent\x1f%s\n' "$label" "$icon" "$urgent"
+            local cache_key
+            cache_key=$(printf '%s|%s' "$base_icon" "$open" | sha1sum | cut -c1-16)
+            local composite="$ICON_CACHE/$cache_key.png"
+            make_composite "$base_icon" "$open" "$composite" >&2
+            printf '%s\0icon\x1f%s\n' "$label" "$composite"
         done | rofi -dmenu \
             -theme "$ROFI_THEME" \
             -theme-str "$theme_overrides" \
