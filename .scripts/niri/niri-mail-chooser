@@ -61,13 +61,13 @@ show_chooser() {
             background-color: transparent;
             text-color: @fg-primary;
             border: 0 0 3px 0 solid;
-            border-color: transparent transparent @accent-cursor transparent;
+            border-color: @accent-cursor;
         }
         element alternate.urgent {
             background-color: transparent;
             text-color: @fg-primary;
             border: 0 0 3px 0 solid;
-            border-color: transparent transparent @accent-cursor transparent;
+            border-color: @accent-cursor;
         }
         element selected.normal {
             background-color: @bg-selection;
