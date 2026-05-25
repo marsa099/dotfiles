@@ -19,8 +19,18 @@ ansi_fg() {
     fi
 }
 
+ansi_bg() {
+    local hex="${1#\#}" fb="$2"
+    if [ "${#hex}" -eq 6 ]; then
+        printf '\033[48;2;%d;%d;%dm' "0x${hex:0:2}" "0x${hex:2:2}" "0x${hex:4:2}"
+    else
+        printf '%s' "$fb"
+    fi
+}
+
 cs_model_hex="" cs_path_hex="" cs_leaf_hex="" cs_branch_hex="" cs_count_hex=""
 cs_dim_hex="" cs_pct_low_hex="" cs_pct_mid_hex="" cs_pct_high_hex="" cs_pct_crit_hex=""
+cs_pill_bg_hex="" cs_pill_fg_hex=""
 theme_colors="${XDG_STATE_HOME:-$HOME/.local/state}/claude-statusline/colors.sh"
 # shellcheck disable=SC1090
 [ -f "$theme_colors" ] && . "$theme_colors"
@@ -40,6 +50,13 @@ c_pct_low=$(ansi_fg  "$cs_pct_low_hex"  $'\033[32m')
 c_pct_mid=$(ansi_fg  "$cs_pct_mid_hex"  $'\033[38;5;208m')
 c_pct_high=$(ansi_fg "$cs_pct_high_hex" $'\033[33m')
 c_pct_crit=$(ansi_fg "$cs_pct_crit_hex" $'\033[1;31m')
+
+# Pill colors for the model-name badge (matches tmux active window pill)
+c_pill_cap=$(ansi_fg "$cs_pill_bg_hex" $'\033[38;5;215m')
+c_pill_bg=$(ansi_bg  "$cs_pill_bg_hex" $'\033[48;5;215m')
+c_pill_fg=$(ansi_fg  "$cs_pill_fg_hex" $'\033[38;5;232m')
+pill_l=$'\xee\x82\xb6'  # U+E0B6 rounded left cap
+pill_r=$'\xee\x82\xb4'  # U+E0B4 rounded right cap
 
 # Color a percentage by severity. Tier thresholds are configurable per call.
 # Defaults: low < 50 < mid < 75 < high < 90 < crit.
@@ -100,7 +117,7 @@ rl_7d=$(jq -r '.rate_limits.seven_day.used_percentage // empty' <<<"$input")
 rl_7d_resets=$(jq -r '.rate_limits.seven_day.resets_at // empty' <<<"$input")
 
 parts=()
-[ -n "$model" ] && parts+=("${bold}${c_model}${model}${rst}")
+[ -n "$model" ] && parts+=("${c_pill_cap}${pill_l}${rst}${c_pill_bg}${c_pill_fg}${bold} ${model} ${rst}${c_pill_cap}${pill_r}${rst}")
 [ -n "$dir_pretty" ] && parts+=("$dir_pretty")
 [ -n "$git_segment" ] && parts+=("$git_segment")
 

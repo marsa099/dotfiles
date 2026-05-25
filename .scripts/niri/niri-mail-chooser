@@ -1,0 +1,155 @@
+#!/usr/bin/env bash
+# Usage: niri-mail-chooser focus|choose
+#   focus  — focus/cycle existing mail windows; if none, open chooser
+#   choose — always open chooser
+
+set -u
+
+MODE="${1:-focus}"
+
+# Each entry: label|app_id|spawn_command|icon_path
+# TODO: replace the Regent entry with the real profile/URL when known.
+MAILS=(
+    "SIS|chrome-outlook.office365.com__mail-Profile_3|google-chrome-stable --profile-directory=\"Profile 3\" --app=\"https://outlook.office365.com/mail\"|$HOME/.config/rofi/icons/sis-mark.svg"
+    "Regent|chrome-outlook.office365.com__mail-Default|google-chrome-stable --profile-directory=\"Default\" --app=\"https://outlook.office365.com/mail\"|$HOME/.config/rofi/icons/regent-mark.png"
+)
+
+SPAWN_OR_FOCUS="$HOME/.scripts/niri/niri-spawn-or-focus"
+ROFI_THEME="$HOME/.config/rofi/theme.rasi"
+
+act_on_choice() {
+    local choice="$1" m label rest app_id cmd
+    [ -z "$choice" ] && return
+    for m in "${MAILS[@]}"; do
+        label="${m%%|*}"
+        if [ "$label" = "$choice" ]; then
+            rest="${m#*|}"
+            app_id="${rest%%|*}"
+            rest="${rest#*|}"
+            cmd="${rest%|*}"
+            "$SPAWN_OR_FOCUS" "$app_id" "$cmd"
+            return
+        fi
+    done
+}
+
+show_chooser() {
+    # Horizontal pair of logo tiles. Icon fills the tile; clients with an open
+    # window get a small colored bottom-stripe (via the dmenu urgent flag) as
+    # the "open" indicator — no element-text needed, so no reserved vertical
+    # space below the logo.
+    local theme_overrides='
+        window { width: 220px; padding: 10px; }
+        mainbox { spacing: 0; children: ["listview"]; }
+        listview {
+            lines: 1;
+            columns: 2;
+            fixed-height: true;
+            spacing: 8px;
+        }
+        element {
+            padding: 6px;
+            border-radius: 6px;
+            spacing: 0;
+            orientation: vertical;
+            children: ["element-icon"];
+            horizontal-align: 0.5;
+            border: 2px solid;
+            border-color: transparent;
+        }
+        element normal.urgent {
+            background-color: transparent;
+            text-color: @fg-primary;
+            border: 0 0 3px 0 solid;
+            border-color: transparent transparent @accent-cursor transparent;
+        }
+        element alternate.urgent {
+            background-color: transparent;
+            text-color: @fg-primary;
+            border: 0 0 3px 0 solid;
+            border-color: transparent transparent @accent-cursor transparent;
+        }
+        element selected.normal {
+            background-color: @bg-selection;
+            border: 2px solid;
+            border-color: @accent-cursor;
+        }
+        element selected.urgent {
+            background-color: @bg-selection;
+            border: 2px solid;
+            border-color: @accent-cursor;
+        }
+        element-icon {
+            size: 56px;
+            horizontal-align: 0.5;
+            expand: false;
+        }
+    '
+
+    # Snapshot which configured mail app_ids currently have a window open
+    local open_ids
+    open_ids=$(niri msg -j windows | jq -r '.[].app_id')
+
+    local choice
+    choice=$(
+        for m in "${MAILS[@]}"; do
+            local label="${m%%|*}"
+            local rest="${m#*|}"
+            local app_id="${rest%%|*}"
+            local icon="${m##*|}"
+            local urgent="false"
+            if grep -qxF "$app_id" <<< "$open_ids"; then
+                urgent="true"
+            fi
+            # dmenu protocol: <entry>\0icon\x1f<path>\x1furgent\x1f<bool>
+            printf '%s\0icon\x1f%s\x1furgent\x1f%s\n' "$label" "$icon" "$urgent"
+        done | rofi -dmenu \
+            -theme "$ROFI_THEME" \
+            -theme-str "$theme_overrides" \
+            -show-icons \
+            -kb-row-down "Down,j" \
+            -kb-row-up "Up,k" \
+            -no-custom
+    )
+    act_on_choice "$choice"
+}
+
+if [ "$MODE" = "choose" ]; then
+    show_chooser
+    exit 0
+fi
+
+# focus mode: look for any windows matching the configured mail app_ids
+ID_SELECT=""
+for m in "${MAILS[@]}"; do
+    rest="${m#*|}"
+    aid="${rest%%|*}"
+    [ -n "$ID_SELECT" ] && ID_SELECT="$ID_SELECT or "
+    ID_SELECT="${ID_SELECT}.app_id == \"$aid\""
+done
+
+WINDOWS=$(niri msg -j windows | jq "[.[] | select($ID_SELECT)] | sort_by(.id)")
+COUNT=$(echo "$WINDOWS" | jq 'length')
+
+if [ "$COUNT" -eq 0 ]; then
+    show_chooser
+    exit 0
+fi
+
+FOCUSED_ID=$(echo "$WINDOWS" | jq -r '.[] | select(.is_focused) | .id // empty' | head -1)
+
+if [ -n "$FOCUSED_ID" ]; then
+    mapfile -t WINDOW_IDS < <(echo "$WINDOWS" | jq -r '.[].id')
+    CURRENT_IDX=0
+    for i in "${!WINDOW_IDS[@]}"; do
+        if [ "${WINDOW_IDS[$i]}" = "$FOCUSED_ID" ]; then
+            CURRENT_IDX=$i
+            break
+        fi
+    done
+    NEXT_IDX=$(( (CURRENT_IDX + 1) % COUNT ))
+    niri msg action focus-window --id "${WINDOW_IDS[$NEXT_IDX]}"
+else
+    FIRST_ID=$(echo "$WINDOWS" | jq -r '.[0].id')
+    niri msg action focus-window --id "$FIRST_ID"
+fi
