@@ -38,6 +38,12 @@
   # Configure network connections interactively with nmcli or nmtui.
   networking.networkmanager.enable = true;
 
+  # Local dev hostnames. SD-API binds to sd-api.dev.sis.se in its launch
+  # settings so it can match the local cert SAN — route it to loopback.
+  networking.hosts = {
+    "127.0.0.1" = [ "sd-api.dev.sis.se" ];
+  };
+
   # Set your time zone.
   time.timeZone = "Europe/Amsterdam";
 
@@ -143,6 +149,7 @@
     waybar
     wget
     fuzzel
+    rofi
     gh # gh cli
     zoxide
     discord
@@ -208,6 +215,18 @@
   # networking.firewall.allowedUDPPorts = [ ... ];
   # Or disable the firewall altogether.
   # networking.firewall.enable = false;
+
+  # mDNS / Bonjour: broadcast nixos.local on the LAN so the phone can reach
+  # the notes app by hostname instead of IP.
+  services.avahi = {
+    enable = true;
+    nssmdns4 = true;
+    openFirewall = true;
+    publish = {
+      enable = true;
+      addresses = true;
+    };
+  };
 
   # Copy the NixOS configuration file and link it from the resulting system
   # (/run/current-system/configuration.nix). This is useful in case you
