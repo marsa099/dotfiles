@@ -11,7 +11,7 @@
 	// "disable-hardware-acceleration": true,
 
 	// Disable sending crash reports to Microsoft telemetry.
-	"enable-crash-reporter": false,
+	"enable-crash-reporter": true,
 
 	// Force Electron to use libsecret instead of letting it auto-detect from
 	// XDG_CURRENT_DESKTOP. On niri (and any desktop that isn't GNOME/Unity/KDE)
