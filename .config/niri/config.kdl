@@ -371,18 +371,11 @@ layer-rule {
     place-within-backdrop true
 }
 
-// Drop shadow + rounded corners for rofi popups (e.g. the Super+M mail chooser).
+// Rounded corners + translucency for rofi popups (e.g. the Super+M mail chooser).
 layer-rule {
     match namespace="^rofi$"
-    geometry-corner-radius 8
-    opacity 0.85
-    shadow {
-        on
-        softness 15
-        spread 2
-        offset x=0 y=3
-        color "#0006"
-    }
+    geometry-corner-radius 12
+    opacity 0.9
 }
 
 // Enable rounded corners for all windows (matching Hyprland's rounding = 10)

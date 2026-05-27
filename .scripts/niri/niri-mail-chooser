@@ -34,9 +34,12 @@ if pgrep -x rofi >/dev/null 2>&1; then
     exit 0
 fi
 
-# Render a composite PNG (64x80): base icon scaled to 64x64 on top, then 16px
-# strip below that contains an orange dot if open, or stays empty if closed.
+# Render a composite PNG (64x80): the 64x64 icon centered inside a 64x80
+# transparent canvas via -extent, which gives 8px top + 8px bottom margin and
+# keeps the icon visually centered inside the rofi element. For "open" mail
+# accounts an orange dot is drawn near the bottom edge of the canvas.
 # Result is cached in ICON_CACHE; only rebuilt if base icon is newer.
+COMPOSITE_VERSION=v3
 make_composite() {
     local base="$1" open="$2" out="$3"
     mkdir -p "$ICON_CACHE"
@@ -45,14 +48,15 @@ make_composite() {
     fi
     if [ "$open" = "true" ]; then
         nix run nixpkgs#imagemagick -- \
-            \( "$base" -background none -density 300 -resize 64x64 -gravity center -extent 64x64 \) \
-            \( -size 64x16 xc:none -fill "$ACCENT" -draw "circle 32,8 32,3" \) \
-            -append "$out"
+            "$base" -background none -density 300 -resize 64x64 \
+            -gravity center -extent 64x80 \
+            -fill "$ACCENT" -draw "circle 32,76 32,73" \
+            "$out"
     else
         nix run nixpkgs#imagemagick -- \
-            \( "$base" -background none -density 300 -resize 64x64 -gravity center -extent 64x64 \) \
-            \( -size 64x16 xc:none \) \
-            -append "$out"
+            "$base" -background none -density 300 -resize 64x64 \
+            -gravity center -extent 64x80 \
+            "$out"
     fi
 }
 
@@ -77,7 +81,12 @@ show_chooser() {
     # into the icon image itself via make_composite — that puts the dot fully
     # outside the rofi element border, since rofi just sees one taller image.
     local theme_overrides='
-        window { width: 220px; padding: 10px; }
+        window {
+            width: 220px;
+            padding: 16px;
+            border-radius: 12px;
+            background-color: #D8D8D8;
+        }
         mainbox { spacing: 0; children: ["listview"]; }
         listview {
             lines: 1;
@@ -92,17 +101,17 @@ show_chooser() {
             orientation: vertical;
             children: ["element-icon"];
             horizontal-align: 0.5;
-            border: 2px solid;
-            border-color: transparent;
+            vertical-align: 0.5;
+            border: 0;
         }
         element selected.normal {
-            background-color: @bg-selection;
-            border: 2px solid;
-            border-color: @accent-cursor;
+            background-color: rgba(0, 0, 0, 0.18);
+            border: 0;
         }
         element-icon {
             size: 80px;
             horizontal-align: 0.5;
+            vertical-align: 0.5;
             expand: false;
         }
     '
@@ -123,7 +132,7 @@ show_chooser() {
                 open="true"
             fi
             local cache_key
-            cache_key=$(printf '%s|%s' "$base_icon" "$open" | sha1sum | cut -c1-16)
+            cache_key=$(printf '%s|%s|%s' "$base_icon" "$open" "$COMPOSITE_VERSION" | sha1sum | cut -c1-16)
             local composite="$ICON_CACHE/$cache_key.png"
             make_composite "$base_icon" "$open" "$composite" >&2
             printf '%s\0icon\x1f%s\n' "$label" "$composite"
