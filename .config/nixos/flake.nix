@@ -13,6 +13,7 @@
       url = "github:marsa099/teams-for-linux/main";
       flake = false;
     };
+    bt-keyboard-bridge.url = "path:/home/martin/repos/bt-keyboard-bridge";
   };
 
   outputs =
@@ -23,6 +24,7 @@
       zen-browser,
       claude-code-notify,
       teams-for-linux-fork,
+      bt-keyboard-bridge,
       ...
     }:
     let
@@ -35,6 +37,7 @@
         specialArgs = { inherit unstable teams-for-linux-fork; };
         modules = [
           ./configuration.nix
+          bt-keyboard-bridge.nixosModules.default
           {
             environment.systemPackages = [
               unstable.claude-code
