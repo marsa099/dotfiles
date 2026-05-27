@@ -34,12 +34,13 @@ if pgrep -x rofi >/dev/null 2>&1; then
     exit 0
 fi
 
-# Render a composite PNG (64x80): the 64x64 icon centered inside a 64x80
-# transparent canvas via -extent, which gives 8px top + 8px bottom margin and
-# keeps the icon visually centered inside the rofi element. For "open" mail
-# accounts an orange dot is drawn near the bottom edge of the canvas.
+# Render a composite PNG (64x80): the 64x64 icon, masked to a 12px-radius
+# rounded square, centered inside a 64x80 transparent canvas via -extent.
+# That gives 8px top + 8px bottom margin and keeps the icon visually centered
+# inside the rofi element. For "open" mail accounts an orange dot is drawn near
+# the bottom edge of the canvas, below the rounded icon.
 # Result is cached in ICON_CACHE; only rebuilt if base icon is newer.
-COMPOSITE_VERSION=v3
+COMPOSITE_VERSION=v4
 make_composite() {
     local base="$1" open="$2" out="$3"
     mkdir -p "$ICON_CACHE"
@@ -49,12 +50,18 @@ make_composite() {
     if [ "$open" = "true" ]; then
         nix run nixpkgs#imagemagick -- \
             "$base" -background none -density 300 -resize 64x64 \
+            \( +clone -alpha transparent \
+               -fill white -draw "roundrectangle 0,0 63,63 12,12" \) \
+            -compose DstIn -composite -compose Over \
             -gravity center -extent 64x80 \
             -fill "$ACCENT" -draw "circle 32,76 32,73" \
             "$out"
     else
         nix run nixpkgs#imagemagick -- \
             "$base" -background none -density 300 -resize 64x64 \
+            \( +clone -alpha transparent \
+               -fill white -draw "roundrectangle 0,0 63,63 12,12" \) \
+            -compose DstIn -composite -compose Over \
             -gravity center -extent 64x80 \
             "$out"
     fi
@@ -83,7 +90,7 @@ show_chooser() {
     local theme_overrides='
         window {
             width: 220px;
-            padding: 16px;
+            padding: 12px;
             border-radius: 12px;
             background-color: #D8D8D8;
         }
@@ -96,7 +103,7 @@ show_chooser() {
         }
         element {
             padding: 6px;
-            border-radius: 6px;
+            border-radius: 12px;
             spacing: 0;
             orientation: vertical;
             children: ["element-icon"];
