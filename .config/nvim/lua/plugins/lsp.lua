@@ -193,16 +193,40 @@ return {
 				end,
 			})
 
-			-- Enable LSP servers
-			-- Configure nil for Nix
-			vim.lsp.config("nil_ls", {
+			-- Configure nixd for Nix.
+			-- Language features + nixpkgs completion work on any machine. NixOS
+			-- *options* completion (services.*, programs.*) requires evaluating a real
+			-- NixOS config, so it's only wired up when this machine actually has the
+			-- flake. On other machines nixd degrades to a plain Nix LSP — nothing here
+			-- assumes NixOS.
+			local nixd_settings = {
+				formatting = { command = { "nixfmt" } },
+				nixpkgs = { expr = "import <nixpkgs> { }" },
+			}
+			local nixos_flake = vim.fn.expand("~/.config/nixos")
+			if vim.uv.fs_stat(nixos_flake .. "/flake.nix") then
+				nixd_settings.nixpkgs.expr =
+					string.format('import (builtins.getFlake "%s").inputs.nixpkgs { }', nixos_flake)
+				nixd_settings.options = {
+					nixos = {
+						expr = string.format(
+							'(builtins.getFlake "%s").nixosConfigurations.%s.options',
+							nixos_flake,
+							vim.uv.os_gethostname()
+						),
+					},
+				}
+			end
+			vim.lsp.config("nixd", {
 				root_markers = { "flake.nix", ".git" },
+				settings = { nixd = nixd_settings },
 			})
 
+			-- Enable LSP servers
 			vim.lsp.enable("lua_ls")
 			vim.lsp.enable("ts_ls")
 			vim.lsp.enable("bicep")
-			vim.lsp.enable("nil_ls")
+			vim.lsp.enable("nixd")
 		end,
 	},
 }

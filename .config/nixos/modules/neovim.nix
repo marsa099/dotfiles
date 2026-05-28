@@ -11,8 +11,8 @@
     nodePackages.typescript-language-server
     lua-language-server # Lua LSP (Mason binary broken on NixOS due to dynamic linking)
     stylua # Lua formatter (Mason binary broken on NixOS due to dynamic linking)
-    nil # Nix LSP
-    nixfmt # formatter used by nil (Nix LSP)
+    nixd # Nix LSP (evaluates the flake to provide NixOS options completion)
+    nixfmt # formatter used by nixd (Nix LSP)
     fd # fast file finder used by telescope.nvim
     ripgrep # needed by telescope.nvim live_grep
     unzip # needed by mason to extract packages
