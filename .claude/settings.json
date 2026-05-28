@@ -30,7 +30,7 @@
     "enabled": true,
     "mode": "hold"
   },
-  "theme": "light-ansi",
+  "theme": "dark",
   "agentPushNotifEnabled": true,
   "skipAutoPermissionPrompt": true,
   "voiceEnabled": true
