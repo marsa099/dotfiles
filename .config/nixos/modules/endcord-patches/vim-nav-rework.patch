@@ -1,0 +1,478 @@
+Vim-mode nav rework + jump-to-media + tree-toggle hide + jump-last-channel.
+
+Final keymap (vim NORMAL mode):
+  j / k         chat line up/down (unchanged)
+  Shift+J / K   jump message-by-message in chat
+  Up / Down     tree (sidebar) navigation (was Shift+J / K)
+  Ctrl+D        jump to next (newer) message containing media
+  Ctrl+U        jump to prev (older) message containing media
+  Ctrl+A        upload attachment (was Shift+U / Ctrl+U)
+  Ctrl+O        jump to previous (last visited) channel
+  Space         enter selected channel (unchanged)
+
+Media def: any message with embeds or stickers (covers attachments,
+gifs, images, video, link previews, custom stickers).
+
+Tree toggle: when toggled off via toggle_tree, the tree pane and its
+borders are removed entirely; chat/prompt/input/status collapse to
+column 0. Toggling back restores the original tree_width. Mention
+notifications surface in the merged title line is suppressed when
+fully hidden.
+
+Adds 5 new actions (50-54). Ctrl+D / Ctrl+U / Ctrl+O codes (4, 21,
+15) collide with standard-mode delete/upload/browser, but
+config.merge_keybindings dedup pulls them out of standard mode when
+vim_mode is active, so only the vim bindings fire in NORMAL.
+
+--- a/endcord/defaults.py	2026-05-11 11:09:21.781144647 +0200
++++ b/endcord/defaults.py	2026-05-11 11:12:56.739817292 +0200
+@@ -214,6 +214,11 @@
+     "send_message": 10,   # Enter
+     "chat_up": 259,   # Up
+     "chat_down": 258,   # Down
++    "chat_msg_up": 275,   # F11 — overridden by vim mode K
++    "chat_msg_down": 276,   # F12 — overridden by vim mode J
++    "jump_next_media": 277,   # F13 — overridden by vim mode ]m
++    "jump_prev_media": 278,   # F14 — overridden by vim mode [m
++    "jump_last_channel": 279,   # F15 — overridden by vim mode Ctrl+O
+     "reply": 18,   # Ctrl+R
+     "edit": 5,   # Ctrl+E
+     "delete": 4,   # Ctrl+D
+@@ -276,8 +281,13 @@
+     # special
+     "insert_mode": "i",
+     # tree
+-    "tree_up": "K",
+-    "tree_down": "J",
++    "tree_up": 259,   # Up
++    "tree_down": 258,   # Down
++    "chat_msg_up": "K",
++    "chat_msg_down": "J",
++    "jump_next_media": 4,    # Ctrl+D
++    "jump_prev_media": 21,   # Ctrl+U
++    "jump_last_channel": 15,   # Ctrl+O
+     "tree_select": " ",
+     "tree_collapse_threads": "W",
+     "tree_join_thread": "O",
+@@ -311,7 +321,7 @@
+     "scroll_bottom": "B",
+     "go_replied": "g",
+     "download": "D",
+-    "upload": "U",
++    "upload": 1,   # Ctrl+A (a for attach)
+     "browser": "o",
+     "view_media": "v",
+     "spoil": "S",
+--- a/endcord/tui.py	2026-05-11 11:09:21.781222136 +0200
++++ b/endcord/tui.py	2026-05-11 11:12:56.740413477 +0200
+@@ -547,44 +547,61 @@
+             return
+ 
+         h, w = self.screen.getmaxyx()
++        # outer_offset = where the input box's `│` lives (at outer_offset-1).
++        # inner_offset = where status/title/prompt start (= outer_offset-1).
++        tree_hidden = self.tree_width <= 0
++        outer_offset = 2 if tree_hidden else (self.tree_width + 3)
++        inner_offset = 1 if tree_hidden else (self.tree_width + 2)
++        chat_offset = outer_offset
++        # Force at least 1-col prompt padding so the cursor lands AFTER
++        # the input-border `│` (otherwise empty prompt puts cursor on the border).
++        prompt_pad = max(len(self.prompt), 1)
+         chat_hwyx = (
+             h - 4 - self.have_title,
+-            w - (self.tree_width + 4) - bool(self.member_list),
++            w - chat_offset - 1 - bool(self.member_list),
+             self.have_title,
+-            self.tree_width + 3,
++            chat_offset,
+         )
+-        win_prompt_input_line = (1, w - self.tree_width - 4, h - 2, self.tree_width + 3)
+-        tree_hwyx = (h - self.have_title_tree - 1, self.tree_width, self.have_title, 1)
++        win_prompt_input_line = (1, w - outer_offset - 1, h - 2, outer_offset)
++        tree_hwyx = (h - self.have_title_tree - 1, max(self.tree_width, 1), self.have_title, 1)
+ 
+         # re-init areas
+         if not redraw_only:
+-            prompt_hwyx = (1, len(self.prompt), h - 2, self.tree_width + 2)
++            prompt_hwyx = (1, prompt_pad, h - 2, inner_offset)
+             input_line_hwyx = (
+                 1,
+-                w - (self.tree_width + 1) - len(self.prompt) - 2,
++                w - inner_offset - prompt_pad - 1,
+                 h - 2,
+-                self.tree_width + len(self.prompt) + 2,
++                inner_offset + prompt_pad,
+             )
+-            status_line_hwyx = (1, w - (self.tree_width + 2), h - 3, self.tree_width + 2)
++            status_line_hwyx = (1, w - inner_offset, h - 3, inner_offset)
+             self.win_chat = self.screen.derwin(*chat_hwyx)
+             self.win_prompt = self.screen.derwin(*prompt_hwyx)
+             self.win_input_line = self.screen.derwin(*input_line_hwyx)
+             self.win_status_line = self.screen.derwin(*status_line_hwyx)
+-            self.win_tree = self.screen.derwin(*tree_hwyx)
++            if not tree_hidden:
++                self.win_tree = self.screen.derwin(*tree_hwyx)
++            else:
++                self.win_tree = None
+             if self.have_title:
+-                title_line_hwyx = (1, w - (self.tree_width + 2) - bool(self.win_member_list) * (self.member_list_width + 1), 0, self.tree_width + 2)
++                title_line_hwyx = (1, w - inner_offset - bool(self.win_member_list) * (self.member_list_width + 1), 0, inner_offset)
+                 self.win_title_line = self.screen.derwin(*title_line_hwyx)
+                 self.title_hw = self.win_title_line.getmaxyx()
+-            if self.have_title_tree:
++            if self.have_title_tree and not tree_hidden:
+                 tree_title_line_hwyx = (1, self.tree_width + 2, 0, 0)
+                 self.win_title_tree = self.screen.derwin(*tree_title_line_hwyx)
+                 self.tree_title_hw = self.win_title_tree.getmaxyx()
++            elif tree_hidden:
++                self.win_title_tree = None
+             self.screen_hw = self.screen.getmaxyx()
+             self.chat_hw = self.win_chat.getmaxyx()
+             self.prompt_hw = self.win_prompt.getmaxyx()
+             self.input_hw = self.win_input_line.getmaxyx()
+             self.status_hw = self.win_status_line.getmaxyx()
+-            self.tree_hw = self.win_tree.getmaxyx()
++            if self.win_tree is not None:
++                self.tree_hw = self.win_tree.getmaxyx()
++            else:
++                self.tree_hw = (0, 0)
+             self.win_extra_line = None
+             self.win_extra_window = None
+             self.win_member_list = None
+@@ -597,11 +614,12 @@
+         self.update_prompt(self.prompt)
+         self.spellcheck()
+         self.draw_input_line()
+-        self.draw_border(tree_hwyx, top=not(self.have_title_tree) or self.tree_width < 10)
+-        self.draw_tree()
++        if not tree_hidden:
++            self.draw_border(tree_hwyx, top=not(self.have_title_tree) or self.tree_width < 10)
++            self.draw_tree()
+         if self.have_title:
+             self.draw_title_line()
+-        if self.have_title_tree:
++        if self.have_title_tree and not tree_hidden:
+             self.draw_title_tree()
+         self.draw_extra_line(self.extra_line_text)
+         self.draw_extra_window(self.extra_window_title, self.extra_window_body, select=self.extra_select, reset_scroll=False)
+@@ -636,11 +654,14 @@
+             common_h = h - 3 - self.have_title - 2*self.bordered
+         else:
+             common_h = h - 2 - self.have_title - 2*self.bordered
++        tree_hidden = self.tree_width <= 0
++        chat_left = 2 if tree_hidden else (self.tree_width + 2 * self.bordered + 1)
++        chat_w = w - chat_left - self.bordered - bool(self.member_list) * (self.member_list_width + 1)
+         chat_hwyx = (
+             common_h,
+-            w - (self.tree_width + 3 * self.bordered + 1) - bool(self.member_list) * (self.member_list_width + 1),
++            chat_w,
+             self.have_title,
+-            self.tree_width + 2 * self.bordered + 1,
++            chat_left,
+         )
+         self.win_chat = self.screen.derwin(*chat_hwyx)
+         self.chat_hw = self.win_chat.getmaxyx()
+@@ -671,7 +692,9 @@
+         """Resume curses and enable drawing, capturing terminal"""
+         with self.lock:
+             curses.reset_prog_mode()
+-            curses.curs_set(0)
++            # vim mode uses the real terminal cursor (DECSCUSR shape) so
++            # restore curs_set(1) here too — mirrors __init__.
++            curses.curs_set(1 if self.vim_mode else 0)
+             curses.flushinp()
+             self.screen.refresh()
+             self.disable_drawing = False
+@@ -688,9 +711,10 @@
+     def get_dimensions(self):
+         """Return current dimensions for screen objects"""
+         status_line = self.win_status_line.getmaxyx()
++        tree_dim = tuple(self.win_tree.getmaxyx()) if self.win_tree is not None else (0, 0)
+         return (
+             tuple(self.win_chat.getmaxyx()),
+-            tuple(self.win_tree.getmaxyx()),
++            tree_dim,
+             (status_line[0], status_line[1] - 2*self.bordered),
+         )
+ 
+@@ -882,12 +906,17 @@
+     def set_tree_width(self, value):
+         """Chang tree width, does not redraw, if value is negative it will toggle state"""
+         if value < 0:
+-            if self.tree_width == 1:
++            if self.tree_width == 0:
+                 self.tree_width = self.tree_width_conf
+             else:
+-                self.tree_width = 1
++                self.tree_width = 0
+         else:
+             self.tree_width = value
++        # Clear the screen so stale tree-content cells (the `─` drop-down
++        # glyphs etc. that were drawn before the toggle) don't bleed into
++        # the chat when toggling off. Without this, the underlying cells
++        # are never overwritten because the chat window starts further right.
++        self.screen.clear()
+         self.resize()
+ 
+ 
+@@ -1226,7 +1255,7 @@
+                 title_txt_r = title_txt_r[:w - 2*self.bordered]
+             title_txt_l = self.title_txt_l
+ 
+-            if self.tree_width < 10:   # merge title tree with left title
++            if 0 < self.tree_width < 10:   # merge title tree with left title
+                 if self.bordered:
+                     title_tree_txt = replace_spaces_dash(trim_with_dash(self.title_tree_txt[:self.tree_width_conf]))
+                     title_tree_txt = title_tree_txt + "─" * (self.tree_width_conf - len(title_tree_txt) - 2) + "─"
+@@ -1438,6 +1467,8 @@
+ 
+     def draw_tree(self):
+         """Draw channel tree"""
++        if self.win_tree is None:
++            return
+         if self.tree_width < 10:
+             self.draw_tree_mini()
+             return
+@@ -1566,7 +1597,7 @@
+             text = f">>> {mentions} MENTIONS >>>".center(h)
+             color = curses.color_pair(8)
+         else:
+-            text = ">>> TREE >>>".center(h)
++            text = " " * h
+             color = curses.color_pair(3)
+ 
+         try:
+@@ -1584,14 +1615,17 @@
+         with self.lock:
+             h, w = self.screen.getmaxyx()
+             del (self.win_prompt, self.win_input_line)
++            tree_hidden = self.tree_width <= 0
++            inner_off = 1 if tree_hidden else (self.tree_width + 2*self.bordered + 1)
++            prompt_pad = max(len(self.prompt), 1)
+             input_line_hwyx = (
+                 1,
+-                w - (self.tree_width + self.bordered + 1) - len(self.prompt) - 2*self.bordered,
++                w - inner_off - prompt_pad - 1,
+                 h - 1 - self.bordered,
+-                self.tree_width + len(self.prompt) + 2*self.bordered + 1)
++                inner_off + prompt_pad)
+             self.win_input_line = self.screen.derwin(*input_line_hwyx)
+             self.input_hw = self.win_input_line.getmaxyx()
+-            prompt_hwyx = (1, len(self.prompt), h - 1 - self.bordered, self.tree_width + 2*self.bordered + 1)
++            prompt_hwyx = (1, prompt_pad, h - 1 - self.bordered, inner_off)
+             self.win_prompt = self.screen.derwin(*prompt_hwyx)
+             self.win_prompt.insstr(0, 0, self.prompt, curses.color_pair(13) | self.attrib_map[13])
+             self.win_prompt.noutrefresh()
+@@ -1612,8 +1646,10 @@
+             self.extra_line_text = text
+             if text and not self.disable_drawing:
+                 h, w = self.screen.getmaxyx()
++                tree_hidden = self.tree_width <= 0
++                el_off = 1 if tree_hidden else (self.tree_width + self.bordered + 1)
+                 if not self.win_extra_line:
+-                    extra_line_hwyx = (1, w - (self.tree_width + self.bordered + 1), h - self.bordered - 3, self.tree_width + self.bordered + 1)
++                    extra_line_hwyx = (1, w - el_off, h - self.bordered - 3, el_off)
+                     self.win_extra_line = self.screen.derwin(*extra_line_hwyx)
+                     del self.win_chat
+                     self.init_chat()
+@@ -1630,7 +1666,7 @@
+                     self.draw_member_list(self.member_list, self.member_list_format, force=True)
+                     if self.bordered:
+                         self.draw_status_line()
+-                w = w - (self.tree_width + self.bordered + 1)
++                w = w - el_off
+                 if self.bordered:
+                     text = "─" + trim_with_dash(text, dash=False)
+                     line_text = self.corner_ul + text + "─" * (w - len(text) - 2) + self.corner_ur
+@@ -1689,11 +1725,18 @@
+                 if not self.win_extra_window:
+                     del self.win_chat
+                     self.win_extra_line = None
++                    tree_hidden = self.tree_width <= 0
++                    # When tree hidden, align with input box left border at
++                    # col 1: ew_inner=2 puts extra_window's `│` at col 1
++                    # (after draw_border's x-1). ew_outer=3 keeps the right
++                    # corner at col w-1.
++                    ew_inner = 2 if tree_hidden else (self.tree_width + 2*self.bordered + 1)
++                    ew_outer = 3 if tree_hidden else (self.tree_width + 3*self.bordered + 1)
+                     extra_window_hwyx = (
+                         self.extra_window_h + 1,
+-                        w - (self.tree_width + 3*self.bordered + 1),
++                        w - ew_outer,
+                         h - 3 - self.extra_window_h - self.bordered,
+-                        self.tree_width + 2*self.bordered + 1,
++                        ew_inner,
+                     )
+                     self.win_extra_window = self.screen.derwin(*extra_window_hwyx)
+                     self.init_chat()
+@@ -1801,7 +1844,8 @@
+                     if self.bordered:
+                         self.draw_border(member_list_hwyx)
+                         if self.have_title:
+-                            title_line_hwyx = (1, w - (self.tree_width + 2) - bool(self.win_member_list) * (self.member_list_width + 1), 0, self.tree_width + 2)
++                            tl_off = 1 if self.tree_width <= 0 else (self.tree_width + 2)
++                            title_line_hwyx = (1, w - tl_off - bool(self.win_member_list) * (self.member_list_width + 1), 0, tl_off)
+                             self.win_title_line = self.screen.derwin(*title_line_hwyx)
+                             self.title_hw = self.win_title_line.getmaxyx()
+                             self.draw_title_line()
+@@ -1873,7 +1917,8 @@
+                 h, w = self.screen.getmaxyx()
+                 self.init_chat()
+                 if self.bordered and self.have_title:
+-                    title_line_hwyx = (1, w - (self.tree_width + 2) - bool(self.win_member_list) * (self.member_list_width + 1), 0, self.tree_width + 2)
++                    tl_off = 1 if self.tree_width <= 0 else (self.tree_width + 2)
++                    title_line_hwyx = (1, w - tl_off - bool(self.win_member_list) * (self.member_list_width + 1), 0, tl_off)
+                     self.win_title_line = self.screen.derwin(*title_line_hwyx)
+                     self.title_hw = self.win_title_line.getmaxyx()
+                     self.draw_title_line()
+@@ -2899,6 +2944,21 @@
+             elif key in self.keybindings["view_media"] and self.chat_selected != -1:
+                 return self.return_input_code(17)
+ 
++            elif key in self.keybindings["chat_msg_up"]:
++                return self.return_input_code(50)
++
++            elif key in self.keybindings["chat_msg_down"]:
++                return self.return_input_code(51)
++
++            elif key in self.keybindings["jump_next_media"]:
++                return self.return_input_code(52)
++
++            elif key in self.keybindings["jump_prev_media"]:
++                return self.return_input_code(53)
++
++            elif key in self.keybindings["jump_last_channel"]:
++                return self.return_input_code(54)
++
+             elif key in self.keybindings["spoil"] and self.chat_selected != -1 and not forum:
+                 return self.return_input_code(18)
+ 
+@@ -3009,6 +3069,8 @@
+ 
+     def mouse_in_window(self, x, y, window, around=False):
+         """Check if mouse is inside specified window"""
++        if window is None:
++            return False
+         win_y, win_x = window.getbegyx()
+         win_h, win_w = window.getmaxyx()
+         if around:
+--- a/endcord/app.py	2026-05-11 11:09:21.778222151 +0200
++++ b/endcord/app.py	2026-05-11 11:13:22.783403588 +0200
+@@ -1578,6 +1578,106 @@
+                     continue
+                 self.go_replied(msg_index)
+ 
++            # chat_msg_up / chat_msg_down: jump message-by-message.
++            # self.messages is newest-first (insert(0, ...)), so visually-up
++            # (older) means a HIGHER index, visually-down (newer) means lower.
++            elif (action == 50 or action == 51) and self.messages:
++                self.restore_input_text = (input_text, "standard")
++                # When the selection is hidden, first press lands on the
++                # newest message (matches j/k semantics: k from hidden
++                # highlights bottom-of-viewport).
++                if chat_sel >= 0:
++                    cur = self.lines_to_msg(chat_sel, space=True)
++                    if cur is None:
++                        continue
++                    target = cur + (1 if action == 50 else -1)
++                else:
++                    target = 0
++                if 0 <= target < len(self.messages):
++                    self.tui.set_selected(self.msg_to_lines(target, smart=True))
++
++            # jump_next_media / jump_prev_media. "next" = newer (visually
++            # down, lower index); "prev" = older (visually up, higher index).
++            # When walking older direction, fetch additional chunks from
++            # the server if the current buffer is exhausted (up to 4
++            # extra chunks, ≈100 more messages).
++            elif (action == 52 or action == 53) and self.messages:
++                self.restore_input_text = (input_text, "standard")
++                direction = -1 if action == 52 else 1
++                # When selection is hidden, include the newest message in
++                # the search so Ctrl+U lands on it if it has media (matches
++                # the j/k mental model: first press = newest).
++                if chat_sel >= 0:
++                    cur_idx = self.lines_to_msg(chat_sel, space=True)
++                    if cur_idx is None:
++                        continue
++                    start_offset = direction
++                else:
++                    cur_idx = 0
++                    start_offset = 0
++                cur_id = self.messages[cur_idx]["id"]
++                found_idx = None
++                for _ in range(5):
++                    # Re-locate current msg by id; trimming may have shifted indices.
++                    cur_idx = next((i for i, m in enumerate(self.messages) if m["id"] == cur_id), None)
++                    if cur_idx is None:
++                        break
++                    start = cur_idx + start_offset
++                    end = -1 if direction == -1 else len(self.messages)
++                    for i in range(start, end, direction):
++                        m = self.messages[i]
++                        if m.get("embeds") or m.get("stickers"):
++                            found_idx = i
++                            break
++                    if found_idx is not None:
++                        break
++                    # No match in current buffer; fetch older chunk if walking
++                    # backward in time. Newer direction has nothing to fetch
++                    # (gateway delivers new messages as they arrive).
++                    if direction == 1 and not self.chat_end:
++                        self.get_chat_chunk(past=True, scroll=False)
++                    else:
++                        break
++                if found_idx is not None:
++                    # Land on the line containing the URL/embed if there is
++                    # one, so `v` works without an extra step. Fall back to
++                    # the message header.
++                    target_line = None
++                    for li, lm in enumerate(self.chat_map):
++                        if lm and lm[0] == found_idx and lm[5] and lm[5][0]:
++                            target_line = li
++                            break
++                    if target_line is None:
++                        target_line = self.msg_to_lines(found_idx, smart=True)
++                    self.tui.set_selected(target_line)
++                else:
++                    self.update_extra_line("No more media in this direction.", timed=True)
++
++            # action 54: jump to previous (last visited) channel
++            elif action == 54:
++                self.restore_input_text = (input_text, "standard")
++                recent = self.state.get("recent_channels", []) if self.state else []
++                if len(recent) < 2:
++                    self.update_extra_line("No previous channel.", timed=True)
++                else:
++                    prev_id = recent[-2]
++                    channel_id, channel_name, guild_id, guild_name, parent_hint = self.find_parents_from_id(prev_id)
++                    if channel_id is None:
++                        self.update_extra_line("Previous channel unavailable.", timed=True)
++                    else:
++                        if guild_id is not None:
++                            self.open_guild(guild_id, select=True, open_only=True)
++                            category_tree_pos = self.tree_pos_from_id(parent_hint)
++                            if category_tree_pos:
++                                self.tui.toggle_category(category_tree_pos, only_open=True)
++                            channel_tree_pos = self.tree_pos_from_id(channel_id)
++                            if channel_tree_pos:
++                                self.tui.tree_select(channel_tree_pos)
++                        else:
++                            self.open_guild(0, select=True, open_only=True)
++                            self.tui.tree_select(self.tree_pos_from_id(channel_id))
++                        self.switch_channel(channel_id, channel_name, guild_id, guild_name, parent_hint=parent_hint)
++
+             # download file
+             elif action == 9:
+                 self.restore_input_text = (input_text, "standard")
+@@ -1646,6 +1746,10 @@
+                     for num in self.get_stuff_from_selected_line(chat_sel, 0):   # get url
+                         if urls[num] in embeds:
+                             selected_urls.append(urls[num])
++                    if not selected_urls:
++                        # cursor isn't on a URL line of this message; use
++                        # all embeds so v works from anywhere in the message
++                        selected_urls = embeds
+                 else:
+                     selected_urls = embeds
+                 if len(selected_urls) == 1:

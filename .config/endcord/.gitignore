@@ -1,0 +1,6 @@
+# endcord writes a plaintext Discord token (profiles.json), logs, and generated
+# themes into this directory. Deny everything by default; only track the
+# hand-managed config so no secret can be committed by accident.
+/*
+!.gitignore
+!config.ini

@@ -1,0 +1,39 @@
+Enable @-mention autocomplete in DMs / group DMs.
+
+Upstream's username/role assist path calls
+gateway.request_members(guild_id, ...) when query_results is empty.
+In a DM there is no guild_id (it's None), so the request goes nowhere
+and the @-mention popup never shows any candidates. Fall back to the
+DM's own recipients list so the user can actually tag the people
+they're chatting with.
+
+--- a/endcord/app.py	2026-05-11 11:13:39.581043362 +0200
++++ b/endcord/app.py	2026-05-11 11:12:27.461317497 +0200
+@@ -5482,9 +5482,26 @@
+                 )
+ 
+         elif assist_type == 2:   # username/role
++            # In a DM (no guild_id), the upstream path calls
++            # gateway.request_members(None, ...) which returns nothing,
++            # so @-mention shows no candidates. Fall back to the DM's
++            # own recipients list so the user can tag anyone in the chat.
++            dm_query_results = query_results
++            if not self.active_channel["guild_id"] and not query_results:
++                for dm in self.dms:
++                    if dm["id"] == self.active_channel["channel_id"]:
++                        dm_query_results = [
++                            {
++                                "id": r["id"],
++                                "username": r["username"],
++                                "name": r["global_name"] or "",
++                            }
++                            for r in dm["recipients"]
++                        ]
++                        break
+             self.assist_found = search.search_usernames_roles(
+                 self.current_roles,
+-                query_results,
++                dm_query_results,
+                 self.active_channel["guild_id"],
+                 self.gateway,
+                 assist_word,

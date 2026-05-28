@@ -13,6 +13,13 @@
       url = "github:marsa099/teams-for-linux/main";
       flake = false;
     };
+    # Upstream endcord source, pinned to the same rev daphen builds against so
+    # his patches (modules/endcord-patches/) apply cleanly. Bump with care:
+    # newer revs may break the patches.
+    endcord-src = {
+      url = "github:sparklost/endcord/b4f890b9b6f9e2a3b3494c41e78ad77f72859d4b";
+      flake = false;
+    };
     bt-keyboard-bridge.url = "path:/home/martin/repos/bt-keyboard-bridge";
   };
 
@@ -24,6 +31,7 @@
       zen-browser,
       claude-code-notify,
       teams-for-linux-fork,
+      endcord-src,
       bt-keyboard-bridge,
       ...
     }:
@@ -34,7 +42,7 @@
     {
       nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
         inherit system;
-        specialArgs = { inherit unstable teams-for-linux-fork; };
+        specialArgs = { inherit unstable teams-for-linux-fork endcord-src; };
         modules = [
           ./configuration.nix
           bt-keyboard-bridge.nixosModules.default

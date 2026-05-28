@@ -21,6 +21,7 @@
     ./modules/bicep.nix
     ./modules/azure-data-studio.nix
     ./modules/teams-fork.nix
+    ./modules/endcord.nix
     ./modules/rust.nix
   ];
 
@@ -167,8 +168,6 @@
     rofi
     gh # gh cli
     zoxide
-    discord
-    vesktop
     xwayland-satellite # XWayland bridge for niri, needed by X11 apps like Discord
     teams-for-linux
     signal-desktop

@@ -1,0 +1,29 @@
+Fix typing indicator in group DMs.
+
+For TYPING_START events arriving in a DM, gateway leaves username/
+global_name as None and expects app.py to fill them in from dms[].
+The original code always grabbed recipients[0], which is fine for a
+1:1 DM but in a group DM means the indicator always names the first
+recipient regardless of who actually started typing. Match by user_id
+so the right name shows up.
+
+--- a/endcord/app.py	2026-05-11 10:54:11.970788454 +0200
++++ b/endcord/app.py	2026-05-11 10:53:32.432847400 +0200
+@@ -7954,10 +7954,15 @@
+                         new_typing["user_id"] != self.my_id
+                     ):
+                         if not new_typing["username"]:   # its DM
++                            # Match recipient by user_id so group DMs show
++                            # the actual typer instead of always recipients[0].
+                             for dm in self.dms:
+                                 if dm["id"] == new_typing["channel_id"]:
+-                                    new_typing["username"] = dm["recipients"][0]["username"]
+-                                    new_typing["global_name"] = dm["recipients"][0]["global_name"]
++                                    for recipient in dm["recipients"]:
++                                        if recipient["id"] == new_typing["user_id"]:
++                                            new_typing["username"] = recipient["username"]
++                                            new_typing["global_name"] = recipient["global_name"]
++                                            break
+                                     break
+                         for num, user in enumerate(self.typing):
+                             if user["user_id"] == new_typing["user_id"]:

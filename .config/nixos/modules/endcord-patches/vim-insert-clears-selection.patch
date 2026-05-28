@@ -1,0 +1,24 @@
+Reset chat selection to bottom when entering vim INSERT mode.
+
+After scrolling around in NORMAL mode the chat_selected cursor often
+ends up off-screen. The next time you enter INSERT to type a message
+and then jump back to NORMAL — e.g. to hit Ctrl+U (jump_prev_media) —
+the search starts from that stale off-screen position instead of the
+newest visible message, which is disorienting. Clear the selection
+on every i-press so the user's mental "I just typed, I'm at the
+bottom" matches reality.
+
+--- a/endcord/tui.py	2026-05-11 10:54:11.969358367 +0200
++++ b/endcord/tui.py	2026-05-11 11:01:58.462382005 +0200
+@@ -3024,6 +3024,11 @@
+ 
+             elif self.vim_mode and key in self.keybindings.get("insert_mode", ()):
+                 self.insert_mode = True
++                # Reset chat selection to bottom on entering INSERT so
++                # subsequent commands like Ctrl+U (jump_prev_media) start
++                # from the newest message instead of a stale off-screen pick.
++                if self.chat_selected != -1:
++                    self.set_selected(-1)
+                 return self.return_input_code(28)
+ 
+             # terminal reserved keys: CTRL+ C, I, J, M, Q, S, Z

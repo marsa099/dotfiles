@@ -1,0 +1,303 @@
+Mode-aware vim border + cursor + truecolor palette resolution.
+
+Border / cursor:
+  vim NORMAL  → input border in default color, cursor block
+  vim INSERT  → input border in color_input_border_insert, cursor bar
+
+Truecolor:
+  parse_color preserves hex strings as RGB tuples instead of snapping to
+  the xterm-256 cube via closest_color. tui.init_pair allocates curses
+  palette slots (init_color, slots 232+ which endcord's bundled palette
+  doesn't reference) so themes render their actual hex values when the
+  terminal supports ccc (kitty does). Falls back to closest_color if
+  can_change_color() is false or the slot range is exhausted.
+
+Adds one new theme key, color_input_border_insert (default [-1, -1] so
+non-customizing users keep current behavior).
+
+--- a/endcord/defaults.py	2026-05-08 01:43:35.000000000 +0200
++++ b/endcord/defaults.py	2026-05-08 15:57:44.262486669 +0200
+@@ -153,6 +153,7 @@
+     "color_extra_window": [-1, -1],
+     "color_prompt": [255, -1],
+     "color_input_line": [255, -1],
++    "color_input_border_insert": [-1, -1],
+     "color_cursor": [233, 255],
+     "color_misspelled": [222, -1],
+     "color_tree_default": [255, -1],
+--- a/endcord/tui.py	2026-05-08 01:43:35.000000000 +0200
++++ b/endcord/tui.py	2026-05-08 17:00:56.357272641 +0200
+@@ -205,7 +205,8 @@
+         self.spellchecker = peripherals.SpellCheck(config["aspell_mode"], config["aspell_lang"])
+         acs_map = acs.get_map()
+         curses.use_default_colors()
+-        curses.curs_set(0)   # using custom cursor
++        # vim mode uses the real terminal cursor so DECSCUSR can shape it.
++        curses.curs_set(1 if config.get("vim_mode") else 0)
+         curses.mousemask(curses.ALL_MOUSE_EVENTS)
+         curses.mouseinterval(0)
+         sys.stdout.write("\033[?2004h")   # enable bracketed paste mode
+@@ -215,7 +216,7 @@
+         self.color_pairs = {}
+         self.attrib_map = [0]   # has 0 so its index starts from 1 to be matched with color pairs
+         tree_bg = config["color_tree_default"][1]
+-        self.protected_colors = 21   # first N colors that must not be reused
++        self.protected_colors = 22   # first N colors that must not be reused
+         self.init_pair((255, -1))   # white on default
+         self.init_pair((233, 255))   # black on white
+         self.init_pair(config["color_tree_default"])   # 3
+@@ -237,6 +238,8 @@
+         self.init_pair((208, tree_bg))   # orange
+         self.init_pair((196, tree_bg))   # red
+         self.init_pair(config["color_extra_window"])   # 21
++        self.init_pair(config["color_input_border_insert"])   # 22
++        self.input_border_insert_pair = 22
+         curses.init_pair(255, config["color_default"][0], config["color_default"][1])   # temporary
+         self.default_color = 255
+         self.role_color_start_id = self.last_free_id   # starting id for role colors
+@@ -453,7 +456,24 @@
+             # here must be delay, otherwise output gets messed up
+             with self.lock:
+                 time.sleep(self.screen_update_delay)
++                shape_byte = None
++                if self.vim_mode and hasattr(self, "input_hw") and self.win_input_line is not None:
++                    self.draw_input_border()
++                    try:
++                        self.screen.noutrefresh()
++                        # setsyx forces the doupdate cursor regardless of
++                        # which window's wnoutrefresh ran last.
++                        in_y, in_x = self.win_input_line.getbegyx()
++                        curses.setsyx(in_y, in_x + min(self.cursor_pos, self.input_hw[1] - 1))
++                    except curses.error:
++                        pass
++                    shape_byte = b"\033[6 q" if self.insert_mode else b"\033[2 q"
+                 curses.doupdate()
++                if shape_byte is not None:
++                    try:
++                        os.write(1, shape_byte)
++                    except OSError:
++                        pass
+                 self.need_update.clear()
+ 
+ 
+@@ -570,8 +590,9 @@
+             self.win_member_list = None
+ 
+         # redraw
+-        self.draw_border(win_prompt_input_line, top=False)
++        self.input_border_hwyx = win_prompt_input_line
+         self.draw_status_line()
++        self.draw_input_border()
+         self.draw_border(chat_hwyx, top=not(self.have_title))
+         self.update_prompt(self.prompt)
+         self.spellcheck()
+@@ -1080,7 +1101,7 @@
+             self.tree_format_changed = True
+ 
+ 
+-    def draw_border(self, hwyx, top=True, bot=True, left=True, right=True):
++    def draw_border(self, hwyx, top=True, bot=True, left=True, right=True, color_pair=None):
+         """Draw border around area on the screen with custom corners"""
+         h, w, y, x = hwyx
+         h += 2
+@@ -1088,31 +1109,56 @@
+         y -= 1
+         x -= 1
+ 
++        pair = color_pair if color_pair is not None else self.default_color
+         try:
+             # lines
+             if top and w > 0:
+-                self.screen.hline(y, x + 1, curses.ACS_HLINE, w - 2, curses.color_pair(self.default_color))
++                self.screen.hline(y, x + 1, curses.ACS_HLINE, w - 2, curses.color_pair(pair))
+             if bot and w > 0:
+-                self.screen.hline(y + h - 1, x + 1, curses.ACS_HLINE, w - 2, curses.color_pair(self.default_color))
++                self.screen.hline(y + h - 1, x + 1, curses.ACS_HLINE, w - 2, curses.color_pair(pair))
+             if left and h > 0:
+-                self.screen.vline(y + 1, x, curses.ACS_VLINE, h - 2, curses.color_pair(self.default_color))
++                self.screen.vline(y + 1, x, curses.ACS_VLINE, h - 2, curses.color_pair(pair))
+             if right and h > 0:
+-                self.screen.vline(y + 1, x + w - 1, curses.ACS_VLINE, h - 2, curses.color_pair(self.default_color))
++                self.screen.vline(y + 1, x + w - 1, curses.ACS_VLINE, h - 2, curses.color_pair(pair))
+ 
+             # corners
+             if top and left:
+-                self.screen.addstr(y, x, self.corner_ul, curses.color_pair(self.default_color))
++                self.screen.addstr(y, x, self.corner_ul, curses.color_pair(pair))
+             if bot and left:
+-                self.screen.addstr(y + h - 1, x, self.corner_dl, curses.color_pair(self.default_color))
++                self.screen.addstr(y + h - 1, x, self.corner_dl, curses.color_pair(pair))
+             if top and right:
+-                self.screen.addstr(y, x + w - 1, self.corner_ur, curses.color_pair(self.default_color))
++                self.screen.addstr(y, x + w - 1, self.corner_ur, curses.color_pair(pair))
+             if bot and right:
+                 # it errors when drawing in bottom-right cell, but still draws it
+-                self.screen.addstr(y + h - 1, x + w - 1, self.corner_dr, curses.color_pair(self.default_color))
++                self.screen.addstr(y + h - 1, x + w - 1, self.corner_dr, curses.color_pair(pair))
+         except curses.error:   # errors randomly when resizing
+             pass
+ 
+ 
++    def draw_input_border(self):
++        """Color the input border based on vim mode."""
++        if not hasattr(self, "input_border_hwyx"):
++            return
++        is_insert = self.vim_mode and self.insert_mode
++        color = self.input_border_insert_pair if is_insert else None
++        self.draw_border(self.input_border_hwyx, top=False, color_pair=color)
++
++        if is_insert and self.win_status_line is not None and getattr(self, "last_status_line", None):
++            box_glyphs = set("─│╭╮╰╯├┤┬┴┼━┃┏┓┗┛┣┫┳┻╋")
++            pair = curses.color_pair(self.input_border_insert_pair)
++            for col, ch in enumerate(self.last_status_line):
++                if ch in box_glyphs:
++                    try:
++                        self.win_status_line.addstr(0, col, ch, pair)
++                    except curses.error:
++                        # addstr at the rightmost cell raises after writing.
++                        pass
++            try:
++                self.win_status_line.noutrefresh()
++            except curses.error:
++                pass
++
++
+ 
+     def draw_status_line(self):
+         """Draw status line"""
+@@ -1166,6 +1212,7 @@
+                 self.win_status_line.insstr(0, 0, status_line + "\n", curses.color_pair(self.default_color))
+             else:
+                 self.win_status_line.insstr(0, 0, status_line + "\n", curses.color_pair(17) | self.attrib_map[17])
++            self.last_status_line = status_line
+             self.win_status_line.noutrefresh()
+             self.need_update.set()
+ 
+@@ -1281,6 +1328,14 @@
+         """Draw text input line"""
+         with self.lock:
+             w = self.input_hw[1]
++            # vim mode skips the inverted-cell cursor that would otherwise
++            # overwrite stale chars; clear the line ourselves.
++            if self.vim_mode:
++                try:
++                    self.win_input_line.move(0, 0)
++                    self.win_input_line.clrtoeol()
++                except curses.error:
++                    pass
+             # show only part of line when longer than screen
+             start = max(0, len(self.input_buffer) - w + 1 - self.input_line_index)
+             end = start + w - 1
+@@ -1304,7 +1359,8 @@
+             for pos, character in enumerate(line_text):
+                 # cursor in the string
+                 if not cursor_drawn and self.cursor_pos == pos:
+-                    safe_insch(self.win_input_line, 0, self.cursor_pos, character, curses.color_pair(15) | self.attrib_map[15])
++                    cursor_color = 14 if self.vim_mode else 15
++                    safe_insch(self.win_input_line, 0, self.cursor_pos, character, curses.color_pair(cursor_color) | self.attrib_map[cursor_color])
+                     cursor_drawn = True
+                 # selected part of string
+                 elif self.input_select_start is not None and selected_start_screen <= pos < selected_end_screen:
+@@ -1319,9 +1375,13 @@
+                     else:
+                         safe_insch(self.win_input_line, 0, pos, character, curses.color_pair(14) | self.attrib_map[14])
+             self.win_input_line.insch(0, pos + 1, "\n", curses.color_pair(0))
+-            # cursor at the end of string
+-            if not cursor_drawn and self.cursor_pos >= len(line_text):
++            if not cursor_drawn and self.cursor_pos >= len(line_text) and not self.vim_mode:
+                 self.show_cursor()
++            if self.vim_mode:
++                try:
++                    self.win_input_line.move(0, min(self.cursor_pos, self.input_hw[1] - 1))
++                except curses.error:
++                    pass
+             self.win_input_line.noutrefresh()
+             self.need_update.set()
+ 
+@@ -1849,6 +1909,11 @@
+         while self.run:
+             while self.run and self.hibernate_cursor >= 10:
+                 time.sleep(self.blink_cursor_on)
++            # vim mode uses the terminal's own cursor — its blink is handled
++            # by the terminal, so don't redraw the cell here.
++            if self.vim_mode:
++                time.sleep(self.blink_cursor_on)
++                continue
+             if self.cursor_on:
+                 color_id = 14
+                 sleep_time = self.blink_cursor_on
+@@ -1940,6 +2005,35 @@
+             self.draw_prompt()
+ 
+ 
++    def _rgb_to_slot(self, rgb):
++        """Allocate (or reuse) a curses palette slot for an (r,g,b) triple.
++        Falls back to closest 8-bit ANSI if the terminal can't redefine
++        colors or we've exhausted our reserved slot range."""
++        if not hasattr(self, "_rgb_slot_cache"):
++            self._rgb_slot_cache = {}
++            self._next_rgb_slot = 232  # endcord's palette stops at 231
++            self._can_change_color = curses.can_change_color()
++        if rgb in self._rgb_slot_cache:
++            return self._rgb_slot_cache[rgb]
++        if not self._can_change_color or self._next_rgb_slot >= curses.COLORS:
++            from endcord import color as _color
++            ansi = _color.closest_color(rgb)[0]
++            self._rgb_slot_cache[rgb] = ansi
++            return ansi
++        slot = self._next_rgb_slot
++        r, g, b = rgb
++        try:
++            curses.init_color(slot, r * 1000 // 255, g * 1000 // 255, b * 1000 // 255)
++        except curses.error:
++            from endcord import color as _color
++            ansi = _color.closest_color(rgb)[0]
++            self._rgb_slot_cache[rgb] = ansi
++            return ansi
++        self._rgb_slot_cache[rgb] = slot
++        self._next_rgb_slot += 1
++        return slot
++
++
+     def init_pair(self, color, force_id=-1):
+         """Initialize color pair while keeping track of last unused id, and store its attribute in attr_map"""
+         if len(color) == 2:
+@@ -1957,6 +2051,11 @@
+             else:
+                 attribute = 0
+ 
++        if isinstance(fg, tuple):
++            fg = self._rgb_to_slot(fg)
++        if isinstance(bg, tuple):
++            bg = self._rgb_to_slot(bg)
++
+         if fg > curses.COLORS:
+             fg = -1
+         if bg > curses.COLORS:
+--- a/endcord/config.py	2026-05-08 01:43:35.000000000 +0200
++++ b/endcord/config.py	2026-05-08 16:40:35.042573425 +0200
+@@ -131,16 +131,18 @@
+ 
+ 
+ def parse_color(data):
+-    """Automatically parse (r, g, b) and '#123abc' color formats and convert to 8-bit ansi"""
++    """Parse (r, g, b) tuples and '#123abc' hex strings into RGB tuples.
++    Plain ints pass through as ANSI codes. RGB tuples get resolved to
++    live curses palette slots later by tui.init_pair."""
+     if isinstance(data, list):
+         for i, value in enumerate(data):
+             data[i] = parse_color(value)
+-    if isinstance(data, int):   # already ansi
++    if isinstance(data, int):
+         return data
+-    if isinstance(data, tuple) and len(data) == 3:   # rgb tuple
+-        return color.closest_color(data)[0]
+-    if isinstance(data, str) and data.startswith("#"):   # hex string
+-        return color.closest_color(color.hex_to_rgb(data))[0]
++    if isinstance(data, tuple) and len(data) == 3:
++        return data
++    if isinstance(data, str) and data.startswith("#"):
++        return color.hex_to_rgb(data)
+     return data
+ 
+ 

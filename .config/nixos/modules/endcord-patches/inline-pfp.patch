@@ -1,0 +1,1651 @@
+Inline profile pictures in the chat (Kitty graphics protocol).
+
+Adds an opt-in feature: each message header line gets the author's
+avatar rendered next to it via Kitty's image protocol. Off by default
+(set `inline_pfp = True` in config.ini to enable). No-op on
+non-Kitty terminals.
+
+Mechanics:
+- New module endcord/pfp.py owns the avatar cache + Kitty escape
+  sequence wrangling.
+- message.py and app.py stop discarding the "avatar" hash so the
+  renderer can find it per message.
+- When enabled, the chat formatter's format_message / format_newline /
+  format_reply / format_reactions / format_interaction are prefixed
+  with 3 spaces so the 2-cell avatar doesn't cover text.
+- tui.draw_chat calls into place_inline_pfps after curses redraws,
+  which deletes the previous Kitty placements and re-issues them for
+  the currently-visible header rows. App-side _build_pfp_lines maps
+  chat_map entries to (user_id, avatar_id) tuples.
+
+Risks: Kitty placements layer on top of curses cells, so anything
+that scrolls / partially redraws the chat without going through
+draw_chat will leave orphaned images on screen. The feature is
+gated to make rollback trivial.
+
+--- a/endcord/defaults.py
++++ b/endcord/defaults.py
+@@ -62,6 +62,7 @@
+     "game_detection_download_delay": 7,
+     "downloads_path": None,
+     "notifications_pfp": True,
++    "inline_pfp": False,   # render inline avatars in chat (Kitty-only)
+     "linux_notification_sound": "message",
+     "custom_notification_sound": None,
+     "linux_ringtone_incoming": "phone-incoming-call",
+@@ -219,6 +220,7 @@
+     "jump_next_media": 277,   # F13 — overridden by vim mode ]m
+     "jump_prev_media": 278,   # F14 — overridden by vim mode [m
+     "jump_last_channel": 279,   # F15 — overridden by vim mode Ctrl+O
++    "jump_latest_unread": 280,   # F16 — overridden by vim mode N
+     "reply": 18,   # Ctrl+R
+     "edit": 5,   # Ctrl+E
+     "delete": 4,   # Ctrl+D
+@@ -288,6 +290,7 @@
+     "jump_next_media": 4,    # Ctrl+D
+     "jump_prev_media": 21,   # Ctrl+U
+     "jump_last_channel": 15,   # Ctrl+O
++    "jump_latest_unread": "N",
+     "tree_select": " ",
+     "tree_collapse_threads": "W",
+     "tree_join_thread": "O",
+--- a/endcord/message.py
++++ b/endcord/message.py
+@@ -275,8 +275,8 @@
+     messages = []
+     for message in data:
+         ready_message = prepare_message(message)
+-        if clean:
+-            del ready_message["avatar"]
++        # Note: previously deleted ready_message["avatar"] when clean=True;
++        # we keep it so inline-PFP rendering can find the avatar hash.
+         messages.append(ready_message)
+         if have_channel_id:
+             messages[-1]["channel_id"] = message["channel_id"]
+--- a/endcord/pfp.py
++++ b/endcord/pfp.py
+@@ -0,0 +1,560 @@
++"""Inline profile pictures via the Kitty graphics protocol.
++
++Renders each message's author avatar at the chat header line using
++Kitty's image transmission + placement commands. Images are written
++directly to stdout (bypassing curses) and re-placed on every chat
++redraw so they track scroll.
++
++Layout: avatars are 2 columns wide and 2 rows tall, placed at the
++leftmost columns of the chat window. The chat formatter prepends 3
++spaces to each header / newline so the avatar doesn't cover text.
++"""
++
++import base64
++import hashlib
++import io
++import logging
++import os
++import sys
++import threading
++import urllib.error
++import urllib.request
++
++logger = logging.getLogger(__name__)
++
++# Pillow is optional - if not present, inline PFPs are disabled.
++try:
++    from PIL import Image, ImageDraw
++    HAVE_PIL = True
++except ImportError:
++    HAVE_PIL = False
++
++# Width/height in terminal cells. 5×2 keeps the avatar square at the
++# typical Kitty cell ratio (~1:2.5). The chat-side pad is 6 = 5 avatar
++# cells + 1 col gap between the avatar and the message text.
++PFP_COLS = 5
++PFP_ROWS = 2
++# Inline custom emoji size. Single-row so the image never bleeds into
++# the row below. 3 cols wide gives a slight horizontal stretch but
++# stays roughly emoji-sized (~text height).
++EMOJI_COLS = 3
++EMOJI_ROWS = 1
++# Inline image-attachment thumbnail. The actual display dimensions
++# (cols × rows) are computed per-image to preserve the source aspect
++# ratio. ATTACHMENT_MAX_COLS / ATTACHMENT_MAX_ROWS are upper bounds.
++# CELL_ASPECT = approximate cell height / cell width for typical Kitty
++# fonts; used to translate source pixel aspect into cell aspect.
++ATTACHMENT_MAX_COLS = 40
++ATTACHMENT_MAX_ROWS = 18
++# Cell height / cell width. Increase to make images wider, decrease
++# to make them taller (counter-intuitive: this is the multiplier
++# we use to translate source aspect into cell aspect).
++CELL_ASPECT = 2.8
++# Max pixel dim for the on-disk thumbnail. Big enough that Kitty
++# doesn't have to upscale when rendering at MAX_COLS×MAX_ROWS cells.
++ATTACHMENT_THUMB_PX = 768
++# HTTP timeout for synchronous attachment downloads.
++ATTACHMENT_TIMEOUT_S = 4
++# Pixel size to request for emoji from the CDN.
++EMOJI_SIZE_PX = 48
++# Pixel size to ask Discord for. Anything >= cell-pixels * dimensions works.
++PFP_SIZE_PX = 64
++# Kitty image IDs are 32-bit. Start at a high offset so we don't clash
++# with anything else that might be using the protocol (e.g. notifications).
++KITTY_ID_BASE = 0x70667000   # "pfp\0"
++
++
++def kitty_supported():
++    """Heuristic: is the current terminal Kitty-compatible?
++
++    Checks $TERM and a couple of common env vars. We don't query the
++    terminal here because that requires read-back on stdin which we
++    can't safely do while curses owns it.
++    """
++    term = os.environ.get("TERM", "")
++    if "kitty" in term:
++        return True
++    if os.environ.get("TERM_PROGRAM") == "kitty":
++        return True
++    # Ghostty also implements the protocol.
++    if os.environ.get("TERM_PROGRAM") == "ghostty":
++        return True
++    if os.environ.get("KITTY_WINDOW_ID"):
++        return True
++    return False
++
++
++def _send(payload):
++    """Write a Kitty graphics escape sequence to stdout."""
++    try:
++        os.write(sys.stdout.fileno(), payload)
++    except OSError:
++        pass
++
++
++def detect_cell_aspect():
++    """Probe the controlling terminal for cell pixel dimensions via
++    TIOCGWINSZ. Returns cell_h / cell_w as a float, or None if the
++    terminal didn't report pixel dimensions (most non-Kitty TTYs).
++    Kitty (and Ghostty) fill ws_xpixel/ws_ypixel so this works without
++    a stdin-blocking CSI query.
++    """
++    try:
++        import fcntl
++        import termios
++        for path in ("/dev/tty", None):
++            try:
++                fd = os.open(path, os.O_RDONLY) if path else sys.stdout.fileno()
++                buf = fcntl.ioctl(fd, termios.TIOCGWINSZ, b"\0" * 8)
++                if path:
++                    os.close(fd)
++                import struct
++                rows, cols, xpix, ypix = struct.unpack("HHHH", buf)
++                if rows > 0 and cols > 0 and xpix > 0 and ypix > 0:
++                    cw = xpix / cols
++                    ch = ypix / rows
++                    return ch / cw
++            except OSError:
++                continue
++    except ImportError:
++        pass
++    return None
++
++
++def best_square(rows, cell_aspect):
++    """Return (cols, rows) closest to a 1:1 visual square at the given
++    cell aspect. rows is fixed (callers choose layout height); cols is
++    picked from {floor, ceil} of rows×cell_aspect, whichever lands
++    closer to a true square."""
++    ideal_c = rows * cell_aspect
++    best = None
++    for c in (max(1, int(ideal_c)), max(1, int(ideal_c) + 1)):
++        visual = c / (rows * cell_aspect)
++        err = abs(visual - 1.0) if visual >= 1.0 else abs(1.0 / visual - 1.0)
++        if best is None or err < best[0]:
++            best = (err, c)
++    return best[1], rows
++
++
++def _apply_circular_mask(im):
++    """Return an RGBA copy of `im` with a circular alpha mask applied.
++    Pixels outside the inscribed circle become transparent so the
++    Kitty renderer composites the chat bg through the corners — i.e.
++    Discord-style round avatars.
++
++    Anti-aliases via a 4x super-sampled mask so the edge doesn't look
++    jagged at our small placement sizes (we transmit at PFP_SIZE_PX
++    and Kitty stretches to ~5 cells wide).
++    """
++    if not HAVE_PIL:
++        return im
++    w, h = im.size
++    if w <= 0 or h <= 0:
++        return im
++    scale = 4
++    mask = Image.new("L", (w * scale, h * scale), 0)
++    ImageDraw.Draw(mask).ellipse(
++        (0, 0, w * scale - 1, h * scale - 1), fill=255,
++    )
++    mask = mask.resize((w, h), Image.LANCZOS)
++    out = im.copy()
++    if "A" in out.getbands():
++        # Intersect the existing alpha with the circle so an avatar
++        # that's already partially transparent keeps its holes.
++        from PIL import ImageChops
++        out.putalpha(ImageChops.multiply(out.getchannel("A"), mask))
++    else:
++        out.putalpha(mask)
++    return out
++
++
++def _chunk_payload(data, controls):
++    """Build the Kitty protocol APC sequence(s).
++
++    Long payloads are split into chunks of 4096 base64 chars with m=1
++    on all but the last chunk.
++    """
++    b64 = base64.standard_b64encode(data)
++    chunks = []
++    chunk_size = 4096
++    pos = 0
++    first = True
++    while pos < len(b64):
++        chunk = b64[pos:pos + chunk_size]
++        pos += chunk_size
++        more = pos < len(b64)
++        if first:
++            ctrl = controls + (",m=1" if more else "")
++        else:
++            ctrl = ("m=1" if more else "m=0")
++        chunks.append(b"\x1b_G" + ctrl.encode("ascii") + b";" + chunk + b"\x1b\\")
++        first = False
++    return b"".join(chunks)
++
++
++class PfpRenderer:
++    """Owns the avatar cache and pushes images into the terminal."""
++
++    def __init__(self, cache_path, discord, enabled=True):
++        self.discord = discord
++        self.cache_path = cache_path
++        self.enabled = enabled and HAVE_PIL and kitty_supported()
++        # avatar_id -> kitty image id (already transmitted)
++        self._transmitted = {}
++        # avatar_id -> True while a background download is in flight
++        self._fetching = set()
++        # next free Kitty image id
++        self._next_id = KITTY_ID_BASE
++        # image ids that have at least one placement currently on screen.
++        # We delete by image id (kills all placements for that image)
++        # so we don't need to track individual placement ids.
++        self._placed = set()
++        # Monotonic placement-id counter — every place() gets a unique
++        # placement_id so two avatars from the same author don't collide.
++        self._next_placement_id = 1
++        self._lock = threading.Lock()
++        # Auto-tune (cols, rows) to render a visually square avatar at
++        # the terminal's actual cell pixel aspect. Falls back to the
++        # hardcoded 5×2 if the terminal doesn't report pixel dims.
++        detected = detect_cell_aspect()
++        self.cell_aspect = detected or CELL_ASPECT
++        self.pfp_cols, self.pfp_rows = best_square(2, self.cell_aspect)
++        self.emoji_cols, self.emoji_rows = best_square(1, self.cell_aspect)
++        # url -> (source_width_px, source_height_px), populated by
++        # measure_attachment. Used for source-region crops when an image
++        # is only partially on-screen.
++        self._attach_px = {}
++        logger.info(
++            f"pfp cell_aspect={self.cell_aspect:.3f} "
++            f"(detected={detected is not None}) "
++            f"pfp={self.pfp_cols}x{self.pfp_rows} "
++            f"emoji={self.emoji_cols}x{self.emoji_rows}"
++        )
++
++    def _alloc_id(self, avatar_id):
++        with self._lock:
++            if avatar_id in self._transmitted:
++                return self._transmitted[avatar_id]
++            kid = self._next_id
++            self._next_id += 1
++            self._transmitted[avatar_id] = kid
++            return kid
++
++    def _avatar_path(self, user_id, avatar_id):
++        """Return a local path to a square 64px PNG of the avatar.
++
++        Downloads + converts if needed. Returns None on failure.
++        """
++        # `pfp_round_` prefix busts the pre-round cache; old pfp_<id>.png
++        # files become harmless leftovers.
++        png_name = f"pfp_round_{avatar_id}.png"
++        png_path = os.path.join(os.path.expanduser(self.cache_path), png_name)
++        if os.path.isfile(png_path):
++            return png_path
++        # Pull the webp via endcord's existing helper, then convert.
++        webp_path = self.discord.get_pfp(
++            user_id, avatar_id, size=PFP_SIZE_PX, save_path=self.cache_path,
++        )
++        if not webp_path or not os.path.isfile(webp_path):
++            return None
++        try:
++            with Image.open(webp_path) as im:
++                im = im.convert("RGBA").resize(
++                    (PFP_SIZE_PX, PFP_SIZE_PX), Image.LANCZOS,
++                )
++                im = _apply_circular_mask(im)
++                im.save(png_path, format="PNG")
++        except Exception as e:
++            logger.debug(f"pfp convert failed for {avatar_id}: {e}")
++            return None
++        return png_path
++
++    def _ensure_transmitted(self, user_id, avatar_id):
++        """If the image isn't on the terminal yet, transmit it.
++
++        Returns the Kitty image id, or None if not yet ready.
++        """
++        if avatar_id in self._transmitted:
++            return self._transmitted[avatar_id]
++        if avatar_id in self._fetching:
++            return None
++        # Fetch synchronously here — caller is the draw thread; the cache
++        # hit path is fast and the cold path happens at most once per user.
++        # Background-thread this if it becomes a bottleneck.
++        self._fetching.add(avatar_id)
++        try:
++            path = self._avatar_path(user_id, avatar_id)
++            if not path:
++                return None
++            kid = self._alloc_id(avatar_id)
++            with open(path, "rb") as f:
++                data = f.read()
++            # a=t: transmit only. f=100: PNG (auto-detect). i: image id.
++            # q=2: suppress all responses. C=1: don't move cursor.
++            ctrl = f"a=t,f=100,i={kid},q=2"
++            _send(_chunk_payload(data, ctrl))
++            return kid
++        finally:
++            self._fetching.discard(avatar_id)
++
++    def clear_placements(self):
++        """Remove all current avatar placements from the terminal.
++
++        Uses lowercase d=i which deletes placements but preserves the
++        image data in Kitty's storage, so we don't have to re-transmit
++        the bytes on the next placement.
++        """
++        if not self.enabled or not self._placed:
++            return
++        for kid in self._placed:
++            _send(b"\x1b_Ga=d,d=i,i=" + str(kid).encode("ascii") + b",q=2\x1b\\")
++        self._placed.clear()
++
++
++    def invalidate_transmissions(self):
++        """Forget which images have been sent to the terminal.
++
++        Call this after anything that drops Kitty's image storage (e.g.
++        the full-screen clear we issue on tree toggle). Forces the next
++        place() to re-transmit the image bytes.
++        """
++        with self._lock:
++            self._transmitted.clear()
++            self._placed.clear()
++            self._next_id = KITTY_ID_BASE
++
++    def _emoji_path(self, emoji_id):
++        """Download + convert a custom emoji to a square PNG. Returns
++        local path or None on failure.
++        """
++        png_name = f"emoji_{emoji_id}.png"
++        png_path = os.path.join(os.path.expanduser(self.cache_path), png_name)
++        if os.path.isfile(png_path):
++            return png_path
++        webp_path = self.discord.get_emoji(emoji_id, size=EMOJI_SIZE_PX)
++        if not webp_path or not os.path.isfile(webp_path):
++            return None
++        try:
++            with Image.open(webp_path) as im:
++                im = im.convert("RGBA").resize(
++                    (EMOJI_SIZE_PX, EMOJI_SIZE_PX), Image.LANCZOS,
++                )
++                im.save(png_path, format="PNG")
++        except Exception as e:
++            logger.debug(f"emoji convert failed for {emoji_id}: {e}")
++            return None
++        return png_path
++
++    def _ensure_emoji_transmitted(self, emoji_id):
++        """Transmit a custom-emoji image to Kitty if not already there.
++
++        Cache key is the emoji_id (a numeric string) — distinct from
++        avatar hashes so the two namespaces don't collide.
++        """
++        key = f"emoji:{emoji_id}"
++        if key in self._transmitted:
++            return self._transmitted[key]
++        if key in self._fetching:
++            return None
++        self._fetching.add(key)
++        try:
++            path = self._emoji_path(emoji_id)
++            if not path:
++                return None
++            with self._lock:
++                kid = self._next_id
++                self._next_id += 1
++                self._transmitted[key] = kid
++            with open(path, "rb") as f:
++                data = f.read()
++            ctrl = f"a=t,f=100,i={kid},q=2"
++            _send(_chunk_payload(data, ctrl))
++            return kid
++        finally:
++            self._fetching.discard(key)
++
++    def _attachment_path(self, url):
++        """Download and PNG-thumbnail an arbitrary image URL.
++
++        Cached by URL hash; returns local path or None on failure.
++        Synchronous — caller is the draw thread, so this blocks. The
++        cache-hit path is fast; first load of each image incurs the
++        download cost once.
++        """
++        if not HAVE_PIL:
++            return None
++        key = hashlib.sha256(url.encode("utf-8", "replace")).hexdigest()[:16]
++        png_path = os.path.join(os.path.expanduser(self.cache_path), f"attach_{key}.png")
++        if os.path.isfile(png_path):
++            return png_path
++        try:
++            req = urllib.request.Request(url, headers={"User-Agent": "endcord"})
++            with urllib.request.urlopen(req, timeout=ATTACHMENT_TIMEOUT_S) as resp:
++                raw = resp.read()
++        except (urllib.error.URLError, TimeoutError, OSError) as e:
++            logger.debug(f"attachment fetch failed {url}: {e}")
++            return None
++        try:
++            with Image.open(io.BytesIO(raw)) as im:
++                im = im.convert("RGB")
++                im.thumbnail((ATTACHMENT_THUMB_PX, ATTACHMENT_THUMB_PX), Image.LANCZOS)
++                im.save(png_path, format="PNG")
++        except Exception as e:
++            logger.debug(f"attachment convert failed {url}: {e}")
++            return None
++        return png_path
++
++    def measure_attachment(
++        self,
++        url,
++        max_cols=ATTACHMENT_MAX_COLS,
++        max_rows=ATTACHMENT_MAX_ROWS,
++        cell_aspect=None,
++    ):
++        """Download the image if needed and return (cols, rows) for an
++        aspect-preserving placement.
++
++        Returns None if the image can't be loaded. The returned cell
++        dimensions fit within (max_cols, max_rows) and approximate the
++        source pixel aspect ratio given the terminal's cell_aspect
++        (cell_height / cell_width).
++        """
++        if not HAVE_PIL:
++            return None
++        if cell_aspect is None:
++            cell_aspect = self.cell_aspect
++        path = self._attachment_path(url)
++        if not path:
++            return None
++        try:
++            with Image.open(path) as im:
++                sw, sh = im.size
++        except Exception as e:
++            logger.debug(f"attachment measure failed {url}: {e}")
++            return None
++        if sw <= 0 or sh <= 0:
++            return None
++        # Cell aspect = cell_h / cell_w. For a cell area c×r to display
++        # an image with source aspect sw:sh undistorted:
++        #   (c * cell_w) / (r * cell_h) = sw / sh
++        #   c / r = (sw / sh) * cell_aspect
++        ratio = (sw / sh) * cell_aspect
++        # Fit within (max_cols, max_rows) preserving ratio.
++        if ratio >= max_cols / max_rows:
++            cols = max_cols
++            rows = max(1, round(cols / ratio))
++        else:
++            rows = max_rows
++            cols = max(1, round(rows * ratio))
++        # Stash source-pixel dims for partial-render crops below.
++        self._attach_px[url] = (sw, sh)
++        return cols, rows
++
++    def _ensure_attachment_transmitted(self, url):
++        """Transmit attachment PNG to Kitty if not already; return image id."""
++        key = f"attach:{url}"
++        if key in self._transmitted:
++            return self._transmitted[key]
++        if key in self._fetching:
++            return None
++        self._fetching.add(key)
++        try:
++            path = self._attachment_path(url)
++            if not path:
++                return None
++            with self._lock:
++                kid = self._next_id
++                self._next_id += 1
++                self._transmitted[key] = kid
++            with open(path, "rb") as f:
++                data = f.read()
++            ctrl = f"a=t,f=100,i={kid},q=2"
++            _send(_chunk_payload(data, ctrl))
++            return kid
++        finally:
++            self._fetching.discard(key)
++
++    def place_attachment(self, url, row, col, cols=ATTACHMENT_MAX_COLS, rows=ATTACHMENT_MAX_ROWS,
++                         crop_top_cells=0, full_rows=None):
++        """Place an attachment thumbnail at (row, col).
++
++        If `crop_top_cells > 0`, render only the bottom slice of the image
++        (the top `crop_top_cells × cell_h` source pixels are skipped). The
++        slice is displayed in `rows` cells starting at `row`, so callers
++        should pass the visible-only row count as `rows` and the image's
++        full row count as `full_rows`. Used when the image header is
++        off-screen above the chat region but its reserved row band is
++        still visible — without it, the reserve cells show as empty
++        whitespace at the top of the chat.
++        """
++        if not self.enabled or not url:
++            return
++        kid = self._ensure_attachment_transmitted(url)
++        if kid is None:
++            return
++        with self._lock:
++            pid = self._next_placement_id
++            self._next_placement_id += 1
++        cup = f"\x1b[{row + 1};{col + 1}H".encode("ascii")
++        if crop_top_cells > 0 and full_rows and url in self._attach_px:
++            sw, sh = self._attach_px[url]
++            # Crop the top of the source image proportionally. Y/h are in
++            # source pixels; r is the cell count we're rendering into.
++            y_off = max(0, min(sh - 1, int(crop_top_cells * sh / full_rows)))
++            h_src = max(1, sh - y_off)
++            controls = (
++                f"a=p,i={kid},p={pid},c={cols},r={rows},Y={y_off},H={h_src},"
++                f"W={sw},X=0,C=1,q=2"
++            )
++        else:
++            controls = f"a=p,i={kid},p={pid},c={cols},r={rows},C=1,q=2"
++        place = (f"\x1b_G{controls}\x1b\\").encode("ascii")
++        _send(cup + place)
++        self._placed.add(kid)
++
++    def place_emoji(self, emoji_id, row, col, cols=None, rows=None):
++        """Place a custom emoji at terminal cell (row, col)."""
++        if not self.enabled or not emoji_id:
++            return
++        if cols is None:
++            cols = self.emoji_cols
++        if rows is None:
++            rows = self.emoji_rows
++        kid = self._ensure_emoji_transmitted(emoji_id)
++        if kid is None:
++            return
++        with self._lock:
++            pid = self._next_placement_id
++            self._next_placement_id += 1
++        cup = f"\x1b[{row + 1};{col + 1}H".encode("ascii")
++        place = (
++            f"\x1b_Ga=p,i={kid},p={pid},c={cols},r={rows},C=1,q=2\x1b\\"
++        ).encode("ascii")
++        _send(cup + place)
++        self._placed.add(kid)
++
++    def place(self, user_id, avatar_id, row, col):
++        """Place this user's avatar at terminal cell (row, col).
++
++        Uses Kitty's a=p with C=1 (don't move cursor) so we can write
++        the placement without disturbing curses' notion of cursor pos.
++        Position is set via the standard CUP escape before the place.
++
++        Each call gets a fresh placement_id so multiple messages from
++        the same author render side-by-side instead of the later one
++        moving the earlier placement.
++        """
++        if not self.enabled or not avatar_id:
++            return
++        kid = self._ensure_transmitted(user_id, avatar_id)
++        if kid is None:
++            return
++        with self._lock:
++            pid = self._next_placement_id
++            self._next_placement_id += 1
++        cup = f"\x1b[{row + 1};{col + 1}H".encode("ascii")
++        place = (
++            f"\x1b_Ga=p,i={kid},p={pid},c={self.pfp_cols},r={self.pfp_rows},C=1,q=2\x1b\\"
++        ).encode("ascii")
++        _send(cup + place)
++        self._placed.add(kid)
+--- a/endcord/discord.py
++++ b/endcord/discord.py
+@@ -129,6 +129,9 @@
+             self.host = DISCORD_HOST
+             self.cdn_host = DISCORD_CDN_HOST
+         logger.debug(f"Endpoints: API={self.host}, CDN={self.cdn_host}")
++        # Populated by send_message when a non-2xx is returned, so the
++        # message_sender thread can surface a visible error.
++        self.last_send_error = None
+         self.token = token
+         self.header = {
+             "Accept": "*/*",
+@@ -796,6 +799,19 @@
+                 "stickers": data.get("sticker_items", []),
+             }
+         log_api_error(data, status, "send_message")
++        # Stash a short human-readable description of the failure so the
++        # message_sender thread can surface it in the extra line — the
++        # caller currently only sees False.
++        err_code = None
++        try:
++            err_code = json.loads(data).get("code") if data else None
++        except (ValueError, TypeError):
++            pass
++        self.last_send_error = {
++            "status": status,
++            "error_code": err_code,
++            "nonce": nonce,
++        }
+         return False
+ 
+ 
+--- a/endcord/app.py
++++ b/endcord/app.py
+@@ -33,6 +33,7 @@
+     parser,
+     peripherals,
+     perms,
++    pfp as pfp_mod,
+     rpc,
+     search,
+     tui,
+@@ -252,6 +253,13 @@
+         threading.Thread(target=self.gateway.connect, daemon=True).start()
+         self.downloader = downloader.Downloader(config["proxy"])
+         self.tui = tui.TUI(self.screen, self.config, keybindings, command_bindings)
++        # Inline avatars in chat (Kitty-only; defaults off — set
++        # inline_pfp = True in config.ini to enable).
++        self.pfp_renderer = pfp_mod.PfpRenderer(
++            peripherals.cache_path, self.discord,
++            enabled=bool(config.get("inline_pfp", False)),
++        )
++        self.tui.set_pfp_renderer(self.pfp_renderer)
+         if self.fun:
+             today = (time.localtime().tm_mon, time.localtime().tm_mday)
+             self.fun = 2 if (10, 25) <= today <= (11, 8) else self.fun
+@@ -266,6 +274,26 @@
+         self.tui.update_chat(self.chat, [[[self.colors[0]]]] * len(self.chat))
+         self.tui.update_status_line(" CONNECTING")
+         self.my_id = None   # will be taken from gateway in main()
++        # If we're going to draw inline avatars, reserve 6 leading cols
++        # on every chat line: 5-cell avatar + 1 col gap before content.
++        # NOTE: only prepend pad once. format_message has `\n%content`
++        # but the body content after the newline is processed via the
++        # wrap loop which uses format_newline (already padded), so adding
++        # pad after `\n` here would double-indent body lines.
++        if self.pfp_renderer.enabled:
++            # 1-col gap between the avatar and the message text.
++            pad = " " * (self.pfp_renderer.pfp_cols + 1)
++            self.config["format_message"] = pad + self.config["format_message"]
++            # Strip the original leading from format_newline so wrapped
++            # body lines start at the same column as the header.
++            fmt_nl = self.config["format_newline"]
++            content_at = fmt_nl.find("%content")
++            if content_at > 0:
++                fmt_nl = fmt_nl[content_at:]
++            self.config["format_newline"] = pad + fmt_nl
++            self.config["format_reply"] = pad + self.config["format_reply"]
++            self.config["format_reactions"] = pad + self.config["format_reactions"]
++            self.config["format_interaction"] = pad + self.config["format_interaction"]
+         self.formatter = formatter.ChatGenerator(self.config, self.colors, self.colors_formatted, self.my_id)
+         self.premium = None    # same
+         self.my_user_data = None    # same
+@@ -498,12 +526,56 @@
+                             self.message_send_queue.get_nowait()
+                         except queue.Empty:
+                             break
++                elif success is False and func == self.discord.send_message:
++                    # API rejected the send — show what Discord said and
++                    # mark the pending bubble as failed so it doesn't sit
++                    # there looking like it was delivered.
++                    err = self.discord.last_send_error or {}
++                    self.discord.last_send_error = None
++                    code = err.get("error_code")
++                    status = err.get("status")
++                    label = {
++                        50035: "invalid form (too long? bad mention?)",
++                        50007: "cannot send to this user",
++                        50013: "missing permissions",
++                        20009: "explicit content blocked",
++                        40005: "request entity too large",
++                    }.get(code, f"code {code}" if code else f"HTTP {status}")
++                    self.update_extra_line(
++                        f"Send failed: {label}", timed=True,
++                    )
++                    self._mark_pending_failed(err.get("nonce"))
+             except Exception:
+                 pass
+             finally:
+                 self.message_send_queue.task_done()
+ 
+ 
++    def _mark_pending_failed(self, nonce):
++        """Tag the pending message with the given nonce as failed so the
++        renderer can colour it distinctly (rather than leaving it stuck
++        looking like it was delivered)."""
++        if not nonce:
++            return
++        for msg in self.messages:
++            if msg.get("nonce") == nonce or msg.get("id") == nonce:
++                # The formatter treats `"pending" in message` (key
++                # existence, not value) as "still sending" — so we must
++                # `del`, not assign False, to drop the pending style.
++                msg.pop("pending", None)
++                # Prefix the content with a visible marker. Reusing the
++                # deleted-style colour would also work; this gives a
++                # clear text indication regardless of theme.
++                content = msg.get("content") or ""
++                if not content.startswith("[SEND FAILED] "):
++                    msg["content"] = "[SEND FAILED] " + content
++                break
++        try:
++            self.update_chat(scroll=False)
++        except Exception:
++            pass
++
++
+     def put_to_message_sender(self, func, *args, **kwargs):
+         """Put method to queue with its args and kwargs"""
+         self.message_send_queue.put((func, args, kwargs))
+@@ -954,6 +1026,11 @@
+             self.update_chat(keep_selected=False, select_message_index=select_message_index, select_unread=True)
+         else:
+             self.tui.update_chat(self.chat, self.chat_format)
++        # Warm the avatar cache for all distinct authors in this channel
++        # so the first render of each user isn't a cold disk-read +
++        # Kitty-transmit in the draw thread.
++        if self.pfp_renderer.enabled:
++            self._prefetch_avatars()
+         self.set_channel_seen(channel_id, self.get_chat_last_message_id(), force_remove_notify=True)   # right after update_chat so new_unreads is determined
+         if not guild_id:   # no member list in dms
+             self.tui.remove_member_list()
+@@ -1678,6 +1755,51 @@
+                             self.tui.tree_select(self.tree_pos_from_id(channel_id))
+                         self.switch_channel(channel_id, channel_name, guild_id, guild_name, parent_hint=parent_hint)
+ 
++            # action 55: jump to the channel with the most recent
++            # unread message (any unread DM, or any guild channel with
++            # an explicit @-mention — same set the title-bar notification
++            # badge counts). Snowflake IDs are time-sortable so we pick
++            # the max(last_message_id) among candidates.
++            elif action == 55:
++                self.restore_input_text = (input_text, "standard")
++                best_id = None
++                best_msg_id = -1
++                dm_ids = {dm["id"] for dm in self.dms}
++                for cid, ch in self.read_state.items():
++                    if not ch or not formatter.is_unseen(ch):
++                        continue
++                    is_dm = cid in dm_ids
++                    if not is_dm and not ch.get("mentions"):
++                        continue
++                    try:
++                        lmid = int(ch["last_message_id"])
++                    except (TypeError, ValueError, KeyError):
++                        continue
++                    if lmid > best_msg_id:
++                        best_msg_id = lmid
++                        best_id = cid
++                if best_id is None:
++                    self.update_extra_line("No unread channels.", timed=True)
++                else:
++                    channel_id, channel_name, guild_id, guild_name, parent_hint = self.find_parents_from_id(best_id)
++                    if channel_id is None:
++                        self.update_extra_line("Unread channel unavailable.", timed=True)
++                    else:
++                        if guild_id is not None:
++                            self.open_guild(guild_id, select=True, open_only=True)
++                            category_tree_pos = self.tree_pos_from_id(parent_hint)
++                            if category_tree_pos:
++                                self.tui.toggle_category(category_tree_pos, only_open=True)
++                            channel_tree_pos = self.tree_pos_from_id(channel_id)
++                            if channel_tree_pos:
++                                self.tui.tree_select(channel_tree_pos)
++                        else:
++                            self.open_guild(0, select=True, open_only=True)
++                            tree_pos = self.tree_pos_from_id(channel_id)
++                            if tree_pos is not None:
++                                self.tui.tree_select(tree_pos)
++                        self.switch_channel(channel_id, channel_name, guild_id, guild_name, parent_hint=parent_hint)
++
+             # download file
+             elif action == 9:
+                 self.restore_input_text = (input_text, "standard")
+@@ -2717,6 +2839,20 @@
+                         self.update_extra_line("Nothing happens.")
+                     if not text_to_send.strip():
+                         continue
++                    # Pre-flight: Discord rejects messages > 2000 chars with
++                    # HTTP 400 / error code 50035. Surface this synchronously
++                    # in the extra line and refuse to send so the pending
++                    # message isn't left stuck forever in the chat buffer.
++                    # (Nitro Basic raises to 4000; if you have it, bump
++                    # DISCORD_MSG_MAX_LEN — we don't auto-detect.)
++                    DISCORD_MSG_MAX_LEN = 2000
++                    if len(text_to_send) > DISCORD_MSG_MAX_LEN:
++                        self.update_extra_line(
++                            f"Message too long: {len(text_to_send)} chars "
++                            f"(limit {DISCORD_MSG_MAX_LEN}). Not sent.",
++                            timed=True,
++                        )
++                        continue
+                     nonce = discord.generate_nonce()
+                     self.put_to_message_sender(self.discord.send_message,
+                         self.active_channel["channel_id"],
+@@ -2736,6 +2872,7 @@
+                         attachments=this_attachments,
+                         stickers=stickers,
+                     )
++                    self.stop_assist()
+                     self.reset_states(replying=True)
+                     continue
+ 
+@@ -4482,6 +4619,7 @@
+             "username": self.my_user_data["username"],
+             "global_name": self.my_user_data["global_name"],   # spacebar_fix - get
+             "nick": self.my_user_data["nick"],
++            "avatar": (self.my_user_data.get("extra") or {}).get("avatar"),
+             "referenced_message": referenced_message,
+             "reactions": [],
+             "embeds": embeds,
+@@ -4812,6 +4950,8 @@
+             self.messages = self.messages[-self.limit_chat_buffer:]
+             if new_chunk:
+                 self.update_chat(keep_selected=None)
++                if self.pfp_renderer.enabled:
++                    self._prefetch_avatars()
+                 # when messages are trimmed, keep same selected position
+                 if len(self.messages) != all_msg:
+                     selected_msg_new = selected_msg - (all_msg - len(self.messages))
+@@ -5964,7 +6104,34 @@
+             change_id=change_id,
+             change_type=change_type,
+         )
++        # Blank out the `:name:` text under every custom emoji so the
++        # image overlay isn't trailed by half-visible characters. Done
++        # before passing chat to the TUI.
++        if self.pfp_renderer.enabled:
++            for i, line in enumerate(self.chat_map):
++                if not (line and line[5] and len(line[5]) > 2 and line[5][2]):
++                    continue
++                if not (0 <= i < len(self.chat)):
++                    continue
++                buf_line = self.chat[i]
++                for r in line[5][2]:
++                    start, end = r[0], r[1]
++                    if start < len(buf_line):
++                        end = min(end, len(buf_line))
++                        buf_line = buf_line[:start] + " " * (end - start) + buf_line[end:]
++                self.chat[i] = buf_line
++            # Group consecutive messages from the same author within 5 min:
++            # drop the header line + spacer above it so the body of the
++            # continuation flows directly under the previous message.
++            self._apply_message_grouping()
++        # Reserve vertical space for image thumbnails before computing
++        # the line maps (the insert shifts indices in chat / chat_map).
++        if self.pfp_renderer.enabled:
++            self._reserve_image_rows()
+         self.tui.set_wide(self.chat_map)
++        self.tui.set_pfp_lines(self._build_pfp_lines())
++        self.tui.set_emoji_lines(self._build_emoji_lines())
++        self.tui.set_image_lines(self._build_image_lines())
+ 
+         if keep_selected:
+             selected_msg = selected_msg + change_amount
+@@ -6347,6 +6514,26 @@
+         # debug.save_json(self.tree_metadata, "tree_metadata.json", False)
+         self.tui.update_tree(self.tree, self.tree_format)
+ 
++        # Notification badge for hidden-tree mode: count unread DMs
++        # and guild channels with explicit @mentions. We compute from
++        # raw state here (rather than tree_format) because DM codes
++        # and guild-channel codes share the 300-range and can't be
++        # distinguished after the fact.
++        mention_count = 0
++        for dm in self.dms:
++            ch = self.read_state.get(dm["id"])
++            if formatter.is_unseen(ch):
++                mention_count += 1
++        for cid, ch in self.read_state.items():
++            if not ch:
++                continue
++            # Skip DMs (already counted above).
++            if any(dm["id"] == cid for dm in self.dms):
++                continue
++            if formatter.is_unseen(ch) and ch.get("mentions"):
++                mention_count += 1
++        self.tui.set_mention_count(mention_count)
++
+         # check for unreads/mentions for tray icon
+         if uses_pgcurses:
+             if not self.tui.is_window_open and not bool(self.tui.get_chat_selected()[1]):
+@@ -6367,6 +6554,302 @@
+             self.tui.set_tray_icon(tray_state)
+ 
+ 
++    def _apply_message_grouping(self):
++        """Discord-style streak grouping: hide header + leading spacer for
++        messages whose immediately-older neighbour is from the same author
++        within 5 minutes. The body of the continuation then sits directly
++        under the previous message's content.
++        """
++        if not self.messages or not self.chat_map:
++            return
++
++        from datetime import datetime as _dt
++
++        def _parse(ts):
++            if not ts:
++                return None
++            for fmt in ("%Y-%m-%dT%H:%M:%S.%f%z", "%Y-%m-%dT%H:%M:%S%z"):
++                try:
++                    return _dt.strptime(ts, fmt)
++                except (ValueError, TypeError):
++                    continue
++            return None
++
++        grouped = set()
++        for idx, msg in enumerate(self.messages):
++            if idx + 1 >= len(self.messages):
++                continue
++            older = self.messages[idx + 1]
++            if older.get("user_id") != msg.get("user_id"):
++                continue
++            t_msg = _parse(msg.get("timestamp"))
++            t_older = _parse(older.get("timestamp"))
++            if t_msg is None or t_older is None:
++                continue
++            if (t_msg - t_older).total_seconds() < 300:
++                grouped.add(idx)
++
++        if not grouped:
++            return
++
++        # In chat_buffer, lines are stored newest-first per message and the
++        # formatter reverses each message's block so its spacing line ends
++        # up at the HIGHEST index of that message's block (visually above
++        # the header). Header lines have a non-None timestamp range
++        # (chat_map[i][4]); the spacing line is the all-None entry that
++        # comes one index later.
++        to_remove = set()
++        for i, line in enumerate(self.chat_map):
++            if not line:
++                continue
++            if line[0] in grouped and line[4] is not None:
++                to_remove.add(i)
++                # Spacing line just above the header (higher chat[] index).
++                if i + 1 < len(self.chat_map):
++                    nxt = self.chat_map[i + 1]
++                    if nxt is None or nxt[0] is None:
++                        to_remove.add(i + 1)
++
++        if not to_remove:
++            return
++
++        new_chat, new_format, new_map = [], [], []
++        for i in range(len(self.chat_map)):
++            if i in to_remove:
++                continue
++            new_chat.append(self.chat[i])
++            new_format.append(self.chat_format[i])
++            new_map.append(self.chat_map[i])
++        self.chat = new_chat
++        self.chat_format = new_format
++        self.chat_map = new_map
++
++
++    def _reserve_image_rows(self):
++        """For each `[image attachment]:` line, measure the source
++        image's aspect ratio and insert the right number of blank rows
++        below the image line so the thumbnail can render at its native
++        aspect without overlaying other content.
++
++        Stores `_image_geom` mapping `(msg_num, url) -> (cols, rows)` so
++        `_build_image_lines` can pass the same dimensions to the TUI.
++
++        chat_buffer is rendered bottom-up, so "visually below" the image
++        line at chat[X] is chat[X-1] ... chat[X-rows+1]. Inserting
++        (rows-1) blank lines AT chat[X] pushes the image line up to
++        chat[X+rows-1] and puts the blanks at chat[X..X+rows-2], which
++        is the exact region the image will occupy.
++        """
++        from endcord import pfp as pfp_mod  # local to avoid import cycle
++        self._image_geom = {}
++        if not self.chat_map:
++            return
++        image_types_short = ("image", "png", "jpg", "jpeg", "gif", "webp")
++
++        # msg_num -> list of (line_idx, url) for image attachment lines
++        msg_image_lines = {}
++        for i, line in enumerate(self.chat_map):
++            if not line or line[0] is None:
++                continue
++            msg_num = line[0]
++            if not (0 <= msg_num < len(self.messages)):
++                continue
++            if not (0 <= i < len(self.chat)):
++                continue
++            if "[image" not in self.chat[i]:
++                continue
++            msg_image_lines.setdefault(msg_num, []).append(i)
++
++        # Pair image lines with the message's image embeds (in order),
++        # measure each, and remember dimensions for later use.
++        plan = []   # (line_idx, url, cols, rows)
++        for msg_num, line_indices in msg_image_lines.items():
++            msg = self.messages[msg_num]
++            image_urls = []
++            for embed in msg.get("embeds", []) or []:
++                url = embed.get("url")
++                if not url:
++                    continue
++                etype = (embed.get("type") or "").lower()
++                if etype.startswith("image/") or etype in image_types_short:
++                    image_urls.append(url)
++            for line_idx, url in zip(line_indices, image_urls):
++                dims = self.pfp_renderer.measure_attachment(url)
++                if not dims:
++                    continue
++                cols, rows = dims
++                self._image_geom[(msg_num, url)] = (cols, rows)
++                plan.append((line_idx, url, cols, rows))
++
++        if not plan:
++            return
++
++        blank_text = ""
++        blank_format = [getattr(self.formatter, "color_default", 1)]
++        blank_map = (None, None, None, None, None, None, None)
++        # Process in REVERSE line-index order so earlier insertions
++        # don't invalidate later indices.
++        for entry in sorted(plan, key=lambda e: -e[0]):
++            line_idx, _url, _cols, rows = entry
++            n_extra = max(0, rows - 1)
++            for _ in range(n_extra):
++                self.chat.insert(line_idx, blank_text)
++                self.chat_format.insert(line_idx, blank_format)
++                self.chat_map.insert(line_idx, blank_map)
++
++
++    def _build_image_lines(self):
++        """Return a list parallel to chat_buffer; each entry is None or
++        (col, url, cols, rows) for a line we want to overlay with an
++        image attachment thumbnail. Dimensions come from the per-image
++        geometry computed by _reserve_image_rows.
++
++        Detection is best-effort: for each message with image embeds,
++        the formatter renders a line like "[image attachment]: <url>".
++        We find those lines and pair them positionally with the
++        message's image embeds (carrying the FULL un-trimmed URL).
++        """
++        if not self.chat_map:
++            return []
++        out = [None] * len(self.chat_map)
++        msg_lines = {}
++        for i, line in enumerate(self.chat_map):
++            if not line or line[0] is None:
++                continue
++            if not (0 <= i < len(self.chat)):
++                continue
++            if "[image" not in self.chat[i]:
++                continue
++            msg_lines.setdefault(line[0], []).append(i)
++        for msg_num, line_indices in msg_lines.items():
++            if not (0 <= msg_num < len(self.messages)):
++                continue
++            msg = self.messages[msg_num]
++            urls = []
++            for embed in msg.get("embeds", []) or []:
++                url = embed.get("url")
++                if not url:
++                    continue
++                etype = (embed.get("type") or "").lower()
++                # Discord attachments carry MIME types like "image/png" or
++                # "image/gif"; embed objects might use a short form
++                # like "image". Match both.
++                if etype.startswith("image/") or etype in (
++                    "image", "png", "jpg", "jpeg", "gif", "webp"
++                ):
++                    urls.append(url)
++            for line_idx, url in zip(line_indices, urls):
++                if not (0 <= line_idx < len(self.chat)):
++                    continue
++                buf = self.chat[line_idx]
++                # Blank from "[image" through the end of the line so
++                # neither the label, the URL, nor the trim ellipsis
++                # ("...") trails the thumbnail.
++                img_pos = buf.find("[image")
++                if img_pos >= 0:
++                    self.chat[line_idx] = buf[:img_pos] + " " * (len(buf) - img_pos)
++                    # Strip any URL-underline / mention colours that
++                    # were on the original text, otherwise they show
++                    # as a faint line through the thumbnail.
++                    if 0 <= line_idx < len(self.chat_format):
++                        self.chat_format[line_idx] = [
++                            getattr(self.formatter, "color_default", 1),
++                        ]
++                    col = img_pos
++                else:
++                    line_map = self.chat_map[line_idx]
++                    url_ranges = (
++                        line_map[5][0] if (line_map[5] and len(line_map[5]) > 0) else []
++                    )
++                    col = url_ranges[0][0] if url_ranges else 0
++                geom = getattr(self, "_image_geom", {}).get((msg_num, url))
++                if not geom:
++                    continue
++                out[line_idx] = (col, url, geom[0], geom[1])
++        return out
++
++
++    def _build_emoji_lines(self):
++        """Return a list parallel to chat_buffer where each entry is a
++        list of (col, emoji_id) tuples for the custom emojis on that
++        line. Empty list for lines with no emojis.
++
++        chat_map[line] is a 7-tuple where index 5 is the per-line
++        `ranges` tuple. Inside ranges, index 2 is `emoji_ranges` —
++        a list of (start, end, emoji_id).
++        """
++        out = []
++        for line in self.chat_map:
++            if line and line[5] and len(line[5]) > 2 and line[5][2]:
++                emoji_ranges = line[5][2]
++                out.append([(r[0], r[2]) for r in emoji_ranges])
++            else:
++                out.append([])
++        return out
++
++
++    def _prefetch_avatars(self):
++        """Kick off a background thread that ensures every distinct
++        author in self.messages has their avatar downloaded and
++        transmitted to Kitty. The draw thread's _ensure_transmitted
++        path then short-circuits on the cache hit."""
++        if not self.pfp_renderer.enabled or not self.messages:
++            return
++        seen = set()
++        targets = []
++        for msg in self.messages:
++            uid = msg.get("user_id")
++            avatar = msg.get("avatar")
++            if not uid or not avatar:
++                continue
++            if avatar in seen:
++                continue
++            seen.add(avatar)
++            targets.append((uid, avatar))
++        if not targets:
++            return
++        def _warm():
++            for uid, avatar in targets:
++                try:
++                    self.pfp_renderer._ensure_transmitted(uid, avatar)
++                except Exception as e:
++                    logger.debug(f"prefetch avatar failed {uid}/{avatar}: {e}")
++        threading.Thread(target=_warm, daemon=True, name="pfp-prefetch").start()
++
++
++    def _build_pfp_lines(self):
++        """Return a list parallel to chat_buffer where each header line is
++        tagged with (user_id, avatar_id). Other lines are None.
++
++        chat_map[line] is a 7-tuple; index 0 = msg_num, index 4 = the
++        timestamp range (only set on header lines). We treat "has
++        timestamp range" as "is the avatar row".
++
++        To match Discord-style "message grouping", we only emit an
++        avatar on the *first* message of an author streak — i.e. when
++        the immediately-older message (self.messages[msg_num+1], since
++        the list is newest-first) is from a different user.
++        """
++        out = []
++        for line in self.chat_map:
++            if line and line[0] is not None and line[4]:
++                msg_num = line[0]
++                if 0 <= msg_num < len(self.messages):
++                    msg = self.messages[msg_num]
++                    older = (
++                        self.messages[msg_num + 1]
++                        if msg_num + 1 < len(self.messages)
++                        else None
++                    )
++                    if older and older.get("user_id") == msg.get("user_id"):
++                        out.append(None)
++                    else:
++                        out.append((msg.get("user_id"), msg.get("avatar")))
++                    continue
++            out.append(None)
++        return out
++
++
+     def lines_to_msg(self, line_index, space=False):
+         """Convert line index from formatted chat to message index"""
+         if not self.chat_map:
+@@ -6428,6 +6911,12 @@
+                     if next_line_map and next_line_map[0] == line_map[0] and next_line_map[2]:
+                         return line_index - in_msg_start_index - 1
+                 return line_index - in_msg_start_index
++        # Fallback: streak-grouped messages have no header line (we strip
++        # it). Return the first line that has the matching msg_index so
++        # navigation (Shift+J/K, ctrl+u, etc.) still finds them.
++        for line_index, line_map in enumerate(self.chat_map):
++            if line_map and line_map[0] == msg_index:
++                return line_index - in_msg_start_index
+         return 0
+ 
+ 
+@@ -7945,7 +8434,9 @@
+                     new_message = self.execute_extensions_methods("on_message_event", new_message, cache=True)[0]
+                     new_message_channel_id = new_message["d"]["channel_id"]
+                     this_channel = (new_message_channel_id == self.active_channel["channel_id"])
+-                    avatar_id = new_message["d"].pop("avatar", None)
++                    # Keep "avatar" on the message dict (use get instead of
++                    # pop) so the inline-PFP renderer can find it later.
++                    avatar_id = new_message["d"].get("avatar", None)
+                     if this_channel and self.get_chat_last_message_id() == self.last_message_id:   # if its scrolled far up, this channel bot is cached
+                         self.process_msg_events_active_channel(new_message)
+                     # handle cached channels
+@@ -7961,7 +8452,13 @@
+                             # still have to do this when scrolled far up, only to handle message delete/edit/react/poll
+                             self.process_msg_events_active_channel(new_message, latest_chat=False)
+                     # handle unseen and mentions
+-                    if not this_channel or (this_channel and (self.new_unreads or self.ping_this_channel or self.tui.disable_drawing or self.tui.is_window_open())):
++                    # NB: is_window_open() is a stub that always returns True
++                    # outside pgcurses mode, so gate it on uses_pgcurses —
++                    # otherwise it short-circuits notification_in_active=False.
++                    # tui.terminal_focused is driven by CSI 1004 focus events;
++                    # when False, the user isn't looking at endcord and should
++                    # still get a notification even for the active channel.
++                    if not this_channel or (this_channel and (not self.tui.terminal_focused or self.new_unreads or self.ping_this_channel or self.tui.disable_drawing or (uses_pgcurses and self.tui.is_window_open()))):
+                         self.process_msg_events_other_channels(new_message, avatar_id)
+                     # remove ghost pings
+                     self.process_msg_events_ghost_ping(new_message)
+--- a/endcord/tui.py
++++ b/endcord/tui.py
+@@ -12,7 +12,7 @@
+ import threading
+ import time
+ 
+-from endcord import acs, peripherals, utils
++from endcord import acs, peripherals, pfp as pfp_mod, utils
+ 
+ logger = logging.getLogger(__name__)
+ uses_pgcurses = hasattr(curses, "PGCURSES")
+@@ -210,6 +210,7 @@
+         curses.mousemask(curses.ALL_MOUSE_EVENTS)
+         curses.mouseinterval(0)
+         sys.stdout.write("\033[?2004h")   # enable bracketed paste mode
++        sys.stdout.write("\033[?1004h")   # enable terminal focus reporting
+         sys.stdout.flush()
+         screen.clear()
+         self.last_free_id = 1   # last free color pair id
+@@ -310,9 +311,24 @@
+         self.chat_buffer = []
+         self.chat_format = []
+         self.wide_map = []
++        # Inline-PFP state. Wired up later via set_pfp_renderer().
++        # pfp_lines: parallel to chat_buffer. None for non-header lines,
++        # (user_id, avatar_id) for lines where we want to draw an avatar.
++        # emoji_lines: parallel to chat_buffer. List of (col, emoji_id)
++        #   tuples per line, or [] when the line has no custom emojis.
++        # _pfp_dirty: set by draw_chat, cleared by screen_update after it
++        # has re-placed the avatars (which must happen AFTER doupdate).
++        self.pfp_renderer = None
++        self.pfp_lines = []
++        self.emoji_lines = []
++        # image_lines: parallel to chat_buffer. None or (col, url) for
++        # lines that carry an image-attachment URL we want to preview.
++        self.image_lines = []
++        self._pfp_dirty = False
+         self.tree = []
+         self.tree_format = []
+         self.tree_clean_len = 0
++        self.mention_count = 0
+         self.chat_selected = -1   # hidden selection by default
+         self.tree_selected = -1
+         self.dont_hide_chat_selection = False
+@@ -327,6 +343,11 @@
+         self.cursor_on = True
+         self.enable_autocomplete = False
+         self.bracket_paste = False
++        # Terminal focus state, fed by parsing CSI focus-in/-out sequences
++        # (ESC [ I / ESC [ O, requires `\e[?1004h` enabled above).
++        # Default True so we don't suppress before the first focus event
++        # lands; the terminal sends the right state on the next change.
++        self.terminal_focused = True
+         self.spelling_range = [0, 0]
+         self.misspelled = []
+         self.delta_store = []
+@@ -469,6 +490,12 @@
+                         pass
+                     shape_byte = b"\033[6 q" if self.insert_mode else b"\033[2 q"
+                 curses.doupdate()
++                # Place inline avatars AFTER doupdate so any terminal-level
++                # screen clears curses just issued (clearok / \e[2J) don't
++                # wipe the Kitty images.
++                if self._pfp_dirty:
++                    self.place_inline_pfps()
++                    self._pfp_dirty = False
+                 if shape_byte is not None:
+                     try:
+                         os.write(1, shape_byte)
+@@ -639,6 +666,11 @@
+         """Forcibly redraw entire screen"""
+         self.screen.clear()
+         self.screen.redrawwin()
++        # Some terminals drop Kitty image storage on a full screen clear,
++        # so the next placement needs to re-transmit. Same trick we use
++        # for tree-toggle.
++        if self.pfp_renderer is not None:
++            self.pfp_renderer.invalidate_transmissions()
+         if sys.platform == "win32":
+             self.screen.noutrefresh()   # ??? needed only with windows-curses
+             self.need_update.set()
+@@ -797,6 +829,13 @@
+                     if self.assist_start != 1 and (self.input_buffer[self.assist_start-2] not in (" ", "\n") or self.input_buffer[self.assist_start] in (" ", "\n")):
+                         # skip trigger if no space before it
+                         return None, None
++                    # Skip if char right after the trigger isn't alnum/underscore:
++                    # avoids opening the picker for ASCII smileys like :), :(,
++                    # :/, :|, :*, ;), etc. Real channel/user/emoji/sticker names
++                    # always start with an alphanumeric char.
++                    first = self.input_buffer[self.assist_start]
++                    if not (first.isalnum() or first == "_"):
++                        return None, None
+                     assist_word = self.input_buffer[self.assist_start : self.input_index]
+                     return assist_word, assist_type
+                 self.assist_start = -1
+@@ -917,6 +956,10 @@
+         # the chat when toggling off. Without this, the underlying cells
+         # are never overwritten because the chat window starts further right.
+         self.screen.clear()
++        # Some terminals drop Kitty image storage when the screen clears,
++        # so tell the renderer to re-transmit on next placement.
++        if self.pfp_renderer is not None:
++            self.pfp_renderer.invalidate_transmissions()
+         self.resize()
+ 
+ 
+@@ -1075,6 +1118,11 @@
+         """Select specific item in tree by its index"""
+         if tree_pos is None:
+             return
++        # The tree's curses refresh can shift Kitty image cells in some
++        # terminals (we've seen the inline avatars/attachments slide
++        # vertically on tree nav). Mark placements dirty so the next
++        # screen_update re-anchors them in the chat region.
++        self._pfp_dirty = True
+         skipped = 0
+         drop_down_skip_folder = False
+         drop_down_skip_guild = False
+@@ -1246,6 +1294,31 @@
+             self.need_update.set()
+ 
+ 
++    def _mention_badge(self):
++        """Return a '(N)' string with the count of channels worth
++        notifying the user about. Empty when the tree is visible.
++
++        The count is computed in app.update_tree (where DM and guild
++        data is directly available) and pushed via set_mention_count.
++        Counting from tree_format is unreliable because DM codes and
++        guild-channel codes both share the 300-range — see set_mention_count.
++        """
++        if self.tree_width > 0:
++            return ""
++        if not self.mention_count:
++            return ""
++        return f"({self.mention_count})"
++
++
++    def set_mention_count(self, count):
++        """Set the notification count shown in the title bar when the
++        tree is hidden. Called by app.update_tree."""
++        if count != self.mention_count:
++            self.mention_count = count
++            if self.tree_width == 0 and not self.disable_drawing:
++                self.draw_title_line()
++
++
+     def draw_title_line(self):
+         """Draw title line, works same as status line"""
+         with self.lock:
+@@ -1254,6 +1327,9 @@
+             if title_txt_r:
+                 title_txt_r = title_txt_r[:w - 2*self.bordered]
+             title_txt_l = self.title_txt_l
++            badge = self._mention_badge()
++            if badge:
++                title_txt_l = f"{badge} {title_txt_l}"
+ 
+             if 0 < self.tree_width < 10:   # merge title tree with left title
+                 if self.bordered:
+@@ -1433,6 +1509,11 @@
+                 self.win_chat.noutrefresh()
+                 if not norefresh:
+                     self.need_update.set()
++                # Flag the screen_update thread to (re)place avatars after
++                # the next doupdate — doing it before doupdate means a
++                # terminal clear (from screen.clear / clearok) wipes the
++                # Kitty images right after they've been placed.
++                self._pfp_dirty = True
+             except curses.error:
+                 # exception will happen when window is resized to smaller w dimensions
+                 self.resize()
+@@ -1446,6 +1527,137 @@
+                 self.wide_map.append(num + 1)
+ 
+ 
++    def set_pfp_renderer(self, renderer):
++        """Install a PfpRenderer; called once during app startup."""
++        self.pfp_renderer = renderer
++
++
++    def set_pfp_lines(self, pfp_lines):
++        """Update the per-line PFP map (parallel to chat_buffer).
++
++        Each entry is None or a tuple (user_id, avatar_id) — when not None
++        the line is a message header that should get an avatar.
++        """
++        self.pfp_lines = pfp_lines
++
++
++    def set_emoji_lines(self, emoji_lines):
++        """Update the per-line custom-emoji placement map.
++
++        Each entry is a list of (col, emoji_id) tuples giving the in-line
++        column offset of each custom emoji on that line.
++        """
++        self.emoji_lines = emoji_lines
++
++
++    def set_image_lines(self, image_lines):
++        """Update the per-line attachment-image map (parallel to
++        chat_buffer). Each entry is None or (col, url)."""
++        self.image_lines = image_lines
++
++
++    def place_inline_pfps(self):
++        """Render avatars for currently visible header lines.
++
++        Called from screen_update after curses.doupdate. The CUP and
++        place commands move the terminal cursor; we save/restore it
++        around the batch so the input-line cursor isn't left parked in
++        the chat region (which made user keypresses appear to vanish).
++        """
++        if not self.pfp_renderer or not self.pfp_renderer.enabled:
++            return
++        if not self.pfp_lines or self.disable_drawing:
++            return
++        # DECSC save cursor (\e7), DECRC restore (\e8). Doing this here
++        # rather than per-placement keeps the wire output compact.
++        try:
++            os.write(sys.stdout.fileno(), b"\x1b7")
++        except OSError:
++            pass
++        self.pfp_renderer.clear_placements()
++        chat_y, chat_x = self.win_chat.getbegyx()
++        chat_h = self.chat_hw[0]
++        # draw_chat renders bottom-up: chat_buffer[chat_index] -> bottom row.
++        # So visible buffer line i is at screen row (chat_y + chat_h - 1 -
++        # (i - chat_index)). Skip the row of avatars that would overflow
++        # past the top.
++        for i in range(self.chat_index, min(self.chat_index + chat_h, len(self.pfp_lines))):
++            entry = self.pfp_lines[i]
++            if not entry:
++                continue
++            user_id, avatar_id = entry
++            if not avatar_id:
++                continue
++            row = chat_y + chat_h - 1 - (i - self.chat_index)
++            if row < chat_y:
++                continue
++            # Avatar is pfp_rows rows tall — skip if placing it here would
++            # extend past the chat region (would bleed below the bottom
++            # border of the chat box).
++            if row + self.pfp_renderer.pfp_rows > chat_y + chat_h:
++                continue
++            # Place flush with the chat's left border so the message text
++            # sits close to the gutter (no extra empty column between).
++            self.pfp_renderer.place(user_id, avatar_id, row, chat_x)
++        # Inline image attachments — per-image (cols, rows) come from
++        # app-side measurement so the thumbnail keeps its source aspect.
++        # We also scan beyond chat_index+chat_h so a tall image whose
++        # header has scrolled just above the viewport can still render
++        # its bottom slice (otherwise the reserved blank rows show as
++        # whitespace at the top of the chat).
++        if self.image_lines:
++            scan_end = min(self.chat_index + chat_h + pfp_mod.ATTACHMENT_MAX_ROWS, len(self.image_lines))
++            for i in range(self.chat_index, scan_end):
++                entry = self.image_lines[i]
++                if not entry:
++                    continue
++                col_off, url, image_cols, image_rows = entry
++                row_natural = chat_y + chat_h - 1 - (i - self.chat_index)
++                crop_top = 0
++                if row_natural < chat_y:
++                    # Image header is above the viewport. Anchor the
++                    # placement to chat_y and crop the corresponding
++                    # number of rows off the top of the image source.
++                    crop_top = chat_y - row_natural
++                    if crop_top >= image_rows:
++                        continue
++                    row = chat_y
++                else:
++                    row = row_natural
++                # Safety net: if scrolled such that the reserved blanks
++                # have been clipped at the bottom, shrink rows so the
++                # thumbnail still fits inside the chat region.
++                available_rows = chat_y + chat_h - row
++                if available_rows < 1:
++                    continue
++                rows_to_use = min(image_rows - crop_top, available_rows)
++                cols_to_use = max(1, image_cols * rows_to_use // image_rows)
++                abs_col = chat_x + col_off
++                if abs_col < chat_x or abs_col >= chat_x + self.chat_hw[1]:
++                    continue
++                self.pfp_renderer.place_attachment(
++                    url, row, abs_col,
++                    cols=cols_to_use, rows=rows_to_use,
++                    crop_top_cells=crop_top, full_rows=image_rows,
++                )
++        # Inline custom emoji — placed at their in-line column for each
++        # visible line.
++        if self.emoji_lines:
++            for i in range(self.chat_index, min(self.chat_index + chat_h, len(self.emoji_lines))):
++                row = chat_y + chat_h - 1 - (i - self.chat_index)
++                if row < chat_y:
++                    continue
++                for col_off, emoji_id in self.emoji_lines[i]:
++                    abs_col = chat_x + col_off
++                    if abs_col < chat_x or abs_col >= chat_x + self.chat_hw[1]:
++                        continue
++                    self.pfp_renderer.place_emoji(emoji_id, row, abs_col)
++        try:
++            os.write(sys.stdout.fileno(), b"\x1b8")
++        except OSError:
++            pass
++
++
+     def clear_chat_wide(self, wait=True):
+         """Clear specific chat lines that are containing emoji"""
+         if self.disable_drawing or not self.wide_map:
+@@ -2328,11 +2540,13 @@
+                 if self.tree_index and self.tree_selected <= self.tree_index + 2:
+                     self.tree_index -= 1
+                 self.tree_selected -= 1
++                self._pfp_dirty = True
+                 self.draw_tree()
+             elif self.wrap_around:
+                 tree_end_index = self.get_tree_index(0)
+                 self.tree_selected = tree_end_index
+                 self.tree_index = max(self.tree_selected - (self.tree_hw[0] - 1), 0)
++                self._pfp_dirty = True
+                 self.draw_tree()
+ 
+         elif key in self.keybindings["tree_down"]:
+@@ -2341,10 +2555,12 @@
+                 if top_line < self.tree_clean_len and self.tree_selected >= top_line - 3:
+                     self.tree_index += 1
+                 self.tree_selected += 1
++                self._pfp_dirty = True
+                 self.draw_tree()
+             elif self.wrap_around:
+                 self.tree_selected = 0
+                 self.tree_index = 0
++                self._pfp_dirty = True
+                 self.draw_tree()
+ 
+         elif key in self.keybindings["tree_select"]:
+@@ -2533,6 +2749,12 @@
+                     self.spellcheck()
+                     self.draw_input_line()
+                     continue
++                elif sequence == [27, 91, 73, -1]:   # ESC [ I — focus in
++                    self.terminal_focused = True
++                    continue
++                elif sequence == [27, 91, 79, -1]:   # ESC [ O — focus out
++                    self.terminal_focused = False
++                    continue
+                 elif sequence[-1] == -1 and sequence[-2] == 27:
+                     # holding escape key
+                     if self.assist_start:
+@@ -2959,6 +3181,9 @@
+             elif key in self.keybindings["jump_last_channel"]:
+                 return self.return_input_code(54)
+ 
++            elif key in self.keybindings["jump_latest_unread"]:
++                return self.return_input_code(55)
++
+             elif key in self.keybindings["spoil"] and self.chat_selected != -1 and not forum:
+                 return self.return_input_code(18)
+ 
+@@ -3037,6 +3262,9 @@
+                 return self.return_input_code((50, self.command_bindings.get(key)))
+ 
+             elif key == curses.KEY_RESIZE:
++                # Terminal resize may invalidate Kitty image storage.
++                if self.pfp_renderer is not None:
++                    self.pfp_renderer.invalidate_transmissions()
+                 self.resize()
+                 _, w = self.input_hw
+ 

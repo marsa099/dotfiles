@@ -1,0 +1,31 @@
+Fix two master-HEAD bugs around message search:
+
+1. extend_search() crashes when self.search is True (gif search) instead of
+   a tuple (message search) — it unconditionally indexes self.search[0].
+   Guard the call site with isinstance(self.search, tuple).
+
+2. In vim mode, pressing `f` opens search but leaves you in NORMAL mode
+   so you can't type the query. Pressing `i` to insert toggles insert mode
+   but also resets restore_input_text to "standard", losing the search
+   context. Auto-enter insert mode when search opens so the user can type
+   the query directly (matches the standard-mode flow).
+
+--- a/endcord/app.py
++++ b/endcord/app.py
+@@ -1875,6 +1875,7 @@ class Endcord:
+                     self.stop_assist(close=False)
+                     self.tui.draw_extra_window(extra_title, extra_body)
+                     self.extra_window_open = True
++                    self.tui.set_vim_insert(True)
+                 else:
+                     self.close_extra_window()
+                     self.reset_states()
+@@ -8164,7 +8165,7 @@ class Endcord:
+                     self.get_forum_chunk()
+
+             # check for message search chunks
+-            if self.search and self.extra_indexes:
++            if isinstance(self.search, tuple) and self.extra_indexes:
+                 extra_selected = self.tui.get_extra_selected()
+                 if extra_selected >= len(self.extra_body) - 2 and not self.search_end:
+                     self.extend_search()

@@ -34,6 +34,23 @@
         "type": "github"
       }
     },
+    "endcord-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1778197415,
+        "narHash": "sha256-C16z2lEvnAqVce3odrDkl4ek2TNzhm5OXRmUb48fSnc=",
+        "owner": "sparklost",
+        "repo": "endcord",
+        "rev": "b4f890b9b6f9e2a3b3494c41e78ad77f72859d4b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "sparklost",
+        "repo": "endcord",
+        "rev": "b4f890b9b6f9e2a3b3494c41e78ad77f72859d4b",
+        "type": "github"
+      }
+    },
     "flake-utils": {
       "inputs": {
         "systems": "systems"
@@ -157,6 +174,7 @@
       "inputs": {
         "bt-keyboard-bridge": "bt-keyboard-bridge",
         "claude-code-notify": "claude-code-notify",
+        "endcord-src": "endcord-src",
         "nixpkgs": "nixpkgs_3",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "teams-for-linux-fork": "teams-for-linux-fork",
