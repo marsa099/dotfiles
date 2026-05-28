@@ -38,8 +38,14 @@ let
     soundfile
     urllib3
     websocket-client
-    # media extra: inline avatars (inline-pfp patch) use the Kitty graphics pipeline (Pillow)
+    # media extra (pyproject [dependency-groups] media). endcord/media.py does a
+    # top-level `import av`, so without PyAV all media viewing (images/gifs/video,
+    # the `v` action) is dead. Pillow drives image rendering + inline avatars
+    # (inline-pfp patch); pynacl is for voice. dave-py (DAVE E2EE voice) is
+    # intentionally omitted — not in nixpkgs and not needed for media display.
+    av
     pillow
+    pynacl
   ]);
 
   endcord = pkgs.stdenv.mkDerivation {
