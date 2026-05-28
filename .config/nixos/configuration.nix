@@ -139,11 +139,26 @@
   # Battery monitoring (required by waybar battery module)
   services.upower.enable = true;
 
+  # Vial (the GUI app for remapping QMK/Vial keyboards, installed below) talks to
+  # the keyboard over a /dev/hidraw* device. By default those nodes are root-only,
+  # so Vial shows "No devices detected" until we grant the logged-in user access.
+  # This udev rule does exactly that: every Vial keyboard reports a USB serial
+  # containing the magic string "vial:f64c2b3c", and TAG+="uaccess" hands the
+  # active desktop session read/write access to the matching hidraw node (no root,
+  # no replugging-as-root). This is Vial's own required setup on Linux, just
+  # expressed declaratively for NixOS instead of a hand-placed /etc/udev file.
+  # Docs / source of this rule: https://get.vial.today/manual/linux-udev.html
+  services.udev.extraRules = ''
+    KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{serial}=="*vial:f64c2b3c*", MODE="0660", GROUP="users", TAG+="uaccess"
+  '';
+
   # List packages installed in system profile.
   # You can use https://search.nixos.org/ to find more packages (and options).
   environment.systemPackages = with pkgs; [
     vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
     ghostty
+    kitty
+    vial
     tmux
     git
     waybar
@@ -191,7 +206,7 @@
   # started in user sessions.
   # programs.mtr.enable = true;
   # PAM service for swaylock (required for password authentication)
-  security.pam.services.swaylock = {};
+  security.pam.services.swaylock = { };
 
   programs.gnupg.agent = {
     enable = true;
