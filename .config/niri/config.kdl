@@ -8,8 +8,8 @@
 environment {
     ELECTRON_OZONE_PLATFORM_HINT "auto"
     // Terminal config for spawn-or-focus keybindings (change here to switch default terminal)
-    TERMINAL "ghostty"
-    TERMINAL_APP_ID "com.mitchellh.ghostty"
+    TERMINAL "kitty"
+    TERMINAL_APP_ID "kitty"
     // Browser config for spawn-or-focus keybindings (change here to switch default browser)
     BROWSER "zen-beta"
     BROWSER_APP_ID "zen-beta"
@@ -386,6 +386,7 @@ window-rule {
 
 window-rule {
     match app-id="com.mitchellh.ghostty"
+    match app-id="kitty"
     opacity 0.95
 }
 
@@ -434,7 +435,7 @@ binds {
     Mod+Shift+Slash { show-hotkey-overlay; }
 
     // Suggested binds for running programs: terminal, app launcher, screen locker.
-    Mod+Return hotkey-overlay-title="Open a Terminal: ghostty" { spawn "ghostty"; }
+    Mod+Return hotkey-overlay-title="Open a Terminal: kitty" { spawn "kitty"; }
     Mod+Space hotkey-overlay-title="Run an Application: fuzzel" { spawn "fuzzel"; }
     Super+Alt+L hotkey-overlay-title="Lock the Screen: swaylock" { spawn "swaylock" "-c" "222222" "--clock" "--indicator" "--timestr" "%H:%M" "--datestr" "%a %d %b"; }
 
@@ -443,13 +444,15 @@ binds {
     Mod+Shift+A { spawn-sh "$TERMINAL"; }
     Mod+T { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus teams-for-linux $HOME/.scripts/teams-launcher"; }
     Mod+Shift+T { spawn-sh "$HOME/.scripts/teams-launcher"; }
-    Mod+D { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus vesktop vesktop"; }
-    Mod+Shift+D { spawn "vesktop"; }
+    Mod+D { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus org.endcord 'ghostty --class=org.endcord -e endcord'"; }
+    Mod+Shift+D { spawn "ghostty" "--class=org.endcord" "-e" "endcord"; }
     Mod+S { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus $BROWSER_APP_ID $BROWSER"; }
     Mod+Shift+S { spawn-sh "$BROWSER"; }
+    Mod+N { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus spotify_player 'kitty --class=spotify_player -e spotify_player'"; }
+    Mod+Shift+N { spawn "kitty" "--class=spotify_player" "-e" "spotify_player"; }
 
-    Mod+X { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus org.lazyjira 'ghostty --class=org.lazyjira -e $HOME/.local/bin/lazyjira'"; }
-    Mod+Shift+X { spawn "ghostty" "--class=org.lazyjira" "-e" "/home/martin/.local/bin/lazyjira"; }
+    Mod+X { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus org.lazyjira 'kitty --class=org.lazyjira -e $HOME/.local/bin/lazyjira'"; }
+    Mod+Shift+X { spawn "kitty" "--class=org.lazyjira" "-e" "/home/martin/.local/bin/lazyjira"; }
     Mod+C { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus chrome-dev.azure.com__swedishinstituteforstandards-Profile_2 'google-chrome-stable --profile-directory=\"Profile 2\" --app=\"https://dev.azure.com/swedishinstituteforstandards\"'"; }
     Mod+Shift+C { spawn "google-chrome-stable" "--profile-directory=Profile 2" "--app=https://dev.azure.com/swedishinstituteforstandards"; }
     Mod+Z { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus chrome-portal.azure.com__-Profile_4 'google-chrome-stable --profile-directory=\"Profile 4\" --app=\"https://portal.azure.com/\"'"; }

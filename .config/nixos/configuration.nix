@@ -199,6 +199,7 @@
     pavucontrol # GUI mixer for PipeWire/PulseAudio (route apps between sinks/sources)
     tcpdump # CLI packet capture/analyzer
     postgresql # provides psql for connecting to Postgres (Vercel/Neon/Supabase etc.)
+    calc
   ];
 
   # Some programs need SUID wrappers, can be configured further or are
