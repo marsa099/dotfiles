@@ -388,6 +388,7 @@ window-rule {
     match app-id="com.mitchellh.ghostty"
     match app-id="kitty"
     opacity 0.95
+    draw-border-with-background false
 }
 
 // claudeck-spawned ghostty windows open un-focused so niri doesn't auto-scroll
