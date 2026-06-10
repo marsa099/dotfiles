@@ -29,6 +29,12 @@ profile work_left {
     output "California Institute of Technology 0x1404 Unknown" mode 1920x1200@60Hz position 5120,0 scale 1.0
 }
 
+# Öland setup 2 - Laptop (left) + Samsung ultrawide
+profile oland_2 {
+    output "California Institute of Technology 0x1404 Unknown" mode 1920x1200@60Hz position 0,0 scale 1.0
+    output "Samsung Electric Company S34C65xV HNTY800129" mode 3440x1440@60Hz position 1920,0 scale 1.0
+}
+
 # Öland setup 4 - Samsung ultrawide + Laptop
 profile oland_4 {
     output "Samsung Electric Company S34C65xV HNTY800129" mode 3440x1440@60Hz position 0,0 scale 1.0
