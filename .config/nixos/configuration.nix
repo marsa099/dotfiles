@@ -23,6 +23,7 @@
     ./modules/teams-fork.nix
     ./modules/endcord.nix
     ./modules/rust.nix
+    ./modules/claude-code-autoupdate.nix
   ];
 
   # Use the systemd-boot EFI boot loader.
@@ -168,6 +169,7 @@
     rofi
     gh # gh cli
     zoxide
+    vesktop
     xwayland-satellite # XWayland bridge for niri, needed by X11 apps like Discord
     teams-for-linux
     signal-desktop

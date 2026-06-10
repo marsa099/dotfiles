@@ -9,6 +9,10 @@
     # Alternative (wiki-recommended): zen-browser = { url = "github:youwen5/zen-browser-flake"; inputs.nixpkgs.follows = "nixpkgs"; };
     zen-browser.url = "github:0xc000022070/zen-browser-flake";
     claude-code-notify.url = "github:marsa099/claude-code-notify";
+    # Claude Code from a dedicated flake that repackages each upstream release
+    # within hours, independent of nixpkgs-unstable. Update with just this input:
+    #   nix flake update claude-code && sudo nixos-rebuild switch --flake .#nixos
+    claude-code.url = "github:sadjow/claude-code-nix";
     teams-for-linux-fork = {
       url = "github:marsa099/teams-for-linux/main";
       flake = false;
@@ -30,6 +34,7 @@
       nixpkgs-unstable,
       zen-browser,
       claude-code-notify,
+      claude-code,
       teams-for-linux-fork,
       endcord-src,
       bt-keyboard-bridge,
@@ -48,7 +53,7 @@
           bt-keyboard-bridge.nixosModules.default
           {
             environment.systemPackages = [
-              unstable.claude-code
+              claude-code.packages.${system}.default
               zen-browser.packages.${system}.default
               claude-code-notify.packages.${system}.default
             ];
