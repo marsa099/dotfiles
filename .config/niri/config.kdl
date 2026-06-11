@@ -444,7 +444,7 @@ binds {
     Mod+A { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus $TERMINAL_APP_ID $TERMINAL"; }
     Mod+Shift+A { spawn-sh "$TERMINAL"; }
     Mod+T { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus teams-for-linux $HOME/.scripts/teams-launcher"; }
-    Mod+Shift+T { spawn-sh "$HOME/.scripts/teams-launcher"; }
+    Mod+Shift+T { spawn "kitty" "--class=tuims" "-e" "/home/martin/repos/tuims/.venv/bin/tuims" "--real"; }
     Mod+D { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus vesktop vesktop"; }
     Mod+Shift+D { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus org.endcord 'ghostty --class=org.endcord -e endcord'"; }
     Mod+S { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus $BROWSER_APP_ID $BROWSER"; }
