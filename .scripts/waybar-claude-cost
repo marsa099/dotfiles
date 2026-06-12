@@ -19,7 +19,7 @@ import select
 import sys
 import time
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 
 PROJECTS = os.path.expanduser("~/.claude/projects")
 STATE_DIR = os.path.expanduser("~/.cache/waybar-claude-cost")
@@ -198,10 +198,7 @@ def emit():
     rate = usd_sek_rate() if currency == "SEK" else 1.0
     now = datetime.now()
     today = now.strftime("%Y-%m-%d")
-    month = today[:7]
     today_cost = days.get(today, 0.0)
-    month_cost = sum(c for d, c in days.items() if d.startswith(month))
-    active_days = sum(1 for d in days if d.startswith(month))
     total = sum(days.values())
     cls = "low"
     if today_cost >= 1000:
@@ -210,10 +207,16 @@ def emit():
         cls = "medium"
     tooltip = (
         "Claude Code · API-equivalent spend (list price)\n"
-        f"Today:\t\t{fmt(today_cost, currency, rate)}\n"
-        f"{now.strftime('%B')}:\t\t{fmt(month_cost, currency, rate)} ({active_days} active days)\n"
-        f"All time:\t{fmt(total, currency, rate)}"
+        f"Today:\t\t{fmt(today_cost, currency, rate)}"
     )
+    first = now.replace(day=1)
+    for _ in range(3):
+        month = first.strftime("%Y-%m")
+        month_cost = sum(c for d, c in days.items() if d.startswith(month))
+        active_days = sum(1 for d in days if d.startswith(month))
+        tooltip += f"\n{first.strftime('%B')}:\t\t{fmt(month_cost, currency, rate)} ({active_days} active days)"
+        first = (first - timedelta(days=1)).replace(day=1)
+    tooltip += f"\nAll time:\t{fmt(total, currency, rate)}"
     if currency == "SEK":
         tooltip += f"\n1 USD = {rate:.2f} kr"
     tooltip += "\nClick: USD ⇄ SEK"
