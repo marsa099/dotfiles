@@ -1,0 +1,273 @@
+#!/usr/bin/env python3
+"""Waybar module: live Claude Code API-equivalent spend.
+
+Watches ~/.claude/projects/ via inotify (raw syscalls through ctypes, no deps)
+and re-parses only appended JSONL bytes, so the counter updates within ~1s of
+every Claude Code event. Falls back to a 60s polling loop if inotify fails.
+
+`waybar-claude-cost --toggle` flips the display currency between USD and SEK
+(wired to on-click in the waybar config). The USD→SEK rate is fetched from
+open.er-api.com at most every 12h and cached; last known rate is used offline.
+
+Emits one waybar JSON line per update on stdout.
+"""
+import ctypes
+import glob
+import json
+import os
+import select
+import sys
+import time
+from collections import defaultdict
+from datetime import datetime
+
+PROJECTS = os.path.expanduser("~/.claude/projects")
+STATE_DIR = os.path.expanduser("~/.cache/waybar-claude-cost")
+CURRENCY_FILE = os.path.join(STATE_DIR, "currency")
+RATE_FILE = os.path.join(STATE_DIR, "usd_sek")
+RATE_URL = "https://open.er-api.com/v6/latest/USD"
+RATE_MAX_AGE = 12 * 3600
+RATE_RETRY = 15 * 60
+FALLBACK_RATE = 9.6
+FALLBACK_REFRESH = 300  # seconds; also catches day rollover
+DEBOUNCE = 0.5
+
+# List prices per million tokens. Matched by prefix, first hit wins, so the
+# date-suffixed and "[1m]" model id variants resolve too.
+PRICES = [
+    ("claude-fable-5",   {"in": 10.0, "out": 50.0, "cw5": 12.50, "cw1": 20.0, "cr": 1.00}),
+    ("claude-opus-4-8",  {"in": 5.0,  "out": 25.0, "cw5": 6.25,  "cw1": 10.0, "cr": 0.50}),
+    ("claude-opus-4-7",  {"in": 5.0,  "out": 25.0, "cw5": 6.25,  "cw1": 10.0, "cr": 0.50}),
+    ("claude-opus-4-6",  {"in": 5.0,  "out": 25.0, "cw5": 6.25,  "cw1": 10.0, "cr": 0.50}),
+    ("claude-opus-4-5",  {"in": 5.0,  "out": 25.0, "cw5": 6.25,  "cw1": 10.0, "cr": 0.50}),
+    ("claude-opus",      {"in": 15.0, "out": 75.0, "cw5": 18.75, "cw1": 30.0, "cr": 1.50}),
+    ("claude-sonnet",    {"in": 3.0,  "out": 15.0, "cw5": 3.75,  "cw1": 6.0,  "cr": 0.30}),
+    ("claude-haiku",     {"in": 1.0,  "out": 5.0,  "cw5": 1.25,  "cw1": 2.0,  "cr": 0.10}),
+]
+DEFAULT_PRICE = PRICES[0][1]  # unknown model: assume top tier
+
+
+def price_for(model):
+    for prefix, p in PRICES:
+        if model.startswith(prefix):
+            return p
+    return DEFAULT_PRICE
+
+
+def cost(model, u):
+    p = price_for(model)
+    cw5 = (u.get("cache_creation") or {}).get("ephemeral_5m_input_tokens", 0)
+    cw1 = (u.get("cache_creation") or {}).get("ephemeral_1h_input_tokens", 0)
+    if not (cw5 or cw1):
+        cw5 = u.get("cache_creation_input_tokens", 0)
+    return (
+        u.get("input_tokens", 0) * p["in"]
+        + u.get("output_tokens", 0) * p["out"]
+        + cw5 * p["cw5"]
+        + cw1 * p["cw1"]
+        + u.get("cache_read_input_tokens", 0) * p["cr"]
+    ) / 1e6
+
+
+def read_currency():
+    try:
+        with open(CURRENCY_FILE) as fh:
+            return fh.read().strip() or "USD"
+    except OSError:
+        return "USD"
+
+
+def toggle_currency():
+    os.makedirs(STATE_DIR, exist_ok=True)
+    new = "SEK" if read_currency() == "USD" else "USD"
+    with open(CURRENCY_FILE, "w") as fh:
+        fh.write(new)
+
+
+def load_rate():
+    try:
+        with open(RATE_FILE) as fh:
+            return float(fh.read().strip()), os.path.getmtime(RATE_FILE)
+    except (OSError, ValueError):
+        return FALLBACK_RATE, 0.0
+
+
+_last_rate_attempt = 0.0
+
+
+def usd_sek_rate():
+    global _last_rate_attempt
+    rate, fetched_at = load_rate()
+    now = time.time()
+    if now - fetched_at < RATE_MAX_AGE or now - _last_rate_attempt < RATE_RETRY:
+        return rate
+    _last_rate_attempt = now
+    try:
+        import urllib.request
+        with urllib.request.urlopen(RATE_URL, timeout=3) as resp:
+            rate = float(json.load(resp)["rates"]["SEK"])
+        os.makedirs(STATE_DIR, exist_ok=True)
+        with open(RATE_FILE, "w") as fh:
+            fh.write(f"{rate:.4f}")
+    except Exception:
+        pass  # offline: keep last known rate
+    return rate
+
+
+def fmt(usd, currency, rate):
+    if currency == "SEK":
+        return f"{usd * rate:,.2f}".replace(",", " ").replace(".", ",") + " kr"
+    return f"${usd:,.2f}"
+
+
+# path -> {"offset": int, "size": int, "mtime": float, "days": {date: cost}}
+file_state = {}
+
+
+def parse_lines(data, days):
+    for raw in data.splitlines():
+        try:
+            evt = json.loads(raw)
+        except Exception:
+            continue
+        if evt.get("type") != "assistant":
+            continue
+        msg = evt.get("message") or {}
+        u = msg.get("usage") or {}
+        c = cost(msg.get("model", ""), u)
+        if not c:
+            continue
+        ts = evt.get("timestamp")
+        try:
+            day = datetime.fromisoformat(ts.replace("Z", "+00:00")).astimezone().strftime("%Y-%m-%d")
+        except Exception:
+            continue
+        days[day] += c
+
+
+def update_file(path, st):
+    state = file_state.get(path)
+    if state and state["size"] == st.st_size and state["mtime"] == st.st_mtime:
+        return False
+    if state is None or st.st_size < state["offset"]:
+        state = {"offset": 0, "days": defaultdict(float)}
+        file_state[path] = state
+    try:
+        with open(path, "rb") as fh:
+            fh.seek(state["offset"])
+            data = fh.read()
+    except OSError:
+        return False
+    # never consume a trailing partial line mid-write
+    end = data.rfind(b"\n") + 1
+    parse_lines(data[:end], state["days"])
+    state["offset"] += end
+    state["size"] = st.st_size
+    state["mtime"] = st.st_mtime
+    return True
+
+
+def scan():
+    changed = False
+    seen = set()
+    for path in glob.glob(f"{PROJECTS}/*/*.jsonl"):
+        seen.add(path)
+        try:
+            st = os.stat(path)
+        except OSError:
+            continue
+        if update_file(path, st):
+            changed = True
+    for path in list(file_state):
+        if path not in seen:
+            del file_state[path]
+            changed = True
+    return changed
+
+
+last_output = None
+
+
+def emit():
+    global last_output
+    days = defaultdict(float)
+    for state in file_state.values():
+        for d, c in state["days"].items():
+            days[d] += c
+    currency = read_currency()
+    rate = usd_sek_rate() if currency == "SEK" else 1.0
+    now = datetime.now()
+    today = now.strftime("%Y-%m-%d")
+    month = today[:7]
+    today_cost = days.get(today, 0.0)
+    month_cost = sum(c for d, c in days.items() if d.startswith(month))
+    active_days = sum(1 for d in days if d.startswith(month))
+    total = sum(days.values())
+    cls = "low"
+    if today_cost >= 1000:
+        cls = "high"
+    elif today_cost >= 500:
+        cls = "medium"
+    tooltip = (
+        "Claude Code · API-equivalent spend (list price)\n"
+        f"Today:\t\t{fmt(today_cost, currency, rate)}\n"
+        f"{now.strftime('%B')}:\t\t{fmt(month_cost, currency, rate)} ({active_days} active days)\n"
+        f"All time:\t{fmt(total, currency, rate)}"
+    )
+    if currency == "SEK":
+        tooltip += f"\n1 USD = {rate:.2f} kr"
+    tooltip += "\nClick: USD ⇄ SEK"
+    out = json.dumps({"text": f"💰 {fmt(today_cost, currency, rate)}", "tooltip": tooltip, "class": cls})
+    if out != last_output:
+        last_output = out
+        print(out, flush=True)
+
+
+def main():
+    print(json.dumps({"text": "💰 …", "class": "low"}), flush=True)
+    os.makedirs(STATE_DIR, exist_ok=True)
+
+    libc = ctypes.CDLL(None, use_errno=True)
+    IN_NONBLOCK = 0x800
+    # IN_MODIFY | IN_CLOSE_WRITE | IN_MOVED_TO | IN_CREATE
+    MASK = 0x2 | 0x8 | 0x80 | 0x100
+    fd = libc.inotify_init1(IN_NONBLOCK)
+    watched = set()
+
+    def add_watches():
+        if fd < 0:
+            return
+        for d in [PROJECTS, STATE_DIR] + glob.glob(f"{PROJECTS}/*"):
+            if d not in watched and os.path.isdir(d):
+                if libc.inotify_add_watch(fd, d.encode(), MASK) >= 0:
+                    watched.add(d)
+
+    add_watches()
+    scan()
+    emit()
+
+    while True:
+        if fd < 0:
+            time.sleep(60)
+        else:
+            r, _, _ = select.select([fd], [], [], FALLBACK_REFRESH)
+            if r:
+                time.sleep(DEBOUNCE)
+                while True:
+                    try:
+                        os.read(fd, 65536)
+                    except (BlockingIOError, OSError):
+                        break
+                add_watches()
+        scan()
+        emit()
+
+
+if __name__ == "__main__":
+    if "--toggle" in sys.argv[1:]:
+        toggle_currency()
+        sys.exit(0)
+    try:
+        main()
+    except (KeyboardInterrupt, BrokenPipeError):
+        sys.exit(0)

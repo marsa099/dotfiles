@@ -8,7 +8,7 @@
     "margin-bottom": 0,
     "modules-left": ["group/hardware", "custom/devops"],
     "modules-center": ["niri/workspaces", "custom/dnd"],
-    "modules-right": ["tray", "group/system"],
+    "modules-right": ["custom/claude-cost", "tray", "group/system"],
     "niri/workspaces": {
          "disable-scroll": true,
          "sort-by-name": true,
@@ -170,6 +170,14 @@
         "tooltip": true,
         "format": "{}",
         "markup": "pango"
+   },
+   "custom/claude-cost": {
+        "exec": "~/.scripts/waybar-claude-cost",
+        "return-type": "json",
+        "restart-interval": 5,
+        "format": "{}",
+        "tooltip": true,
+        "on-click": "~/.scripts/waybar-claude-cost --toggle"
    },
    "custom/cpu-temp": {
         "exec": "sensors k10temp-pci-00c3 | awk '/Tccd1:/ {gsub(/[^0-9.]/, \"\", $2); printf \"%.0f\", $2}'",
