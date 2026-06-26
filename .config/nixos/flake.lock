@@ -106,6 +106,26 @@
         "type": "github"
       }
     },
+    "helium-browser": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs-unstable"
+        ]
+      },
+      "locked": {
+        "lastModified": 1782384076,
+        "narHash": "sha256-S6zGlRgqopTYCNYbF0VUh/yTDwKCmWW6W2jgmsJqxDw=",
+        "owner": "oxcl",
+        "repo": "nix-flake-helium-browser",
+        "rev": "694dc9b6c5edb5686483836174961ceb93e825e4",
+        "type": "github"
+      },
+      "original": {
+        "owner": "oxcl",
+        "repo": "nix-flake-helium-browser",
+        "type": "github"
+      }
+    },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
@@ -229,6 +249,7 @@
         "claude-code": "claude-code",
         "claude-code-notify": "claude-code-notify",
         "endcord-src": "endcord-src",
+        "helium-browser": "helium-browser",
         "nixpkgs": "nixpkgs_4",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "teams-for-linux-fork": "teams-for-linux-fork",

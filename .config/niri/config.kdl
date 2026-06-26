@@ -458,8 +458,8 @@ binds {
     Mod+Shift+C { spawn "google-chrome-stable" "--profile-directory=Profile 2" "--app=https://dev.azure.com/swedishinstituteforstandards"; }
     Mod+Z { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus chrome-portal.azure.com__-Profile_4 'google-chrome-stable --profile-directory=\"Profile 4\" --app=\"https://portal.azure.com/\"'"; }
     Mod+Shift+Z { spawn "google-chrome-stable" "--profile-directory=Profile 4" "--app=https://portal.azure.com/"; }
-    Mod+M { spawn-sh "$HOME/.scripts/niri/niri-mail-chooser focus"; }
-    Mod+Shift+M { spawn-sh "$HOME/.scripts/niri/niri-mail-chooser choose"; }
+    Mod+M { spawn-sh "$HOME/.scripts/niri/niri-mailbox-selector focus"; }
+    Mod+Shift+M { spawn-sh "$HOME/.scripts/niri/niri-mailbox-selector choose"; }
     Mod+P hotkey-overlay-title="Ask Claude (spotlight)" { spawn "/home/martin/repos/claude-spotlight/bin/claude-spotlight-toggle"; }
 
     // Use spawn-sh to run a shell command. Do this if you need pipes, multiple commands, etc.

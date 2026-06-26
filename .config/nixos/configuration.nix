@@ -7,6 +7,7 @@
   lib,
   pkgs,
   unstable,
+  flakePackages,
   ...
 }:
 
@@ -157,6 +158,7 @@
   # List packages installed in system profile.
   # You can use https://search.nixos.org/ to find more packages (and options).
   environment.systemPackages = with pkgs; [
+    mkcert
     vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
     ghostty
     kitty
@@ -202,7 +204,10 @@
     tcpdump # CLI packet capture/analyzer
     postgresql # provides psql for connecting to Postgres (Vercel/Neon/Supabase etc.)
     calc
-  ];
+  ]
+  # Packages from external flake inputs (zen, helium, claude-code, ...), wired
+  # in flake.nix and passed through via specialArgs. See flake.nix `flakePackages`.
+  ++ flakePackages;
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.

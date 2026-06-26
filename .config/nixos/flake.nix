@@ -8,6 +8,12 @@
     # See: https://wiki.nixos.org/wiki/Zen_Browser
     # Alternative (wiki-recommended): zen-browser = { url = "github:youwen5/zen-browser-flake"; inputs.nixpkgs.follows = "nixpkgs"; };
     zen-browser.url = "github:0xc000022070/zen-browser-flake";
+    # Community flake for Helium browser (downloads upstream prebuilt release).
+    # Not in nixpkgs. Update with: nix flake update helium-browser
+    helium-browser = {
+      url = "github:oxcl/nix-flake-helium-browser";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
     claude-code-notify.url = "github:marsa099/claude-code-notify";
     # Claude Code from a dedicated flake that repackages each upstream release
     # within hours, independent of nixpkgs-unstable. Update with just this input:
@@ -33,6 +39,7 @@
       nixpkgs,
       nixpkgs-unstable,
       zen-browser,
+      helium-browser,
       claude-code-notify,
       claude-code,
       teams-for-linux-fork,
@@ -43,21 +50,23 @@
     let
       system = "x86_64-linux";
       unstable = import nixpkgs-unstable { inherit system; config.allowUnfree = true; };
+      # Packages sourced from external flake inputs (not nixpkgs). Declared here
+      # because flake inputs can only live in flake.nix; consumed in the same
+      # systemPackages list as everything else via specialArgs.
+      flakePackages = [
+        claude-code.packages.${system}.default
+        zen-browser.packages.${system}.default
+        helium-browser.packages.${system}.default
+        claude-code-notify.packages.${system}.default
+      ];
     in
     {
       nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
         inherit system;
-        specialArgs = { inherit unstable teams-for-linux-fork endcord-src; };
+        specialArgs = { inherit unstable teams-for-linux-fork endcord-src flakePackages; };
         modules = [
           ./configuration.nix
           bt-keyboard-bridge.nixosModules.default
-          {
-            environment.systemPackages = [
-              claude-code.packages.${system}.default
-              zen-browser.packages.${system}.default
-              claude-code-notify.packages.${system}.default
-            ];
-          }
         ];
       };
     };
