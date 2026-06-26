@@ -10,8 +10,25 @@
 #
 # The azure-devops extension prefers MSAL tokens (az login) over PATs.
 # When az login uses a different account than the PAT, the extension picks
-# the wrong identity. AZURE_CONFIG_DIR is set to a temp dir so the extension
-# can't find the MSAL cache and falls through to the PAT.
+# the wrong identity. AZURE_CONFIG_DIR is pointed at a dedicated dir so the
+# extension can't find the MSAL cache and falls through to the PAT.
+#
+# Config dir layout (AZURE_CONFIG_DIR decides where the MSAL token cache,
+# azureProfile.json, az config, logs, etc. live):
+#   ~/.azure          — the CLI default (used whenever the wrapper doesn't
+#                       override AZURE_CONFIG_DIR). Holds the MSAL token cache
+#                       written by `az login`; the `rest` (Graph/ARM) and the
+#                       catch-all `*)` cases authenticate as this identity.
+#   ~/.config/az-devops — dedicated, persistent dir for devops/repos/pipelines.
+#                       Deliberately isolated from ~/.azure so the MSAL cache
+#                       isn't visible there, forcing the PAT identity. Made
+#                       persistent (not a throwaway mktemp -d) so that
+#                       `az devops configure --defaults organization=... project=...`
+#                       survives between invocations.
+# Note: ~/.azure is the default only because nothing exports AZURE_CONFIG_DIR.
+# If that var were set in the shell environment, the `rest`/`*)` cases would
+# honour it; the devops/repos/pipelines case always pins ~/.config/az-devops
+# regardless.
 #
 # `az rest` normally injects an MSAL bearer token from `az login`. For ADO
 # URLs we override that with --skip-authorization-header and a Basic auth
@@ -43,8 +60,11 @@ let
 export AZURE_BICEP_USE_BINARY_FROM_PATH=true
 case "$1" in
     devops|repos|pipelines)
+        # Persistent, isolated config dir — see "Config dir layout" header note.
+        az_devops_cfg="''${XDG_CONFIG_HOME:-$HOME/.config}/az-devops"
+        mkdir -p "$az_devops_cfg"
         AZURE_DEVOPS_EXT_PAT=$(secret-tool lookup service azure-devops type cli) \
-        AZURE_CONFIG_DIR=$(mktemp -d) \
+        AZURE_CONFIG_DIR="$az_devops_cfg" \
             exec ${az-unwrapped}/bin/az "$@" ;;
     rest)
         shift
@@ -81,4 +101,11 @@ in
     az-wrapped
     # bicep is provided by ./bicep.nix (upstream binary, newer than nixpkgs)
   ];
+
+  # Default all az output to human-readable tables. Set as an env var rather
+  # than `az config set core.output=table` because the wrapper splits the
+  # config dir (devops/repos/pipelines read ~/.config/az-devops, everything
+  # else ~/.azure) — a config-file setting would only cover one of them, the
+  # env var covers both. Per-command `-o json` still overrides it.
+  environment.variables.AZURE_CORE_OUTPUT = "table";
 }
