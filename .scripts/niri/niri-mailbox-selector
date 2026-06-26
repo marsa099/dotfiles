@@ -17,6 +17,7 @@ MODE="${1:-focus}"
 MAILS=(
     "SIS|chrome-outlook.office365.com__mail-Profile_3|google-chrome-stable --profile-directory=\"Profile 3\" --app=\"https://outlook.office365.com/mail\"|$HOME/.config/rofi/icons/sis-mark.svg"
     "Regent|chrome-outlook.office365.com__mail-Default|google-chrome-stable --profile-directory=\"Default\" --app=\"https://outlook.office365.com/mail\"|$HOME/.config/rofi/icons/regent-mark.png"
+    "Thunderbird|thunderbird|thunderbird|$HOME/.config/rofi/icons/thunderbird.png"
 )
 
 SPAWN_OR_FOCUS="$HOME/.scripts/niri/niri-spawn-or-focus"
@@ -89,7 +90,7 @@ show_chooser() {
     # outside the rofi element border, since rofi just sees one taller image.
     local theme_overrides='
         window {
-            width: 220px;
+            width: 316px;
             padding: 12px;
             border-radius: 12px;
             background-color: #D8D8D8;
@@ -97,7 +98,7 @@ show_chooser() {
         mainbox { spacing: 0; children: ["listview"]; }
         listview {
             lines: 1;
-            columns: 2;
+            columns: 3;
             fixed-height: true;
             spacing: 8px;
         }
