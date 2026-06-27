@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# waybar-claude-pending — show a Claude indicator + count of pending Claude Code
+# notifications you haven't acknowledged yet.
+#
+# claude-code-notify drops one state file per waiting instance into
+# /tmp/claude-permissions and removes it on goto / answer / terminal-focus, so
+# the number of those files == number of un-acknowledged Claude prompts. The
+# popup itself auto-expires (CN_NOTIFY_TIMEOUT); this module is the persistent
+# backup so a missed popup still leaves a visible count in the bar.
+#
+# Wired in waybar as custom/claude-pending (interval poll). Empty output hides
+# the module. Left-click jumps to the instance (goto); right-click cycles
+# through pending instances (navigate).
+
+STATE_DIR="/tmp/claude-permissions"
+ICON="󰚩"
+
+count=0
+labels=()
+
+if [ -d "$STATE_DIR" ]; then
+    shopt -s nullglob
+    for f in "$STATE_DIR"/*; do
+        name=${f##*/}
+        # Skip bookkeeping files; only per-instance state files count.
+        case "$name" in
+            watcher-*|tool-info-*) continue ;;
+        esac
+        [ -f "$f" ] || continue
+        count=$((count + 1))
+        label=$(grep -m1 '^label=' "$f" 2>/dev/null | cut -d= -f2-)
+        [ -n "$label" ] && labels+=("$label")
+    done
+fi
+
+# Empty output -> waybar hides the module.
+if [ "$count" -eq 0 ]; then
+    echo ''
+    exit 0
+fi
+
+tooltip="Claude waiting for you ($count)"
+for l in "${labels[@]}"; do
+    tooltip+=$'\n• '"$l"
+done
+
+jq -cn --arg text "$ICON  $count" --arg tt "$tooltip" \
+    '{text: $text, tooltip: $tt, class: "waiting"}'

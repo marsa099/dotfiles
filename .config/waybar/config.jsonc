@@ -8,7 +8,7 @@
     "margin-bottom": 0,
     "modules-left": ["group/hardware", "custom/devops"],
     "modules-center": ["niri/workspaces", "custom/dnd"],
-    "modules-right": ["custom/claude-cost", "tray", "group/system"],
+    "modules-right": ["custom/idp-status", "custom/claude-cost", "custom/claude-pending", "tray", "group/system"],
     "niri/workspaces": {
          "disable-scroll": true,
          "sort-by-name": true,
@@ -151,6 +151,14 @@
         "interval": 1,
         "tooltip": true
    },
+   "custom/idp-status": {
+        "exec": "~/.scripts/waybar-idp-status",
+        "return-type": "json",
+        "interval": 30,
+        "tooltip": true,
+        "markup": "pango",
+        "format": "{}"
+   },
    "custom/dnd": {
         "exec": "~/.scripts/waybar-dnd",
         "return-type": "json",
@@ -178,6 +186,15 @@
         "format": "{}",
         "tooltip": true,
         "on-click": "~/.scripts/waybar-claude-cost --toggle"
+   },
+   "custom/claude-pending": {
+        "exec": "~/.scripts/waybar-claude-pending",
+        "return-type": "json",
+        "interval": 2,
+        "format": "{}",
+        "tooltip": true,
+        "on-click": "claude-notify-goto",
+        "on-click-right": "claude-notify-navigate"
    },
    "custom/cpu-temp": {
         "exec": "sensors k10temp-pci-00c3 | awk '/Tccd1:/ {gsub(/[^0-9.]/, \"\", $2); printf \"%.0f\", $2}'",
