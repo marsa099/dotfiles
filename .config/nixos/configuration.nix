@@ -188,6 +188,7 @@
     wev # tool to see keycodes for key input etc
     brightnessctl # brightness control via keyboard brightness keys
     unstable.swayosd # on-screen display for brightness/volume changes (unstable for v0.3.1 monitor hot-plug crash fix)
+    unstable.quickshell # QML desktop-shell toolkit — powers ~/repos/qs-picker (Helium profile picker; future bar/notifications)
     dunst # notification daemon
     libnotify # provides notify-send for sending desktop notifications
     pass # password manager (pass)

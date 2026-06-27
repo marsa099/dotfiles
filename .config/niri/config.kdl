@@ -289,6 +289,7 @@ spawn-at-startup "waybar"
 spawn-at-startup "swaybg" "-i" "/home/martin/wallpapers/forest.jpg" "-m" "fill"
 spawn-at-startup "swayosd-server"
 spawn-at-startup "dunst"
+spawn-at-startup "qs" "-p" "/home/martin/repos/qs-picker/shell.qml"
 
 // Start kanshi for dynamic monitor configuration
 spawn-at-startup "kanshi"
@@ -438,6 +439,7 @@ binds {
     // Suggested binds for running programs: terminal, app launcher, screen locker.
     Mod+Return hotkey-overlay-title="Open a Terminal: kitty" { spawn "kitty"; }
     Mod+Space hotkey-overlay-title="Run an Application: fuzzel" { spawn "fuzzel"; }
+    Mod+B hotkey-overlay-title="Helium profile picker" { spawn "qs" "-p" "/home/martin/repos/qs-picker/shell.qml" "ipc" "call" "helium-picker" "toggle"; }
     Super+Alt+L hotkey-overlay-title="Lock the Screen: swaylock" { spawn "swaylock" "-c" "222222" "--clock" "--indicator" "--timestr" "%H:%M" "--datestr" "%a %d %b"; }
 
     // Spawn-or-focus keybindings (focus existing window, cycle through instances, or spawn new)
