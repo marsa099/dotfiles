@@ -4,10 +4,6 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
-    # Community flake for Zen Browser (most actively maintained)
-    # See: https://wiki.nixos.org/wiki/Zen_Browser
-    # Alternative (wiki-recommended): zen-browser = { url = "github:youwen5/zen-browser-flake"; inputs.nixpkgs.follows = "nixpkgs"; };
-    zen-browser.url = "github:0xc000022070/zen-browser-flake";
     # Community flake for Helium browser (downloads upstream prebuilt release).
     # Not in nixpkgs. Update with: nix flake update helium-browser
     helium-browser = {
@@ -31,6 +27,13 @@
       flake = false;
     };
     bt-keyboard-bridge.url = "path:/home/martin/repos/bt-keyboard-bridge";
+    # daphen's native QML/Quickshell chat clients. Each flake exposes a daemon
+    # (`slqs`/`dsqrd`) + a self-contained launch wrapper (`slqs-client`/
+    # `dsqrd-client`) that bundles quickshell/mpv/imv and starts the daemon.
+    #   - dsqrd (Discord): standalone, needs a token in ~/.config/dsqrd/profiles.json
+    #   - slqs  (Slack):   companion to the `slk` TUI — run slk once to auth first
+    dsqrd.url = "github:daphen/dsqrd";
+    slqs.url = "github:daphen/slqs";
   };
 
   outputs =
@@ -38,13 +41,14 @@
       self,
       nixpkgs,
       nixpkgs-unstable,
-      zen-browser,
       helium-browser,
       claude-code-notify,
       claude-code,
       teams-for-linux-fork,
       endcord-src,
       bt-keyboard-bridge,
+      dsqrd,
+      slqs,
       ...
     }:
     let
@@ -55,9 +59,13 @@
       # systemPackages list as everything else via specialArgs.
       flakePackages = [
         claude-code.packages.${system}.default
-        zen-browser.packages.${system}.default
         helium-browser.packages.${system}.default
         claude-code-notify.packages.${system}.default
+        # QML chat clients: daemon + launch wrapper for each (see inputs above).
+        dsqrd.packages.${system}.dsqrd
+        dsqrd.packages.${system}.dsqrd-client
+        slqs.packages.${system}.slqs
+        slqs.packages.${system}.slqs-client
       ];
     in
     {
