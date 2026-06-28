@@ -220,14 +220,14 @@ def emit():
     if currency == "SEK":
         tooltip += f"\n1 USD = {rate:.2f} kr"
     tooltip += "\nClick: USD ⇄ SEK"
-    out = json.dumps({"text": f"💰 {fmt(today_cost, currency, rate)}", "tooltip": tooltip, "class": cls})
+    out = json.dumps({"text": f" {fmt(today_cost, currency, rate)}", "tooltip": tooltip, "class": cls})
     if out != last_output:
         last_output = out
         print(out, flush=True)
 
 
 def main():
-    print(json.dumps({"text": "💰 …", "class": "low"}), flush=True)
+    print(json.dumps({"text": " …", "class": "low"}), flush=True)
     os.makedirs(STATE_DIR, exist_ok=True)
 
     libc = ctypes.CDLL(None, use_errno=True)
