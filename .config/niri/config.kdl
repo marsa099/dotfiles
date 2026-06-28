@@ -297,6 +297,10 @@ spawn-at-startup "kanshi"
 // Text expander (auto-wraps code keywords in backticks)
 spawn-at-startup "espanso" "daemon"
 
+// Discord (dsqrd) daemon — stays connected so Mod+D opens instantly and
+// background desktop notifications fire even when the window is closed.
+spawn-sh-at-startup "dsqrd >/tmp/dsqrd.log 2>&1"
+
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
 // spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"
 
