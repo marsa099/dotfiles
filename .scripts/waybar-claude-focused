@@ -1,0 +1,177 @@
+#!/usr/bin/env python3
+"""Waybar module: the Claude Code session you're currently focused in, live.
+
+Reads niri's event stream and, whenever the focused window (or its title)
+changes, maps the focused terminal window to a running Claude session via
+~/.claude/sessions/<pid>.json and emits a waybar JSON line. The session's
+custom name is preferred; otherwise the terminal title (sans status glyph).
+Empty text when the focused window isn't a Claude session, so the module hides.
+
+Event-driven, so the label flips the instant you switch windows — no polling.
+`class` carries busy/idle + remote so the bar can colour it. Click opens the
+session picker (wired in the waybar config).
+"""
+import json
+import os
+import re
+import subprocess
+import sys
+
+REGISTRY = os.path.expanduser("~/.claude/sessions")
+TERMINALS = {"kitty", "foot", "alacritty", "wezterm-gui", "ghostty"}
+ICON = "󰚩"
+
+
+def emit(obj):
+    sys.stdout.write(json.dumps(obj, ensure_ascii=False) + "\n")
+    sys.stdout.flush()
+
+
+def proc_field(pid, name):
+    try:
+        with open(f"/proc/{pid}/stat") as fh:
+            data = fh.read()
+    except OSError:
+        return None
+    rparen = data.rfind(")")
+    fields = data[rparen + 2:].split()
+    return fields  # caller indexes; field 4 (PPid) == index 1, field 22 == 19
+
+
+def ppid_of(pid):
+    f = proc_field(pid, "ppid")
+    try:
+        return int(f[1]) if f else None
+    except (ValueError, IndexError):
+        return None
+
+
+def starttime_of(pid):
+    f = proc_field(pid, "start")
+    try:
+        return f[19] if f else None
+    except IndexError:
+        return None
+
+
+def ancestors(pid, limit=25):
+    chain, cur, n = set(), pid, 0
+    while cur and cur > 1 and n < limit:
+        chain.add(cur)
+        cur = ppid_of(cur)
+        n += 1
+    return chain
+
+
+def load_registry():
+    """Live sessions only (procStart-verified): list of dicts with pid/name/…"""
+    out = []
+    try:
+        files = os.listdir(REGISTRY)
+    except OSError:
+        return out
+    for fn in files:
+        if not fn.endswith(".json"):
+            continue
+        try:
+            with open(os.path.join(REGISTRY, fn)) as fh:
+                r = json.load(fh)
+        except (OSError, ValueError):
+            continue
+        pid = r.get("pid")
+        if not pid or starttime_of(pid) != str(r.get("procStart")):
+            continue
+        out.append({
+            "pid": pid,
+            "name": r.get("name"),
+            "status": r.get("status"),
+            "remote": r.get("bridgeSessionId") is not None,
+        })
+    return out
+
+
+def strip_glyph(title):
+    return re.sub(r"^[^\w]+", "", title or "").strip()
+
+
+def label_for(window):
+    """Return (text, klass) for the focused window, or ('', '') if not Claude."""
+    if not window:
+        return "", ""
+    if window.get("app_id") not in TERMINALS:
+        return "", ""
+    wpid = window.get("pid")
+    if not wpid:
+        return "", ""
+    for s in load_registry():
+        if wpid in ancestors(s["pid"]):
+            name = s.get("name")
+            text = name if name else strip_glyph(window.get("title"))
+            klass = (s.get("status") or "idle")
+            if s.get("remote"):
+                klass += " remote"
+            return text, klass
+    return "", ""
+
+
+def main():
+    try:
+        proc = subprocess.Popen(
+            ["niri", "msg", "--json", "event-stream"],
+            stdout=subprocess.PIPE, text=True, bufsize=1,
+        )
+    except OSError:
+        emit({"text": ""})
+        return
+
+    windows = {}        # id -> window dict
+    focused_id = None
+    last = None
+
+    def refresh():
+        nonlocal last
+        text, klass = label_for(windows.get(focused_id))
+        out = {"text": (ICON + "  " + text) if text else "",
+               "tooltip": "Focused Claude session: " + text if text else "",
+               "class": klass}
+        if out != last:
+            last = out
+            emit(out)
+
+    while True:
+        line = proc.stdout.readline()
+        if not line:
+            break
+        try:
+            ev = json.loads(line)
+        except ValueError:
+            continue
+        kind = next(iter(ev), None)
+        body = ev.get(kind) or {}
+
+        if kind == "WindowsChanged":
+            windows = {w["id"]: w for w in body.get("windows", [])}
+            focused_id = next((w["id"] for w in windows.values()
+                               if w.get("is_focused")), focused_id)
+            refresh()
+        elif kind == "WindowOpenedOrChanged":
+            w = body.get("window") or {}
+            if w.get("id") is not None:
+                windows[w["id"]] = w
+                if w.get("is_focused"):
+                    focused_id = w["id"]
+                if w.get("id") == focused_id:
+                    refresh()
+        elif kind == "WindowClosed":
+            wid = body.get("id")
+            windows.pop(wid, None)
+            if wid == focused_id:
+                focused_id = None
+                refresh()
+        elif kind == "WindowFocusChanged":
+            focused_id = body.get("id")
+            refresh()
+
+
+if __name__ == "__main__":
+    main()

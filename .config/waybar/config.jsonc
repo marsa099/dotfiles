@@ -8,7 +8,7 @@
     "margin-bottom": 0,
     "modules-left": ["group/hardware", "custom/devops"],
     "modules-center": ["niri/workspaces", "custom/dnd"],
-    "modules-right": ["custom/idp-status", "custom/claude-cost", "custom/claude-pending", "tray", "group/system"],
+    "modules-right": ["custom/idp-status", "custom/claude-focused", "custom/claude-cost", "custom/claude-pending", "tray", "group/system"],
     "niri/workspaces": {
          "disable-scroll": true,
          "sort-by-name": true,
@@ -178,6 +178,14 @@
         "tooltip": true,
         "format": "{}",
         "markup": "pango"
+   },
+   "custom/claude-focused": {
+        "exec": "~/.scripts/waybar-claude-focused",
+        "return-type": "json",
+        "restart-interval": 3,
+        "format": "{}",
+        "tooltip": true,
+        "on-click": "quickshell -p /home/martin/repos/qs-picker/shell.qml ipc call claude-picker toggle"
    },
    "custom/claude-cost": {
         "exec": "~/.scripts/waybar-claude-cost",
