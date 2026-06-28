@@ -40,16 +40,34 @@
         "nixpkgs": "nixpkgs_3"
       },
       "locked": {
-        "lastModified": 1782616017,
-        "narHash": "sha256-Kpqpb5tS9X/hrsMaLxstzqIDdHZCauLdMaJ0+Izpm40=",
+        "lastModified": 1782620771,
+        "narHash": "sha256-s4t4BWrR02yu1U47FaL9shpUnTUyqtMipgSSjwZVc0s=",
         "owner": "marsa099",
         "repo": "claude-code-notify",
-        "rev": "1d867b0277e67487e2bad58b4243bc287154c22a",
+        "rev": "ba0104936e4464f1bf865ceb4a5bf1ed9f0b58d0",
         "type": "github"
       },
       "original": {
         "owner": "marsa099",
         "repo": "claude-code-notify",
+        "type": "github"
+      }
+    },
+    "dsqrd": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_4"
+      },
+      "locked": {
+        "lastModified": 1782487808,
+        "narHash": "sha256-jIhvwnPFguDee4rbn3LIXX7gTKqDUykiGMm32LKS/sA=",
+        "owner": "daphen",
+        "repo": "dsqrd",
+        "rev": "f287478704893997b80e1c7fb1782687f8c94d3b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "daphen",
+        "repo": "dsqrd",
         "type": "github"
       }
     },
@@ -126,27 +144,6 @@
         "type": "github"
       }
     },
-    "home-manager": {
-      "inputs": {
-        "nixpkgs": [
-          "zen-browser",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1778805320,
-        "narHash": "sha256-nGFJ01m2CTBKD4ABtcY4vLhHrRN91LKr/pn41PcU78A=",
-        "owner": "nix-community",
-        "repo": "home-manager",
-        "rev": "9846abe15e7d0d36b8acbd4d05f2b87461744c92",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nix-community",
-        "repo": "home-manager",
-        "type": "github"
-      }
-    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1779560665,
@@ -213,6 +210,22 @@
     },
     "nixpkgs_4": {
       "locked": {
+        "lastModified": 1782467914,
+        "narHash": "sha256-pGvFkM8N0xEkIIXDe5YYfbEAvHrk4IxBrjB/x8OomhE=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "e73de5be04e0eff4190a1432b946d469c794e7b4",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_5": {
+      "locked": {
         "lastModified": 1779102034,
         "narHash": "sha256-vZJZjLo513IeI8hjzHFc6TDezUd4uCE2Eq4SNO3DNNg=",
         "owner": "NixOS",
@@ -227,17 +240,17 @@
         "type": "github"
       }
     },
-    "nixpkgs_5": {
+    "nixpkgs_6": {
       "locked": {
-        "lastModified": 1778443072,
-        "narHash": "sha256-zi7/fsqM/kFdNuED//4WOCUtezGtKKqRNORjMvfwjnA=",
-        "owner": "nixos",
+        "lastModified": 1782467914,
+        "narHash": "sha256-pGvFkM8N0xEkIIXDe5YYfbEAvHrk4IxBrjB/x8OomhE=",
+        "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "da5ad661ba4e5ef59ba743f0d112cbc30e474f32",
+        "rev": "e73de5be04e0eff4190a1432b946d469c794e7b4",
         "type": "github"
       },
       "original": {
-        "owner": "nixos",
+        "owner": "NixOS",
         "ref": "nixos-unstable",
         "repo": "nixpkgs",
         "type": "github"
@@ -248,12 +261,31 @@
         "bt-keyboard-bridge": "bt-keyboard-bridge",
         "claude-code": "claude-code",
         "claude-code-notify": "claude-code-notify",
+        "dsqrd": "dsqrd",
         "endcord-src": "endcord-src",
         "helium-browser": "helium-browser",
-        "nixpkgs": "nixpkgs_4",
+        "nixpkgs": "nixpkgs_5",
         "nixpkgs-unstable": "nixpkgs-unstable",
-        "teams-for-linux-fork": "teams-for-linux-fork",
-        "zen-browser": "zen-browser"
+        "slqs": "slqs",
+        "teams-for-linux-fork": "teams-for-linux-fork"
+      }
+    },
+    "slqs": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_6"
+      },
+      "locked": {
+        "lastModified": 1782487808,
+        "narHash": "sha256-zYhrC6rIYW+NXMqBT+nSXEWjSCc5ksRK9r33lGZNUWI=",
+        "owner": "daphen",
+        "repo": "slqs",
+        "rev": "955bd31ad9553ec59f2a8d02ac9f1bef07077e51",
+        "type": "github"
+      },
+      "original": {
+        "owner": "daphen",
+        "repo": "slqs",
+        "type": "github"
       }
     },
     "systems": {
@@ -300,25 +332,6 @@
         "owner": "marsa099",
         "ref": "main",
         "repo": "teams-for-linux",
-        "type": "github"
-      }
-    },
-    "zen-browser": {
-      "inputs": {
-        "home-manager": "home-manager",
-        "nixpkgs": "nixpkgs_5"
-      },
-      "locked": {
-        "lastModified": 1779305121,
-        "narHash": "sha256-+QS13RMzhO8OzY8xRmX7oDPAUWEzVCUK/O636C2vd5M=",
-        "owner": "0xc000022070",
-        "repo": "zen-browser-flake",
-        "rev": "144dc8b4af155dd724bee8c273cc22cf7d91a7a5",
-        "type": "github"
-      },
-      "original": {
-        "owner": "0xc000022070",
-        "repo": "zen-browser-flake",
         "type": "github"
       }
     }
