@@ -172,8 +172,7 @@
     gh # gh cli
     zoxide
     eza # modern ls replacement with icons (used by ls/ll/la/lt aliases in .bashrc)
-    vesktop
-    xwayland-satellite # XWayland bridge for niri, needed by X11 apps like Discord
+    xwayland-satellite # XWayland bridge for niri, needed by X11 apps
     teams-for-linux
     signal-desktop
     swaybg
@@ -196,7 +195,6 @@
     terraform
     spotify-player
     wtype # To be able to send keystrokes to a terminal from dunst notification for claude notifications
-    google-chrome
     cloc # Count Lines Of Code
     sqlcmd # MS SQL CLI client
     swaylock-effects # screen locker for Wayland (fork with blur/screenshot support)
@@ -207,7 +205,7 @@
     postgresql # provides psql for connecting to Postgres (Vercel/Neon/Supabase etc.)
     calc
   ]
-  # Packages from external flake inputs (zen, helium, claude-code, ...), wired
+  # Packages from external flake inputs (helium, claude-code, ...), wired
   # in flake.nix and passed through via specialArgs. See flake.nix `flakePackages`.
   ++ flakePackages;
 
