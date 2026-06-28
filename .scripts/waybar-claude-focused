@@ -175,7 +175,15 @@ def main():
             focused_id = body.get("id")
             refresh(True)
 
+    # Read the raw fd ourselves and split lines manually. select() watches the
+    # OS-level fd, so it MUST be the sole reader — mixing it with the buffered
+    # proc.stdout.readline() loses events: niri batches several events into one
+    # read, readline() returns one and parks the rest in Python's buffer, then
+    # select() blocks because the OS fd is already drained. The stuck events
+    # (incl. the focus change that should update the label) wait for the next
+    # event, so the label lags. os.read on a ready fd never has that buffer.
     fd = proc.stdout.fileno()
+    buf = ""
     while True:
         timeout = 0.4 if pending > 0 else None
         try:
@@ -183,13 +191,21 @@ def main():
         except OSError:
             break
         if ready:
-            line = proc.stdout.readline()
-            if not line:
-                break
             try:
-                handle(json.loads(line))
-            except ValueError:
-                continue
+                chunk = os.read(fd, 65536)
+            except OSError:
+                break
+            if not chunk:
+                break
+            buf += chunk.decode("utf-8", "replace")
+            while "\n" in buf:
+                line, buf = buf.split("\n", 1)
+                if not line:
+                    continue
+                try:
+                    handle(json.loads(line))
+                except ValueError:
+                    continue
         else:
             pending -= 1          # timeout tick: re-attempt resolving
             refresh(False)
