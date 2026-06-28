@@ -41,7 +41,10 @@ alias PAGER=less
 alias gbc=find-and-copy-branch
 alias ts='tmux-session-creator'
 alias cl=clear
-alias ls='ls --color=auto'
+# eza: modern ls with file-type icons (requires a Nerd Font, which Alacritty uses)
+alias ls='eza --icons=auto --group-directories-first'
+alias la='eza -a --icons=auto --group-directories-first'
+alias lt='eza --tree --level=2 --icons=auto --group-directories-first'
 alias grep='grep --color=auto'
 #PS1='[\e[1m\W]\$ \e(B\e[m'
 #PS1='\[\e[32m\][\e[1m\W]\$ \e(B\e[m'
@@ -88,8 +91,31 @@ alias wifi='iwctl'
 alias connect-wifi='~/.scripts/connect-wifi.sh'
 alias connect-mobile='connect-wifi martin'
 
-alias ll='ls -la'
+alias ll='eza -la --icons=auto --group-directories-first'
+# llg = ll plus the git-status column. Kept separate because --git is slow in
+# huge repos (e.g. $HOME is itself the dotfiles repo, so `ll ~` would diff the
+# whole home tree on every run).
+alias llg='eza -la --icons=auto --group-directories-first --git'
 alias n='nvim'
+
+# Listing colors. Start from the classic dircolors palette (images, archives,
+# audio, video) and extend it with common dev file types it doesn't know about,
+# grouped into a few tasteful colors so code/docs/config get distinct icon+name
+# colors in eza. EZA_COLORS layers on top (eza only): gold folders + a dimmed,
+# neutral access-rights column.
+if command -v dircolors &>/dev/null; then
+    eval "$(dircolors -b)"
+    _code="38;5;77"; _conf="38;5;110"; _doc="38;5;180"; _web="38;5;209"; _office="38;5;167"; _log="38;5;244"
+    for e in js mjs cjs ts tsx jsx py go rs c cc cpp cxx h hpp cs java kt rb php lua sh bash zsh fish nix vim vil pl swift dart scala clj ex exs; do LS_COLORS+=":*.$e=$_code"; done
+    for e in json jsonc yaml yml toml ini conf cfg config env xml csv tsv sql properties lock; do LS_COLORS+=":*.$e=$_conf"; done
+    for e in md markdown mdx rst txt org tex adoc; do LS_COLORS+=":*.$e=$_doc"; done
+    for e in html htm css scss sass less vue svelte; do LS_COLORS+=":*.$e=$_web"; done
+    for e in pdf doc docx odt xls xlsx ods ppt pptx epub; do LS_COLORS+=":*.$e=$_office"; done
+    LS_COLORS+=":*.log=$_log"
+    export LS_COLORS
+    unset _code _conf _doc _web _office _log e
+fi
+export EZA_COLORS="di=1;38;5;178:ur=38;5;244:uw=38;5;244:ux=38;5;244:ue=38;5;244:gr=38;5;244:gw=38;5;244:gx=38;5;244:tr=38;5;244:tw=38;5;244:tx=38;5;244:xa=38;5;244"
 alias rebuild='sudo nixos-rebuild switch --flake /home/martin/.config/nixos'
 
 # Function to create directory and cd into it

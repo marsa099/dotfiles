@@ -171,6 +171,7 @@
     rofi
     gh # gh cli
     zoxide
+    eza # modern ls replacement with icons (used by ls/ll/la/lt aliases in .bashrc)
     vesktop
     xwayland-satellite # XWayland bridge for niri, needed by X11 apps like Discord
     teams-for-linux
