@@ -412,15 +412,6 @@ window-rule {
     }
 }
 
-// Claude spotlight popup: floating, fixed size, no border (Mod+P toggles)
-window-rule {
-    match app-id=r#"^org\.claude-spotlight$"#
-    open-floating true
-    default-column-width { fixed 900; }
-    default-window-height { fixed 600; }
-    border { off; }
-}
-
 binds {
     // Keys consist of modifiers separated by + signs, followed by an XKB key name
     // in the end. To find an XKB name for a particular key, you may use a program
@@ -462,7 +453,6 @@ binds {
     Mod+Shift+Z { spawn "google-chrome-stable" "--profile-directory=Profile 4" "--app=https://portal.azure.com/"; }
     Mod+M { spawn-sh "$HOME/.scripts/niri/niri-mailbox-selector focus"; }
     Mod+Shift+M { spawn-sh "$HOME/.scripts/niri/niri-mailbox-selector choose"; }
-    Mod+P hotkey-overlay-title="Ask Claude (spotlight)" { spawn "/home/martin/repos/claude-spotlight/bin/claude-spotlight-toggle"; }
 
     // Use spawn-sh to run a shell command. Do this if you need pipes, multiple commands, etc.
     // Note: the entire command goes as a single argument. It's passed verbatim to `sh -c`.
