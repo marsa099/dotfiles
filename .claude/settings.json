@@ -50,6 +50,7 @@
       }
     ]
   },
+  "preferredNotifChannel": "notifications_disabled",
   "statusLine": {
     "type": "command",
     "command": "~/.scripts/claude-statusline"
@@ -64,7 +65,7 @@
     "enabled": true,
     "mode": "hold"
   },
-  "theme": "custom:dotfiles",
+  "theme": "custom:dotfiles-light",
   "agentPushNotifEnabled": true,
   "voiceEnabled": true
 }
