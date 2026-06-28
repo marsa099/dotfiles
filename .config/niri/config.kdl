@@ -431,6 +431,7 @@ binds {
     Mod+Return hotkey-overlay-title="Open a Terminal: kitty" { spawn "kitty"; }
     Mod+Space hotkey-overlay-title="Run an Application: fuzzel" { spawn "fuzzel"; }
     Mod+B hotkey-overlay-title="Helium profile picker" { spawn "qs" "-p" "/home/martin/repos/qs-picker/shell.qml" "ipc" "call" "helium-picker" "toggle"; }
+    Mod+Shift+B hotkey-overlay-title="Add bookmark" { spawn "qs" "-p" "/home/martin/repos/qs-picker/shell.qml" "ipc" "call" "add-bookmark" "toggle"; }
     Super+Alt+L hotkey-overlay-title="Lock the Screen: swaylock" { spawn "swaylock" "-c" "222222" "--clock" "--indicator" "--timestr" "%H:%M" "--datestr" "%a %d %b"; }
 
     // Spawn-or-focus keybindings (focus existing window, cycle through instances, or spawn new)
@@ -438,10 +439,14 @@ binds {
     Mod+Shift+A { spawn-sh "$TERMINAL"; }
     Mod+T { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus teams-for-linux $HOME/.scripts/teams-launcher"; }
     Mod+Shift+T { spawn "kitty" "--class=tuims" "-e" "/home/martin/repos/tuims/.venv/bin/tuims" "--real"; }
-    Mod+D { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus vesktop vesktop"; }
+    // Native QML/Quickshell Discord client (dsqrd). Windows share the org.quickshell
+    // app-id, so jump-or-exec matches by window title ("discord-client").
+    Mod+D { spawn-sh "$HOME/.config/niri/scripts/niri-jump-or-exec title:discord-client $HOME/.config/niri/scripts/launch-discord-client"; }
     Mod+Shift+D { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus org.endcord 'ghostty --class=org.endcord -e endcord'"; }
-    Mod+S { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus $BROWSER_APP_ID $BROWSER"; }
-    Mod+Shift+S { spawn-sh "$BROWSER"; }
+    // Mod+S: cycle open Helium windows; if none are open, summon the qs-picker
+    // profile launcher instead. Mod+Shift+S always summons the picker.
+    Mod+S { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus helium 'qs -p /home/martin/repos/qs-picker/shell.qml ipc call helium-picker toggle'"; }
+    Mod+Shift+S { spawn "qs" "-p" "/home/martin/repos/qs-picker/shell.qml" "ipc" "call" "helium-picker" "toggle"; }
     Mod+N { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus spotify_player 'kitty --class=spotify_player -e spotify_player'"; }
     Mod+Shift+N { spawn "kitty" "--class=spotify_player" "-e" "spotify_player"; }
 
@@ -465,6 +470,7 @@ binds {
     Mod+Ctrl+N hotkey-overlay-title=null { spawn "claude-notify-respond" "3"; }
     Mod+Ctrl+P hotkey-overlay-title=null { spawn "claude-notify-navigate"; }
     Mod+Ctrl+O hotkey-overlay-title=null { spawn "claude-notify-goto"; }
+    Mod+Ctrl+C hotkey-overlay-title="Claude session switcher" { spawn "quickshell" "-p" "/home/martin/repos/qs-picker/shell.qml" "ipc" "call" "claude-picker" "toggle"; }
 
     // Toggle Do Not Disturb (dunst pause)
     Mod+Ctrl+D hotkey-overlay-title=null { spawn "bash" "/home/martin/.scripts/waybar-dnd-toggle"; }
