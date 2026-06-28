@@ -14,6 +14,7 @@ session picker (wired in the waybar config).
 import json
 import os
 import re
+import select
 import subprocess
 import sys
 
@@ -127,10 +128,19 @@ def main():
     windows = {}        # id -> window dict
     focused_id = None
     last = None
+    pending = 0         # remaining retries to resolve a just-focused terminal
 
-    def refresh():
-        nonlocal last
-        text, klass = label_for(windows.get(focused_id))
+    def refresh(arm):
+        nonlocal last, pending
+        win = windows.get(focused_id)
+        text, klass = label_for(win)
+        if text:
+            pending = 0
+        elif arm and win and win.get("app_id") in TERMINALS:
+            # Terminal focused but no Claude session matched — likely just
+            # spawned and its ~/.claude/sessions registry file isn't written
+            # yet. Poll a few times (no niri event will fire when it appears).
+            pending = 10
         out = {"text": (ICON + "  " + text) if text else "",
                "tooltip": "Focused Claude session: " + text if text else "",
                "class": klass}
@@ -138,22 +148,15 @@ def main():
             last = out
             emit(out)
 
-    while True:
-        line = proc.stdout.readline()
-        if not line:
-            break
-        try:
-            ev = json.loads(line)
-        except ValueError:
-            continue
+    def handle(ev):
+        nonlocal windows, focused_id
         kind = next(iter(ev), None)
         body = ev.get(kind) or {}
-
         if kind == "WindowsChanged":
             windows = {w["id"]: w for w in body.get("windows", [])}
             focused_id = next((w["id"] for w in windows.values()
                                if w.get("is_focused")), focused_id)
-            refresh()
+            refresh(True)
         elif kind == "WindowOpenedOrChanged":
             w = body.get("window") or {}
             if w.get("id") is not None:
@@ -161,16 +164,35 @@ def main():
                 if w.get("is_focused"):
                     focused_id = w["id"]
                 if w.get("id") == focused_id:
-                    refresh()
+                    refresh(True)
         elif kind == "WindowClosed":
             wid = body.get("id")
             windows.pop(wid, None)
             if wid == focused_id:
                 focused_id = None
-                refresh()
+                refresh(True)
         elif kind == "WindowFocusChanged":
             focused_id = body.get("id")
-            refresh()
+            refresh(True)
+
+    fd = proc.stdout.fileno()
+    while True:
+        timeout = 0.4 if pending > 0 else None
+        try:
+            ready, _, _ = select.select([fd], [], [], timeout)
+        except OSError:
+            break
+        if ready:
+            line = proc.stdout.readline()
+            if not line:
+                break
+            try:
+                handle(json.loads(line))
+            except ValueError:
+                continue
+        else:
+            pending -= 1          # timeout tick: re-attempt resolving
+            refresh(False)
 
 
 if __name__ == "__main__":
