@@ -217,6 +217,17 @@
   # PAM service for swaylock (required for password authentication)
   security.pam.services.swaylock = { };
 
+  # Passwordless sudo scoped to nixos-rebuild only, so automated/agent-driven
+  # rebuilds don't get stuck on the TTY password prompt. Normal sudo still
+  # requires a password for everything else.
+  security.sudo.extraRules = [{
+    users = [ "martin" ];
+    commands = [{
+      command = "/run/current-system/sw/bin/nixos-rebuild";
+      options = [ "NOPASSWD" ];
+    }];
+  }];
+
   programs.gnupg.agent = {
     enable = true;
     enableSSHSupport = true;
