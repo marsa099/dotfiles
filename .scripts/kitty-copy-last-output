@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Copy kitty's last command output to the Wayland clipboard, ANSI stripped.
+# Bound to Ctrl+Shift+G via:
+#   launch --type=background --stdin-source=@last_cmd_output kitty-copy-last-output
+# LC_ALL=C is required so sed's byte ranges ([@-~] etc.) match under UTF-8.
+esc=$'\033'
+LC_ALL=C sed -E "s#${esc}\[[0-9;:?]*[ -/]*[@-~]##g; s#${esc}\][^${esc}]*(${esc}\\\\|$(printf '\a'))##g" | wl-copy

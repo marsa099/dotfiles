@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Plain editable scrollback pager for kitty (Ctrl+Shift+H -> show_scrollback).
+# Strips ANSI escape sequences and opens the scrollback in a normal, fully
+# modifiable nvim buffer: edit freely, :w <file> to save, :q to discard.
+# Nothing is ever sent back to the shell (unlike kitty-scrollback.nvim).
+exec nvim \
+  -c 'silent! keeppatterns %s/\%x1b\[[0-9;:?]*[ -/]*[@-~]//ge' \
+  -c 'silent! keeppatterns %s/\%x1b\].\{-}\(\%x07\|\%x1b\\\)//ge' \
+  -c 'setlocal nomodified number relativenumber' \
+  -c 'normal! G' \
+  -
