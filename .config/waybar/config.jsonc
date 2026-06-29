@@ -7,7 +7,7 @@
     "margin-top": 0,
     "margin-bottom": 0,
     "modules-left": ["group/hardware", "custom/devops"],
-    "modules-center": ["custom/claude-focused", "custom/dnd"],
+    "modules-center": ["custom/claude-focused", "custom/helium-focused", "custom/dnd"],
     "modules-right": ["custom/claude-cost", "custom/claude-pending", "tray", "group/system"],
     "niri/workspaces": {
          "disable-scroll": true,
@@ -161,7 +161,15 @@
    },
    "group/hardware": {
         "orientation": "inherit",
-        "modules": ["cpu", "memory", "niri/workspaces", "custom/cpu-temp", "custom/gpu-temp", "custom/screencast", "custom/camera", "pulseaudio#mic", "pulseaudio#speaker"]
+        "modules": ["cpu", "memory", "custom/idp-status", "custom/cpu-temp", "custom/gpu-temp", "custom/screencast", "custom/camera", "pulseaudio#mic"]
+   },
+   "custom/idp-status": {
+        "exec": "~/.scripts/waybar-idp-status",
+        "return-type": "json",
+        "interval": 30,
+        "tooltip": true,
+        "markup": "pango",
+        "format": "{}"
    },
    "custom/devops": {
         "exec": "~/.scripts/waybar-devops/waybar-devops",
@@ -178,6 +186,14 @@
         "format": "{}",
         "tooltip": true,
         "on-click": "quickshell -p /home/martin/repos/qs-picker/shell.qml ipc call claude-picker toggle"
+   },
+   "custom/helium-focused": {
+        "exec": "~/.scripts/waybar-helium-focused",
+        "return-type": "json",
+        "restart-interval": 3,
+        "format": "{}",
+        "tooltip": true,
+        "on-click": "qs -p /home/martin/repos/qs-picker/shell.qml ipc call helium-picker toggle"
    },
    "custom/claude-cost": {
         "exec": "~/.scripts/waybar-claude-cost",

@@ -1,0 +1,186 @@
+#!/usr/bin/env python3
+"""Waybar module: the Helium browser profile you're currently focused in, live.
+
+Each Helium profile runs as its own process (own --user-data-dir + CDP port),
+so the focused window's PID maps straight to a profile via /proc/<pid>/cmdline
+(--profile-directory / --user-data-dir=…/helium-<P>). Reads niri's event stream
+and re-emits whenever the focused window or its title changes, so the label
+flips the instant you switch windows — no polling. Empty text when the focused
+window isn't Helium, so the module hides. `class` carries the profile (lowercased)
+so the bar can colour it per profile.
+"""
+import json
+import os
+import re
+import select
+import subprocess
+import sys
+
+TERMINAL_MARK = "helium"          # niri app_id substring for Helium windows
+ICON = "󰝨"                        # nf-md-atom — monochrome "helium" glyph
+
+# profile dir (as passed to --profile-directory) -> display label
+LABELS = {
+    "SIS": "SIS",
+    "SISAdmin": "SIS Admin",
+    "Koderiet": "Koderiet",
+    "Regent": "Regent",
+    "Private": "Private",
+    "Default": "Default",
+}
+
+# Values may be null- or space-separated depending on the NixOS wrapper, and a
+# profile dir never contains whitespace, so stop the capture at either.
+PROF_RE = re.compile(r"--profile-directory=([^\x00\s]+)")
+UDD_RE = re.compile(r"--user-data-dir=\S*/helium-([^\x00\s/]+)")
+
+
+def emit(obj):
+    sys.stdout.write(json.dumps(obj, ensure_ascii=False) + "\n")
+    sys.stdout.flush()
+
+
+def ppid_of(pid):
+    try:
+        with open(f"/proc/{pid}/stat") as fh:
+            data = fh.read()
+    except OSError:
+        return None
+    fields = data[data.rfind(")") + 2:].split()
+    try:
+        return int(fields[1])
+    except (ValueError, IndexError):
+        return None
+
+
+def cmdline_of(pid):
+    try:
+        with open(f"/proc/{pid}/cmdline", "rb") as fh:
+            return fh.read().decode("utf-8", "replace")
+    except OSError:
+        return ""
+
+
+def profile_of(pid, limit=6):
+    """Walk the focused window's pid up its ancestors, returning the Helium
+    profile dir from the first cmdline that carries it (the browser process)."""
+    cur, n = pid, 0
+    while cur and cur > 1 and n < limit:
+        cl = cmdline_of(cur)
+        if "helium" in cl:
+            m = PROF_RE.search(cl) or UDD_RE.search(cl)
+            if m:
+                return m.group(1)
+        cur = ppid_of(cur)
+        n += 1
+    return None
+
+
+def label_for(window):
+    """Return (text, klass) for the focused window, or ('', '') if not Helium."""
+    if not window:
+        return "", ""
+    if TERMINAL_MARK not in (window.get("app_id") or "").lower():
+        return "", ""
+    pid = window.get("pid")
+    if not pid:
+        return "", ""
+    prof = profile_of(pid)
+    if not prof:
+        return "", ""
+    return LABELS.get(prof, prof), prof.lower()
+
+
+def main():
+    try:
+        proc = subprocess.Popen(
+            ["niri", "msg", "--json", "event-stream"],
+            stdout=subprocess.PIPE, text=True, bufsize=1,
+        )
+    except OSError:
+        emit({"text": ""})
+        return
+
+    windows = {}        # id -> window dict
+    focused_id = None
+    last = None
+    pending = 0         # remaining retries to resolve a just-focused window
+
+    def refresh(arm):
+        nonlocal last, pending
+        win = windows.get(focused_id)
+        text, klass = label_for(win)
+        if text:
+            pending = 0
+        elif arm and win and TERMINAL_MARK in (win.get("app_id") or "").lower():
+            # Helium window focused but profile not resolved yet (e.g. pid not
+            # populated). Poll a few times; no niri event fires when it settles.
+            pending = 8
+        out = {"text": (ICON + "  " + text) if text else "",
+               "tooltip": "Helium profile: " + text if text else "",
+               "class": klass}
+        if out != last:
+            last = out
+            emit(out)
+
+    def handle(ev):
+        nonlocal windows, focused_id
+        kind = next(iter(ev), None)
+        body = ev.get(kind) or {}
+        if kind == "WindowsChanged":
+            windows = {w["id"]: w for w in body.get("windows", [])}
+            focused_id = next((w["id"] for w in windows.values()
+                               if w.get("is_focused")), focused_id)
+            refresh(True)
+        elif kind == "WindowOpenedOrChanged":
+            w = body.get("window") or {}
+            if w.get("id") is not None:
+                windows[w["id"]] = w
+                if w.get("is_focused"):
+                    focused_id = w["id"]
+                if w.get("id") == focused_id:
+                    refresh(True)
+        elif kind == "WindowClosed":
+            wid = body.get("id")
+            windows.pop(wid, None)
+            if wid == focused_id:
+                focused_id = None
+                refresh(True)
+        elif kind == "WindowFocusChanged":
+            focused_id = body.get("id")
+            refresh(True)
+
+    # Read the raw fd ourselves and split lines manually — select() must be the
+    # sole reader of the OS-level fd, or niri's batched events get parked in
+    # Python's buffer and the label lags. (Same rationale as waybar-claude-focused.)
+    fd = proc.stdout.fileno()
+    buf = ""
+    while True:
+        timeout = 0.4 if pending > 0 else None
+        try:
+            ready, _, _ = select.select([fd], [], [], timeout)
+        except OSError:
+            break
+        if ready:
+            try:
+                chunk = os.read(fd, 65536)
+            except OSError:
+                break
+            if not chunk:
+                break
+            buf += chunk.decode("utf-8", "replace")
+            while "\n" in buf:
+                line, buf = buf.split("\n", 1)
+                if not line:
+                    continue
+                try:
+                    handle(json.loads(line))
+                except ValueError:
+                    continue
+        else:
+            pending -= 1
+            refresh(False)
+
+
+if __name__ == "__main__":
+    main()
