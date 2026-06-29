@@ -113,6 +113,7 @@ ctx_cur=$(jq -r '
 ' <<<"$input")
 
 rl_5h=$(jq -r '.rate_limits.five_hour.used_percentage // empty' <<<"$input")
+rl_5h_resets=$(jq -r '.rate_limits.five_hour.resets_at // empty' <<<"$input")
 rl_7d=$(jq -r '.rate_limits.seven_day.used_percentage // empty' <<<"$input")
 rl_7d_resets=$(jq -r '.rate_limits.seven_day.resets_at // empty' <<<"$input")
 
@@ -135,7 +136,13 @@ fi
 
 if [ -n "$rl_5h" ]; then
     col=$(pct_color "$rl_5h")
-    parts+=("${dim}5h${rst} ${col}$(printf '%.0f' "$rl_5h")%${rst}")
+    fivehr="${dim}5h${rst} ${col}$(printf '%.0f' "$rl_5h")%${rst}"
+    if [ -n "$rl_5h_resets" ]; then
+        reset_arrow=$'\xe2\x86\xba'  # U+21BA anticlockwise open circle arrow
+        ends=$(date -d "@$rl_5h_resets" +%H:%M 2>/dev/null || true)
+        [ -n "$ends" ] && fivehr+=" ${dim}(${reset_arrow} ${ends})${rst}"
+    fi
+    parts+=("$fivehr")
 fi
 if [ -n "$rl_7d" ]; then
     col=$(pct_color "$rl_7d")
