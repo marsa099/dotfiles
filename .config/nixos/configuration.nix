@@ -118,7 +118,6 @@
   virtualisation.docker.enable = true;
 
   programs.niri.enable = true;
-  programs.firefox.enable = true;
   programs.thunderbird.enable = true;
 
   # XDG Portal for screen sharing on Wayland

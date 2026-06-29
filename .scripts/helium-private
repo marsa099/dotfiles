@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Launch Helium in the "Private" profile. Used as $BROWSER so CLI / app
+# link-opens land in the same profile as the xdg default (helium-private.desktop).
+exec helium --user-data-dir="$HOME/.config/helium-Private" --profile-directory=Private "$@"
