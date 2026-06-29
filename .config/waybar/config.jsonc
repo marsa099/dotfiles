@@ -6,7 +6,7 @@
     "reload_style_on_change": true,
     "margin-top": 0,
     "margin-bottom": 0,
-    "modules-left": ["group/hardware", "custom/devops"],
+    "modules-left": ["group/hardware", "custom/idp-status", "custom/devops"],
     "modules-center": ["custom/claude-focused", "custom/helium-focused", "custom/dnd"],
     "modules-right": ["custom/claude-cost", "custom/claude-pending", "tray", "group/system"],
     "niri/workspaces": {
@@ -161,7 +161,7 @@
    },
    "group/hardware": {
         "orientation": "inherit",
-        "modules": ["cpu", "memory", "custom/idp-status", "custom/cpu-temp", "custom/gpu-temp", "custom/screencast", "custom/camera", "pulseaudio#mic"]
+        "modules": ["cpu", "memory", "custom/cpu-temp", "custom/gpu-temp", "custom/screencast", "custom/camera", "pulseaudio#mic"]
    },
    "custom/idp-status": {
         "exec": "~/.scripts/waybar-idp-status",
