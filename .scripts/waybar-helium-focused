@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Waybar module: the Helium browser profile you're currently focused in, live.
+"""Waybar module: the Helium browser profile + active tab you're focused in.
 
-Each Helium profile runs as its own process (own --user-data-dir + CDP port),
-so the focused window's PID maps straight to a profile via /proc/<pid>/cmdline
-(--profile-directory / --user-data-dir=…/helium-<P>). Reads niri's event stream
+Shows "<profile> - <active tab>", e.g. "SIS - GitHub". Each Helium profile runs
+as its own process (own --user-data-dir + CDP port), so the focused window's PID
+maps straight to a profile via /proc/<pid>/cmdline (--profile-directory /
+--user-data-dir=…/helium-<P>); the tab name comes from niri's window title
+("<tab> - Helium"), capped so it can't run away. Reads niri's event stream
 and re-emits whenever the focused window or its title changes, so the label
 flips the instant you switch windows — no polling. Empty text when the focused
 window isn't Helium, so the module hides. `class` carries the profile (lowercased)
@@ -76,19 +78,41 @@ def profile_of(pid, limit=6):
     return None
 
 
+MAX_TAB = 45   # cap the tab title so the label can't run away across the bar
+
+
+def tab_title(title):
+    """The active tab's name, from niri's window title ("<tab> - Helium").
+    Empty for blank/new tabs so the label stays just the profile name."""
+    t = (title or "")
+    if t.endswith(" - Helium"):
+        t = t[:-len(" - Helium")]
+    t = t.strip()
+    if t in ("", "Helium", "about:blank", "New Tab"):
+        return ""
+    if len(t) > MAX_TAB:
+        t = t[:MAX_TAB - 1].rstrip() + "…"
+    return t
+
+
 def label_for(window):
-    """Return (text, klass) for the focused window, or ('', '') if not Helium."""
+    """Return (text, klass, tooltip) for the focused window, or ('','','') if
+    not Helium."""
     if not window:
-        return "", ""
+        return "", "", ""
     if TERMINAL_MARK not in (window.get("app_id") or "").lower():
-        return "", ""
+        return "", "", ""
     pid = window.get("pid")
     if not pid:
-        return "", ""
+        return "", "", ""
     prof = profile_of(pid)
     if not prof:
-        return "", ""
-    return LABELS.get(prof, prof), prof.lower()
+        return "", "", ""
+    name = LABELS.get(prof, prof)
+    tab = tab_title(window.get("title"))
+    text = f"{name} - {tab}" if tab else name
+    tooltip = f"Helium · {name}" + (f" — {tab}" if tab else "")
+    return text, prof.lower(), tooltip
 
 
 def main():
@@ -109,7 +133,7 @@ def main():
     def refresh(arm):
         nonlocal last, pending
         win = windows.get(focused_id)
-        text, klass = label_for(win)
+        text, klass, tooltip = label_for(win)
         if text:
             pending = 0
         elif arm and win and TERMINAL_MARK in (win.get("app_id") or "").lower():
@@ -117,7 +141,7 @@ def main():
             # populated). Poll a few times; no niri event fires when it settles.
             pending = 8
         out = {"text": (ICON + "  " + text) if text else "",
-               "tooltip": "Helium profile: " + text if text else "",
+               "tooltip": tooltip,
                "class": klass}
         if out != last:
             last = out
