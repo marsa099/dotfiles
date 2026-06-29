@@ -65,7 +65,7 @@
     "enabled": true,
     "mode": "hold"
   },
-  "theme": "custom:dotfiles-light",
+  "theme": "custom:dotfiles-dark",
   "agentPushNotifEnabled": true,
   "voiceEnabled": true
 }

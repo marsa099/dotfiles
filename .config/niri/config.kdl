@@ -188,7 +188,7 @@ layout {
         //
         // The focus ring only draws around the active window, so the only place
         // where you can see its inactive-color is on other monitors.
-        inactive-color "#999999"
+        inactive-color "#3A3A3A"
 
         // You can also use gradients. They take precedence over solid colors.
         // Gradients are rendered the same as CSS linear-gradient(angle, from, to).
@@ -213,7 +213,7 @@ layout {
 
         width 3
         active-color "#FF570D"
-        inactive-color "#999999"
+        inactive-color "#3A3A3A"
 
         // Color of the border around windows that request your attention.
         urgent-color "#9b0000"
@@ -301,6 +301,10 @@ spawn-at-startup "espanso" "daemon"
 // background desktop notifications fire even when the window is closed.
 spawn-sh-at-startup "dsqrd >/tmp/dsqrd.log 2>&1"
 
+// Teams (tmqs) daemon — same deal: stays connected so Mod+T opens instantly
+// and notifications fire when the window is closed.
+spawn-sh-at-startup "$HOME/repos/tmqs/run-tmqs.sh >/tmp/tmqs.log 2>&1"
+
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
 // spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"
 
@@ -358,6 +362,17 @@ window-rule {
     open-floating true
 }
 
+// imv (images) and mpv (gif-as-mp4 + audio/video) are both launched by
+// dsqrd's media-viewer.sh when viewing chat media. Float them so they
+// overlay the chat window instead of opening a new tile; the script
+// already sizes them to a fraction of the focused output, and niri
+// centers floating windows on focus.
+window-rule {
+    match app-id=r#"^imv$"#
+    match app-id=r#"^mpv$"#
+    open-floating true
+}
+
 // Example: block out two password managers from screen capture.
 // (This example rule is commented out with a "/-" in front.)
 /-window-rule {
@@ -412,7 +427,7 @@ window-rule {
 
     border {
         active-color "#FF570D"
-        inactive-color "#999999"
+        inactive-color "#3A3A3A"
     }
 }
 
@@ -442,7 +457,9 @@ binds {
     Mod+A { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus $TERMINAL_APP_ID $TERMINAL"; }
     Mod+Shift+A { spawn-sh "$TERMINAL"; }
     Mod+T { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus teams-for-linux $HOME/.scripts/teams-launcher"; }
-    Mod+Shift+T { spawn "kitty" "--class=tuims" "-e" "/home/martin/repos/tuims/.venv/bin/tuims" "--real"; }
+    // Native QML/Quickshell Teams client (tmqs) — replaces the old tuims TUI.
+    // Matches by window title ("teams-client"); Mod+T still opens teams-for-linux.
+    Mod+Shift+T { spawn-sh "$HOME/.config/niri/scripts/niri-jump-or-exec title:teams-client $HOME/.config/niri/scripts/launch-teams-client"; }
     // Native QML/Quickshell Discord client (dsqrd). Windows share the org.quickshell
     // app-id, so jump-or-exec matches by window title ("discord-client").
     Mod+D { spawn-sh "$HOME/.config/niri/scripts/niri-jump-or-exec title:discord-client $HOME/.config/niri/scripts/launch-discord-client"; }
@@ -456,8 +473,8 @@ binds {
 
     Mod+X { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus org.lazyjira 'kitty --class=org.lazyjira -e $HOME/.local/bin/lazyjira'"; }
     Mod+Shift+X { spawn "kitty" "--class=org.lazyjira" "-e" "/home/martin/.local/bin/lazyjira"; }
-    Mod+C { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus chrome-dev.azure.com__swedishinstituteforstandards-Profile_2 'google-chrome-stable --profile-directory=\"Profile 2\" --app=\"https://dev.azure.com/swedishinstituteforstandards\"'"; }
-    Mod+Shift+C { spawn "google-chrome-stable" "--profile-directory=Profile 2" "--app=https://dev.azure.com/swedishinstituteforstandards"; }
+    Mod+C hotkey-overlay-title="Claude session switcher" { spawn "qs" "-p" "/home/martin/repos/qs-picker/shell.qml" "ipc" "call" "claude-picker" "toggle"; }
+    Mod+Shift+C hotkey-overlay-title="New Claude session" { spawn "qs" "-p" "/home/martin/repos/qs-picker/shell.qml" "ipc" "call" "new-claude-session" "toggle"; }
     Mod+Z { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus chrome-portal.azure.com__-Profile_4 'google-chrome-stable --profile-directory=\"Profile 4\" --app=\"https://portal.azure.com/\"'"; }
     Mod+Shift+Z { spawn "google-chrome-stable" "--profile-directory=Profile 4" "--app=https://portal.azure.com/"; }
     Mod+M { spawn-sh "$HOME/.scripts/niri/niri-mailbox-selector focus"; }
@@ -474,7 +491,6 @@ binds {
     Mod+Ctrl+N hotkey-overlay-title=null { spawn "claude-notify-respond" "3"; }
     Mod+Ctrl+P hotkey-overlay-title=null { spawn "claude-notify-navigate"; }
     Mod+Ctrl+O hotkey-overlay-title=null { spawn "claude-notify-goto"; }
-    Mod+Ctrl+C hotkey-overlay-title="Claude session switcher" { spawn "quickshell" "-p" "/home/martin/repos/qs-picker/shell.qml" "ipc" "call" "claude-picker" "toggle"; }
 
     // Toggle Do Not Disturb (dunst pause)
     Mod+Ctrl+D hotkey-overlay-title=null { spawn "bash" "/home/martin/.scripts/waybar-dnd-toggle"; }
