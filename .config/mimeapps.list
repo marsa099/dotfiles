@@ -1,0 +1,25 @@
+[Default Applications]
+x-scheme-handler/http=helium-private.desktop
+x-scheme-handler/https=helium-private.desktop
+x-scheme-handler/chrome=helium-private.desktop
+text/html=helium-private.desktop
+application/x-extension-htm=helium-private.desktop
+application/x-extension-html=helium-private.desktop
+application/x-extension-shtml=helium-private.desktop
+application/xhtml+xml=helium-private.desktop
+application/x-extension-xhtml=helium-private.desktop
+application/x-extension-xht=helium-private.desktop
+x-scheme-handler/discord=vesktop.desktop
+x-scheme-handler/claude-cli=claude-code-url-handler.desktop
+
+[Added Associations]
+x-scheme-handler/http=helium-private.desktop;
+x-scheme-handler/https=helium-private.desktop;
+x-scheme-handler/chrome=helium-private.desktop;
+text/html=helium-private.desktop;
+application/x-extension-htm=helium-private.desktop;
+application/x-extension-html=helium-private.desktop;
+application/x-extension-shtml=helium-private.desktop;
+application/xhtml+xml=helium-private.desktop;
+application/x-extension-xhtml=helium-private.desktop;
+application/x-extension-xht=helium-private.desktop;
