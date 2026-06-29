@@ -1,0 +1,175 @@
+#!/usr/bin/env bash
+# waybar-idp-status - Waybar module showing ContentDelivery IdP connectivity
+#
+# Probes Subscription/current in dev/tst/prd. A working call returns JSON with
+# a "location" field (redirect to the IdP login); a broken one (e.g. 409
+# "Unable to obtain configuration from: ...") lacks it.
+#
+# Three dots (DEV TST PRD). Each dot's colour reflects the last 10 *online*
+# checks for that env:
+#   green  - all of the last 10 succeeded
+#   yellow - mixed success/failure
+#   red    - none of the last 10 succeeded
+#   gray   - no internet right now (all three envs unreachable this round)
+# Rounds where the whole internet connection was down (every env unreachable)
+# are ignored, as if the check never happened, so a local wifi blip doesn't
+# turn a dot red. Tooltip shows the recent success/failure history per env.
+#
+# Palette: ~/.cache/waybar-idp-status/colors.sh (themes-generator).
+# History: ~/.cache/waybar-idp-status/history.jsonl
+
+set -u
+
+CACHE_DIR="$HOME/.cache/waybar-idp-status"
+HISTORY_FILE="$CACHE_DIR/history.jsonl"
+PALETTE_FILE="$CACHE_DIR/colors.sh"
+HISTORY_MAX_LINES=2000
+WINDOW=10
+TIMEOUT=8
+
+mkdir -p "$CACHE_DIR"
+
+# Themed palette, written by themes-generator (theme-manager apply waybar-idp).
+# Fallback to Catppuccin Mocha if it hasn't been generated yet.
+C_OK="#a6e3a1"    # green  - all recent checks succeeded
+C_MIX="#fab387"   # yellow - mixed success/failure
+C_DOWN="#f38ba8"  # red    - no recent success
+C_GRAY="#6c7086"  # gray   - no internet right now
+# shellcheck disable=SC1090
+[ -f "$PALETTE_FILE" ] && . "$PALETTE_FILE"
+
+declare -a ENVS=("DEV" "TST" "PRD")
+declare -A URLS=(
+    [DEV]="https://as-contentdelivery-dev.azurewebsites.net/Subscription/current"
+    [TST]="https://as-contentdelivery-tst.azurewebsites.net/Subscription/current"
+    [PRD]="https://as-contentdelivery-prd.azurewebsites.net/Subscription/current"
+)
+
+# Pick a field out of a JSON body, case-insensitive on the key.
+json_field() {
+    local field="$1" body="$2"
+    printf '%s' "$body" | jq -r --arg f "$field" \
+        'to_entries | map(select(.key | ascii_downcase == ($f | ascii_downcase))) | .[0].value // empty' 2>/dev/null
+}
+
+# Probe one env, emit a single line: "<ok>\t<status>\t<info>"
+# ok = 1 (working: location present), 0 (broken/unreachable)
+# status = HTTP code, or 000 when the connection failed (used for "online?")
+probe() {
+    local env="$1" url="${URLS[$env]}"
+    local response status body location detail rc
+
+    response=$(curl -sS -m "$TIMEOUT" -H 'accept: */*' -w $'\n%{http_code}' "$url" 2>&1)
+    rc=$?
+
+    if [ $rc -ne 0 ]; then
+        printf '0\t000\t%s\n' "anslutning misslyckades (curl rc=$rc)"
+        return
+    fi
+
+    status="${response##*$'\n'}"
+    body="${response%$'\n'*}"
+    location=$(json_field "location" "$body")
+
+    if [ -n "$location" ]; then
+        printf '1\t%s\t\n' "$status"
+    else
+        detail=$(json_field "detail" "$body")
+        [ -z "$detail" ] && detail="$body"
+        detail="${detail%%$'\n'*}"
+        printf '0\t%s\t%s\n' "$status" "$detail"
+    fi
+}
+
+# Collapse to one line and cap length, for storing in history.
+trunc() {
+    local s="${1//$'\n'/ }"
+    [ "${#s}" -gt 120 ] && s="${s:0:117}..."
+    printf '%s' "$s"
+}
+
+# Run all three in parallel, collect results in fixed order.
+declare -A TMP
+for env in "${ENVS[@]}"; do
+    TMP[$env]=$(mktemp)
+    probe "$env" > "${TMP[$env]}" &
+done
+wait
+
+declare -A OK STATUS INFO
+for env in "${ENVS[@]}"; do
+    IFS=$'\t' read -r OK[$env] STATUS[$env] INFO[$env] < "${TMP[$env]}"
+    rm -f "${TMP[$env]}"
+    INFO[$env]=$(trunc "${INFO[$env]}")
+done
+
+# Append this round to history, then trim.
+ts=$(date +%s)
+jq -cn --argjson ts "$ts" \
+    --arg do "${OK[DEV]}" --arg ds "${STATUS[DEV]}" --arg di "${INFO[DEV]}" \
+    --arg to "${OK[TST]}" --arg ts2 "${STATUS[TST]}" --arg ti "${INFO[TST]}" \
+    --arg po "${OK[PRD]}" --arg ps "${STATUS[PRD]}" --arg pi "${INFO[PRD]}" \
+    '{ts: $ts,
+      dev: {ok: ($do=="1"), status: $ds, info: $di},
+      tst: {ok: ($to=="1"), status: $ts2, info: $ti},
+      prd: {ok: ($po=="1"), status: $ps, info: $pi}}' >> "$HISTORY_FILE" 2>/dev/null
+if [ -f "$HISTORY_FILE" ] && (( $(wc -l < "$HISTORY_FILE") > HISTORY_MAX_LINES )); then
+    tail -n $((HISTORY_MAX_LINES / 2)) "$HISTORY_FILE" > "$HISTORY_FILE.tmp" && mv "$HISTORY_FILE.tmp" "$HISTORY_FILE"
+fi
+
+# Compute dot colours and tooltip from the history.
+# A round is "online" if any env got an HTTP response (status != 000); rounds
+# where every env was unreachable are dropped from the per-env window.
+jq -c -s \
+    --argjson win "$WINDOW" \
+    --arg cok "$C_OK" --arg cmix "$C_MIX" --arg cdown "$C_DOWN" --arg cgray "$C_GRAY" '
+    def esc: gsub("&";"&amp;") | gsub("<";"&lt;") | gsub(">";"&gt;");
+    def online(r): (r.dev.status != "000") or (r.tst.status != "000") or (r.prd.status != "000");
+    . as $all
+    | ($all | map(select(online(.)))) as $on
+    | ($on | length) as $onlen
+    | ($on[ ([$onlen - $win, 0] | max) : ]) as $window
+    | ($all[-1]) as $cur
+    | (online($cur)) as $cur_online
+    | ($all[-30:] | map(select(online(.) | not)) | length) as $ignored
+    | ([ "dev","tst","prd" ] | map(
+          . as $e
+          | ($window | map(.[$e].ok)) as $oks
+          | ($oks | length) as $n
+          | ($oks | map(select(.)) | length) as $s
+          | ($on | map(select((.[$e].ok) | not)) | last) as $lf
+          | { e: $e, n: $n, s: $s,
+              color: ( if ($cur_online | not) then $cgray
+                       elif $n == 0 then $cgray
+                       elif $s == $n then $cok
+                       elif $s == 0 then $cdown
+                       else $cmix end ),
+              seq: ($window | map(if .[$e].ok
+                                  then "<span color=\"" + $cok + "\">●</span>"
+                                  else "<span color=\"" + $cdown + "\">●</span>" end) | join(" ")),
+              lf: ( if $lf == null then ""
+                    else ( ($lf[$e].info // "") as $i
+                           | if ($i | length) > 0 then $lf[$e].status + " — " + ($i | esc)
+                             elif $lf[$e].status != "000" then $lf[$e].status
+                             else "" end )
+                    end )
+            }
+      )) as $st
+    | ($st | map(.color)) as $cols
+    | ( if ($cur_online | not) then "offline"
+        elif ($cols | any(. == $cdown)) then "error"
+        elif ($cols | any(. == $cmix)) then "warning"
+        else "ok" end ) as $class
+    | ( [ ( (if $cur_online
+             then "IdP-anslutning (ContentDelivery) — senaste " + ($win|tostring) + " kontroller"
+             else "⚠ Ingen internetanslutning — visar senaste kända status" end)
+            + (if $ignored > 0 then "  (" + ($ignored|tostring) + " utan internet ignorerade)" else "" end) ) ]
+        + ($st | map(
+            ((.e | ascii_upcase) + "  " + (.s|tostring) + "/" + (.n|tostring) + " OK   " + .seq)
+            + (if .lf != "" then "\n        senaste fel: " + .lf else "" end)
+          ))
+      ) as $lines
+    | { text: ($st | map("<span size=\"160%\" color=\"" + .color + "\">●</span>") | join(" ")),
+        tooltip: ($lines | join("\n")),
+        class: $class }
+    ' "$HISTORY_FILE"
