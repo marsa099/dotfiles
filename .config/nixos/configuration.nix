@@ -177,6 +177,7 @@
     signal-desktop
     swaybg
     wl-clipboard
+    grim # region capture backend for the qs-picker keyboard screenshot (Print)
     jq
     python3
     glib # provides gsettings - a CLI tool that reads/writes GNOME/GTK settings (e.g. dark/light mode preference that apps like Ghostty and Firefox listen to)
