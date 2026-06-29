@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Launch the native QML Teams client (tmqs). Ensures the tmqs daemon is running
+# (it owns the Graph connection + serves data over the socket), then opens the
+# Quickshell UI pointed at tmqs's socket. niri-jump-or-exec focuses an existing
+# window instead of calling this when one is already open.
+export PATH="/etc/profiles/per-user/$USER/bin:/run/current-system/sw/bin:$PATH"
+export SLK_SOCK=tmqs
+
+REPO="$HOME/repos/tmqs"
+
+# Reap windowless tmqs UI orphans before launching. A failed config load leaves
+# quickshell alive without mapping a window; niri-jump-or-exec then can't focus
+# it, so each launch piles up another. Scoped to tmqs by its UI path.
+WIN_PIDS=" $(niri msg --json windows 2>/dev/null | python3 -c 'import json,sys;[print(w.get("pid")) for w in json.load(sys.stdin)]' 2>/dev/null | tr "\n" " ") "
+for p in /proc/[0-9]*; do
+    exe=$(readlink "$p/exe" 2>/dev/null) || continue
+    case "$exe" in *quickshell*) ;; *) continue ;; esac
+    case "$(tr '\0' ' ' < "$p/cmdline" 2>/dev/null)" in *tmqs/ui*) ;; *) continue ;; esac
+    pid=${p#/proc/}
+    case "$WIN_PIDS" in *" $pid "*) ;; *) kill "$pid" 2>/dev/null ;; esac
+done
+
+# Start the daemon if it isn't already up (nix-shell pulls msal + httpx).
+pgrep -f 'tmqs\.py' >/dev/null 2>&1 || \
+    setsid nohup "$REPO/run-tmqs.sh" >/tmp/tmqs.log 2>&1 </dev/null &
+
+exec qs -p "$REPO/ui"
