@@ -702,8 +702,8 @@ binds {
 
     Print hotkey-overlay-title="Region screenshot (keyboard)" { spawn "qs" "-p" "/home/martin/repos/qs-picker/shell.qml" "ipc" "call" "region-shot" "start"; }
     Shift+Print hotkey-overlay-title="Region screenshot (mouse)" { screenshot; }
-    Ctrl+Print { screenshot-screen; }
-    Alt+Print { screenshot-window; }
+    Ctrl+Print hotkey-overlay-title="Screenshot active screen" { screenshot-screen; }
+    Alt+Print hotkey-overlay-title="Screenshot active window" { screenshot-window; }
 
     // Applications such as remote-desktop clients and software KVM switches may
     // request that niri stops processing the keyboard shortcuts defined here
