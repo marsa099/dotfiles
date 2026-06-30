@@ -11,6 +11,11 @@ vim.o.showtabline = 0
 vim.o.cmdheight = 0
 vim.o.ruler = false
 
+-- plain `y` copies straight to the system (Wayland) clipboard, no staging window.
+-- A plain yank has regname '' so it won't trigger the plugin's '+'-register auto-close;
+-- it just copies and leaves the scrollback open.
+vim.o.clipboard = "unnamedplus"
+
 -- transparent background so kitty's background image shows through, like the terminal
 local function transparent()
 	vim.api.nvim_set_hl(0, "Normal", { bg = "none" })
@@ -27,6 +32,12 @@ require("kitty-scrollback").setup({
 	{
 		status_window = {
 			enabled = false,
+		},
+		paste_window = {
+			-- We use this as a read-only pager, not a send-to-shell tool. Without this,
+			-- a plain `y` drops the yanked text into a floating "paste" staging window
+			-- (yank_register defaults to the unnamed register). Disable that.
+			yank_register_enabled = false,
 		},
 	},
 })
