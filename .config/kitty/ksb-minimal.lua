@@ -57,6 +57,18 @@ vim.api.nvim_create_autocmd("FileType", {
 			vim.wo[win].scrolloff = 0
 		end
 		apply()
-		vim.schedule(apply)
+		vim.schedule(function()
+			apply()
+			-- cursor to the middle of the window WITHOUT scrolling, so the plugin's
+			-- terminal-matching view alignment is preserved (G would anchor the last
+			-- captured blank line at the bottom and shove the content up a few rows).
+			local win = vim.fn.bufwinid(ev.buf)
+			if win == -1 then
+				win = vim.api.nvim_get_current_win()
+			end
+			vim.api.nvim_win_call(win, function()
+				vim.cmd("normal! M")
+			end)
+		end)
 	end,
 })
