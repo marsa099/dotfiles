@@ -282,13 +282,13 @@ layout {
 // See the binds section below for more spawn examples.
 
 // Known bug: waybar duplicates bars on output changes (dock/undock, lid open/close)
-// because it accumulates monitor event handlers without cleaning up old ones.
-// Workaround: restart waybar process on output changes (e.g. via kanshi exec).
-// https://github.com/Alexays/Waybar/issues/3344
-spawn-at-startup "waybar"
+// The bar and notifications are now part of the qs-picker Quickshell config
+// (modules/Bar.qml + Notification*.qml), so the single qs process below renders
+// the bar, the on-screen notification popups, the notification centre, AND the
+// pickers. waybar and dunst are retired; swayosd-server stays for volume/
+// brightness OSD.
 spawn-at-startup "swaybg" "-i" "/home/martin/wallpapers/forest.jpg" "-m" "fill"
 spawn-at-startup "swayosd-server"
-spawn-at-startup "dunst"
 spawn-at-startup "qs" "-p" "/home/martin/repos/qs-picker/shell.qml"
 
 // Start kanshi for dynamic monitor configuration
@@ -703,7 +703,7 @@ binds {
     Print hotkey-overlay-title="Region screenshot (keyboard)" { spawn "qs" "-p" "/home/martin/repos/qs-picker/shell.qml" "ipc" "call" "region-shot" "start"; }
     Shift+Print hotkey-overlay-title="Region screenshot (mouse)" { screenshot; }
     Ctrl+Print hotkey-overlay-title="Screenshot active screen" { screenshot-screen; }
-    Alt+Print hotkey-overlay-title="Screenshot active window" { screenshot-window; }
+    Alt+Print hotkey-overlay-title="Screenshot active window" { spawn "sh" "-c" "$HOME/.scripts/screenshot-window"; }
 
     // Applications such as remote-desktop clients and software KVM switches may
     // request that niri stops processing the keyboard shortcuts defined here
