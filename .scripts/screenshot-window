@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Screenshot the focused window: niri captures it to the clipboard, then we also
+# save that image to ~/Pictures/Screenshots and notify — matching the region
+# screenshot's save+copy behaviour. niri's own screenshot-window action only
+# copies (no disk file), so this wrapper fills that gap. Bound to Alt+Print.
+set -euo pipefail
+
+niri msg action screenshot-window
+
+dir="$HOME/Pictures/Screenshots"
+mkdir -p "$dir"
+file="$dir/Screenshot from $(date '+%Y-%m-%d %H-%M-%S').png"
+
+# Give niri a moment to put the PNG on the clipboard, then save it.
+for _ in $(seq 1 20); do
+    wl-paste --list-types 2>/dev/null | grep -q image/png && break
+    sleep 0.05
+done
+sleep 0.1
+wl-paste --type image/png > "$file"
+
+if command -v notify-send >/dev/null; then
+    notify-send -t 1500 "Screenshot" "Window saved + copied — ${file##*/}"
+fi
