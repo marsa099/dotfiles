@@ -442,7 +442,7 @@ binds {
     Mod+Space hotkey-overlay-title="Run an Application: fuzzel" { spawn "fuzzel"; }
     Mod+B hotkey-overlay-title="Helium profile picker" { spawn "qs" "-p" "/home/martin/repos/qs-picker/shell.qml" "ipc" "call" "helium-picker" "toggle"; }
     Mod+Shift+B hotkey-overlay-title="Add bookmark" { spawn "qs" "-p" "/home/martin/repos/qs-picker/shell.qml" "ipc" "call" "add-bookmark" "toggle"; }
-    Super+Alt+L hotkey-overlay-title="Lock the Screen: swaylock" { spawn "swaylock" "-c" "222222" "--clock" "--indicator" "--timestr" "%H:%M" "--datestr" "%a %d %b"; }
+    Super+Alt+L hotkey-overlay-title="Lock the Screen: ORION secure terminal" { spawn "/home/martin/repos/qs-picker/scripts/lock"; }
 
     // Spawn-or-focus keybindings (focus existing window, cycle through instances, or spawn new)
     Mod+A { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus $TERMINAL_APP_ID $TERMINAL"; }

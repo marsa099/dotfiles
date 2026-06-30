@@ -198,7 +198,6 @@
     wtype # To be able to send keystrokes to a terminal from dunst notification for claude notifications
     cloc # Count Lines Of Code
     sqlcmd # MS SQL CLI client
-    swaylock-effects # screen locker for Wayland (fork with blur/screenshot support)
     kanshi # dynamic monitor configuration
     sox # audio recording, required by claude code /voice
     pavucontrol # GUI mixer for PipeWire/PulseAudio (route apps between sinks/sources)
@@ -213,7 +212,9 @@
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
   # programs.mtr.enable = true;
-  # PAM service for swaylock (required for password authentication)
+  # PAM service used by the qs-picker ORION lockscreen (~/repos/qs-picker/lock.qml)
+  # for password authentication. Named "swaylock" for the pure pam_unix policy;
+  # swaylock itself is gone, but lock.qml authenticates against this service.
   security.pam.services.swaylock = { };
 
   # Passwordless sudo scoped to nixos-rebuild only, so automated/agent-driven
