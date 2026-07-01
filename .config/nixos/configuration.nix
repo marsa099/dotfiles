@@ -178,6 +178,8 @@
     wl-clipboard
     grim # region capture backend for the qs-picker keyboard screenshot (Print)
     imagemagick # crops the frozen grim snapshot for the qs-picker region screenshot
+    imv # image viewer for tmqs media enlarging (SLK_MEDIA_VIEWER -> media-viewer.sh)
+    mpv # video player for tmqs media enlarging
     jq
     python3
     glib # provides gsettings - a CLI tool that reads/writes GNOME/GTK settings (e.g. dark/light mode preference that apps like Ghostty and Firefox listen to)

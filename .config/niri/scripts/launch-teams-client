@@ -8,6 +8,11 @@ export SLK_SOCK=tmqs
 
 REPO="$HOME/repos/tmqs"
 
+# Media viewer for enlarging images/video (`v` on a message, or click a
+# thumbnail): imv for images/gifs, mpv for video. Needs imv+mpv on PATH
+# (systemPackages).
+export SLK_MEDIA_VIEWER="$REPO/media-viewer.sh"
+
 # Reap windowless tmqs UI orphans before launching. A failed config load leaves
 # quickshell alive without mapping a window; niri-jump-or-exec then can't focus
 # it, so each launch piles up another. Scoped to tmqs by its UI path.
