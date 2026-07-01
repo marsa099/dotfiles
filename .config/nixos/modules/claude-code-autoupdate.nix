@@ -16,9 +16,15 @@ let
   updateScript = pkgs.writeShellScript "claude-code-update" ''
     set -euo pipefail
     cd ${flakeDir}
+    # /home/martin is a git working tree (dotfiles bare repo); root touching it
+    # trips git's ownership guard and aborts the flake update. Allow it.
+    ${pkgs.git}/bin/git config --global --add safe.directory /home/martin
     ${pkgs.nix}/bin/nix flake update claude-code \
       --extra-experimental-features 'nix-command flakes'
     ${pkgs.nixos-rebuild}/bin/nixos-rebuild switch --flake ${flakeDir}#nixos
+    # Root rewrote flake.lock; hand it back to martin so the dotfiles repo
+    # doesn't accumulate root-owned files to chown before committing.
+    ${pkgs.coreutils}/bin/chown martin:users ${flakeDir}/flake.lock
   '';
 in
 {
