@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Default browser + $BROWSER handler: route each opened URL to the Helium profile
+# whose rule matches (qs-picker data/profile-rules.txt, via `bookmarks route`),
+# falling back to the Private profile for anything unmatched. With no URL, opens
+# Private. Replaces helium-private as the system link handler so links from Teams,
+# Slack, the CLI, etc. land in the "right" profile instead of always Private.
+BOOKMARKS="$HOME/repos/qs-picker/scripts/bookmarks"
+
+launch() {
+    local url="$1" dir="Private" port=9226 out
+    if [ -n "$url" ]; then
+        out=$("$BOOKMARKS" route "$url" 2>/dev/null)
+        [ -n "$out" ] && read -r dir port <<<"$out"
+    fi
+    helium --user-data-dir="$HOME/.config/helium-$dir" \
+           --profile-directory="$dir" \
+           --remote-debugging-port="$port" ${url:+"$url"}
+}
+
+if [ "$#" -eq 0 ]; then
+    launch ""
+else
+    for u in "$@"; do launch "$u"; done
+fi
