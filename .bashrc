@@ -81,6 +81,18 @@ alias install='sudo pacman -Sy'
 
 set -o vi               # replace readline with vi mode
 
+# Paste the Wayland system clipboard at the cursor. Native readline `p` only
+# pastes its internal kill-ring, not the real clipboard — this bridges to wl-paste.
+_paste_clipboard() {
+	local clip
+	clip=$(wl-paste -n)
+	READLINE_LINE="${READLINE_LINE:0:READLINE_POINT}${clip}${READLINE_LINE:READLINE_POINT}"
+	READLINE_POINT=$((READLINE_POINT + ${#clip}))
+}
+bind -m vi-command -x '"p": _paste_clipboard'   # Esc then p
+bind -m vi-command -x '"P": _paste_clipboard'
+bind -m vi-insert  -x '"\C-v": _paste_clipboard' # Ctrl+V while typing
+
 # Git
 alias config='git --git-dir=$HOME/.git/ --work-tree=$HOME'
 alias c=config
