@@ -57,7 +57,7 @@ export PS1="\[\e[32m\e[1m\]\W $ \[\e[0m\]"
 # Environment variables
 export REPOS="${HOME}/repos"
 export EDITOR=nvim
-export BROWSER="${HOME}/.scripts/helium-private"
+export BROWSER="${HOME}/.scripts/helium-router"
 export NOTES="${HOME}/notes"
 
 # Path
