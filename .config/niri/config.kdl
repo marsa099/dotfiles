@@ -447,10 +447,10 @@ binds {
     // Spawn-or-focus keybindings (focus existing window, cycle through instances, or spawn new)
     Mod+A { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus $TERMINAL_APP_ID $TERMINAL"; }
     Mod+Shift+A { spawn-sh "$TERMINAL"; }
-    Mod+T { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus teams-for-linux $HOME/.scripts/teams-launcher"; }
     // Native QML/Quickshell Teams client (tmqs) — replaces the old tuims TUI.
-    // Matches by window title ("teams-client"); Mod+T still opens teams-for-linux.
-    Mod+Shift+T { spawn-sh "$HOME/.config/niri/scripts/niri-jump-or-exec title:teams-client $HOME/.config/niri/scripts/launch-teams-client"; }
+    // Matches by window title ("teams-client"). Mod+Shift+T opens teams-for-linux.
+    Mod+T { spawn-sh "$HOME/.config/niri/scripts/niri-jump-or-exec title:teams-client $HOME/.config/niri/scripts/launch-teams-client"; }
+    Mod+Shift+T { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus teams-for-linux $HOME/.scripts/teams-launcher"; }
     // Native QML/Quickshell Discord client (dsqrd). Windows share the org.quickshell
     // app-id, so jump-or-exec matches by window title ("discord-client").
     Mod+D { spawn-sh "$HOME/.config/niri/scripts/niri-jump-or-exec title:discord-client $HOME/.config/niri/scripts/launch-discord-client"; }
