@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# One-command updater for dsqrd (and slqs).
+#
+# The NixOS system installs dsqrd from `github:daphen/dsqrd`, pinned in
+# ~/.config/nixos/flake.lock — NOT from any local checkout. So "there's a new
+# version" means: bump that pin, rebuild, then restart the long-running daemon
+# + UI (a rebuild swaps the binary but won't restart already-running procs).
+#
+# Usage:
+#   update-dsqrd            update dsqrd, rebuild, restart its daemon + UI
+#   update-dsqrd --check    only report whether an update is available
+#   update-dsqrd slqs       same flow but for slqs instead of dsqrd
+set -euo pipefail
+
+NIXOS="$HOME/.config/nixos"
+APP="${1:-dsqrd}"
+case "$APP" in
+    --check) CHECK=1; APP="dsqrd" ;;
+    dsqrd|slqs) CHECK="${2:-}"; [ "$CHECK" = "--check" ] && CHECK=1 || CHECK="" ;;
+    *) echo "unknown app: $APP (expected dsqrd or slqs)" >&2; exit 1 ;;
+esac
+
+locked_rev() {
+    nix flake metadata "$NIXOS" --json 2>/dev/null \
+        | python3 -c "import json,sys; print(json.load(sys.stdin)['locks']['nodes']['$1']['locked']['rev'])"
+}
+remote_rev() {
+    # latest main on the GitHub repo this input tracks
+    git ls-remote "https://github.com/daphen/$1.git" main | cut -f1
+}
+
+OLD="$(locked_rev "$APP")"
+NEW="$(remote_rev "$APP")"
+
+if [ "$OLD" = "$NEW" ]; then
+    echo "$APP is up to date (${OLD:0:7})."
+    exit 0
+fi
+
+echo "$APP: ${OLD:0:7} -> ${NEW:0:7}  (update available)"
+[ -n "${CHECK:-}" ] && exit 10   # --check: signal "update available" via exit code
+
+echo "==> bumping flake lock"
+nix flake update "$APP" --flake "$NIXOS"
+
+echo "==> nixos-rebuild switch"
+sudo nixos-rebuild switch --flake "$NIXOS"
+
+echo "==> restarting $APP daemon + UI"
+# Match the running processes by their store UI/daemon paths. This script's own
+# command line is just its path, so these patterns never match it (no self-kill).
+case "$APP" in
+    dsqrd)
+        pkill -f 'share/dsqrd/dsqrd\.py' 2>/dev/null || true
+        pkill -f 'quickshell -p .*/share/dsqrd/ui' 2>/dev/null || true
+        sleep 1
+        SLK_UPDATE_CMD="$HOME/.scripts/update-dsqrd" \
+            setsid nohup dsqrd-client >/tmp/dsqrd.log 2>&1 </dev/null &
+        ;;
+    slqs)
+        pkill -f '/bin/slqs$' 2>/dev/null || true
+        pkill -f 'quickshell -p .*/share/slqs/ui' 2>/dev/null || true
+        sleep 1
+        SLK_UPDATE_CMD="$HOME/.scripts/update-dsqrd slqs" \
+            setsid nohup slqs-client >/tmp/slqs.log 2>&1 </dev/null &
+        ;;
+esac
+
+sleep 2
+echo "==> now running:"
+pgrep -af "share/$APP" | grep -v 'pgrep\|grep' || echo "  (nothing — check /tmp/$APP.log)"
+LOCKED="$(locked_rev "$APP")"
+echo "Done. $APP is on ${LOCKED:0:7}."
