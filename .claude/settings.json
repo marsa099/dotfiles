@@ -5,6 +5,7 @@
   "permissions": {
     "defaultMode": "auto"
   },
+  "model": "sonnet",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -50,7 +51,6 @@
       }
     ]
   },
-  "preferredNotifChannel": "notifications_disabled",
   "statusLine": {
     "type": "command",
     "command": "~/.scripts/claude-statusline"
@@ -66,6 +66,8 @@
     "mode": "hold"
   },
   "theme": "custom:dotfiles-dark",
+  "preferredNotifChannel": "notifications_disabled",
+  "remoteControlAtStartup": true,
   "agentPushNotifEnabled": true,
   "voiceEnabled": true
 }

@@ -180,6 +180,9 @@
     imagemagick # crops the frozen grim snapshot for the qs-picker region screenshot
     imv # image viewer for tmqs media enlarging (SLK_MEDIA_VIEWER -> media-viewer.sh)
     mpv # video player for tmqs media enlarging
+    aerc # vim-like terminal email client
+    w3m # HTML->text renderer used by aerc's html filter
+    chafa # renders images to terminal graphics (kitty protocol) for inline aerc images
     jq
     python3
     glib # provides gsettings - a CLI tool that reads/writes GNOME/GTK settings (e.g. dark/light mode preference that apps like Ghostty and Firefox listen to)
@@ -248,7 +251,8 @@
   # services.openssh.enable = true;
 
   # Open ports in the firewall.
-  # networking.firewall.allowedTCPPorts = [ ... ];
+  # 7777 = hemma home dashboard (~/repos/hemma), LAN-only.
+  networking.firewall.allowedTCPPorts = [ 7777 ];
   # networking.firewall.allowedUDPPorts = [ ... ];
   # Or disable the firewall altogether.
   # networking.firewall.enable = false;
