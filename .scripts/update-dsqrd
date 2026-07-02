@@ -54,14 +54,14 @@ case "$APP" in
         pkill -f 'share/dsqrd/dsqrd\.py' 2>/dev/null || true
         pkill -f 'quickshell -p .*/share/dsqrd/ui' 2>/dev/null || true
         sleep 1
-        SLK_UPDATE_CMD="$HOME/.scripts/update-dsqrd" \
+        SLK_UPDATE_CMD="kitty -e $HOME/.scripts/update-dsqrd" \
             setsid nohup dsqrd-client >/tmp/dsqrd.log 2>&1 </dev/null &
         ;;
     slqs)
         pkill -f '/bin/slqs$' 2>/dev/null || true
         pkill -f 'quickshell -p .*/share/slqs/ui' 2>/dev/null || true
         sleep 1
-        SLK_UPDATE_CMD="$HOME/.scripts/update-dsqrd slqs" \
+        SLK_UPDATE_CMD="kitty -e $HOME/.scripts/update-dsqrd slqs" \
             setsid nohup slqs-client >/tmp/slqs.log 2>&1 </dev/null &
         ;;
 esac
