@@ -286,9 +286,10 @@ layout {
 // (modules/Bar.qml + Notification*.qml), so the single qs process below renders
 // the bar, the on-screen notification popups, the notification centre, AND the
 // pickers. waybar and dunst are retired; swayosd-server stays for volume/
-// brightness OSD.
+// brightness OSD but runs as a systemd user service (swayosd.service) with
+// restart-on-crash + notification — NOT spawned here, since spawn-at-startup
+// never restarts it after its known startup/hot-plug SIGABRT.
 spawn-at-startup "swaybg" "-i" "/home/martin/wallpapers/forest.jpg" "-m" "fill"
-spawn-at-startup "swayosd-server"
 spawn-at-startup "qs" "-p" "/home/martin/repos/qs-picker/shell.qml"
 
 // Start kanshi for dynamic monitor configuration
