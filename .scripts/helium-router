@@ -12,9 +12,14 @@ launch() {
         out=$("$BOOKMARKS" route "$url" 2>/dev/null)
         [ -n "$out" ] && read -r dir port <<<"$out"
     fi
-    helium --user-data-dir="$HOME/.config/helium-$dir" \
+    # Launch detached and return immediately. When invoked as $BROWSER (e.g. by
+    # `az login`), the caller waits for this command to exit before serving its
+    # localhost OAuth callback; if we blocked (a fresh Helium foregrounds as the
+    # browser and never returns) that callback would hang forever.
+    setsid helium --user-data-dir="$HOME/.config/helium-$dir" \
            --profile-directory="$dir" \
-           --remote-debugging-port="$port" ${url:+"$url"}
+           --remote-debugging-port="$port" ${url:+"$url"} \
+           </dev/null >/dev/null 2>&1 &
 }
 
 if [ "$#" -eq 0 ]; then
