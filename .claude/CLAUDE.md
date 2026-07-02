@@ -55,3 +55,18 @@ My iOS apps (SwiftUI + XcodeGen `project.yml`, e.g. `notesapp-ios`, `helloworld`
 
 # dsqrd / slqs — updating the desktop chat clients
 The Discord (`dsqrd`) and Slack (`slqs`) Wayland clients are installed system-wide via the NixOS config at `~/.config/nixos/flake.nix`, which pins them as flake inputs from `github:daphen/dsqrd` and `github:daphen/slqs` (NOT from any local checkout — pulling `~/repos/dsqrd` does nothing to the running system). To update: `update-dsqrd` (or `update-dsqrd slqs`) — a `~/.scripts/` helper that bumps the flake lock, runs `sudo nixos-rebuild switch --flake ~/.config/nixos`, then restarts the long-running daemon + Quickshell UI (a rebuild swaps the binary but won't restart already-running processes). `update-dsqrd --check` only reports whether a newer `main` exists (exit 10 = update available). Both clients run a headless daemon (`dsqrd.py` / `slqs` binary) plus a `qs -p .../share/<app>/ui` UI process; the `*-client` wrapper starts the daemon then execs the UI.
+
+# Marking a Claude session done (qs-picker session overview)
+The qs-picker Claude session overview has a lifecycle "status" column (ongoing /
+done / restarted / n/a). When I tell you, in a session, that **the whole session
+is done/finished/complete** — i.e. the entire session's work is wrapped up, not
+just one task — run:
+
+    ~/repos/qs-picker/scripts/claude-sessions --mark-done
+
+It auto-detects the current session from the process tree, records it as `done`
+in the overview, and closes this terminal window (so the session goes inactive).
+Only run it when I clearly mean the session as a whole is over (e.g. "ok this
+session is done", "we're finished here", "this session is complete") — NOT for
+"that task is done" / "that's finished" about a single piece of work. After
+running it, stop; the window closes itself.
