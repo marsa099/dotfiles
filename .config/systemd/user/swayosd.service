@@ -1,0 +1,21 @@
+[Unit]
+Description=swayosd volume/brightness OSD server
+# Known bug (still in 0.3.1): SIGABRTs ~2s after a new DRM connector appears
+# (monitor hot-plug, suspend-resume replay, or plain session startup). This
+# unit restarts it AND fires a critical notification on every abnormal exit,
+# so a crash loop is loud instead of silent.
+PartOf=graphical-session.target
+After=graphical-session.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+ExecStart=/run/current-system/sw/bin/swayosd-server
+Restart=on-failure
+RestartSec=2
+ExecStopPost=/bin/sh -c 'if [ "$$SERVICE_RESULT" != success ]; then echo "CRASH result=$$SERVICE_RESULT exit=$$EXIT_STATUS — notifying + restarting"; /run/current-system/sw/bin/notify-send -u critical "swayosd-server crashed" "Result: $$SERVICE_RESULT ($$EXIT_STATUS) — restarting. Count crashes: journalctl --user -u swayosd -g CRASH"; fi'
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=graphical-session.target
