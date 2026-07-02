@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
 # Launch Helium in the "Private" profile. Used as $BROWSER so CLI / app
 # link-opens land in the same profile as the xdg default (helium-private.desktop).
-exec helium --user-data-dir="$HOME/.config/helium-Private" --profile-directory=Private "$@"
+# Detach and return immediately: callers invoking us as $BROWSER (e.g. `az login`)
+# wait for this command to exit before serving their localhost OAuth callback, so
+# a foreground Helium that never returns would hang that callback forever.
+setsid helium --user-data-dir="$HOME/.config/helium-Private" --profile-directory=Private "$@" \
+       </dev/null >/dev/null 2>&1 &
