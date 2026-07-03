@@ -13,9 +13,21 @@
 # Also sets DOTNET_ROOT as a session variable so other tools (roslyn-ls
 # etc.) can find the SDK.
 #
-# NuGet auth setup (one-time):
-#   dotnet tool install --global Microsoft.Artifacts.CredentialProvider.NuGet.Tool
-#   dotnet restore --interactive
+# NuGet auth for Azure DevOps Artifacts feeds (e.g. SIS.Common@Local):
+#   uses the Microsoft Artifacts Credential Provider. The env vars below force
+#   keyring-only credential storage:
+#     - SESSIONTOKENCACHE_ENABLED=false  -> never write the feed token to disk
+#       (it was persisted plaintext in ~/.local/share/MicrosoftCredentialProvider/
+#        SessionTokenCache.dat; disabled so it's re-derived in memory each restore)
+#     - MSAL_ENABLED + MSAL_FILECACHE_ENABLED=true -> remember the AAD login in
+#       gnome-keyring (via libsecret, wired below), so restores stay
+#       non-interactive without any plaintext secret on disk.
+#   This is isolated from the az CLI login: the provider uses its own AAD client
+#   id + keyring collection, while az keeps its cache under ~/.azure/.
+#
+#   One-time setup:
+#     dotnet tool install --global Microsoft.Artifacts.CredentialProvider.NuGet.Tool
+#     dotnet restore --interactive   # device-code login; token lands in keyring
 
 { pkgs, ... }:
 
@@ -33,7 +45,15 @@ let
   };
 in
 {
-  environment.sessionVariables.DOTNET_ROOT = "${dotnet-wrapped}/share/dotnet";
+  environment.sessionVariables = {
+    DOTNET_ROOT = "${dotnet-wrapped}/share/dotnet";
+
+    # Force the Artifacts Credential Provider to keyring-only storage:
+    # no plaintext feed-token file; remember the AAD login in gnome-keyring.
+    NUGET_CREDENTIALPROVIDER_SESSIONTOKENCACHE_ENABLED = "false";
+    NUGET_CREDENTIALPROVIDER_MSAL_ENABLED = "true";
+    NUGET_CREDENTIALPROVIDER_MSAL_FILECACHE_ENABLED = "true";
+  };
 
   environment.systemPackages = [
     dotnet-wrapped
