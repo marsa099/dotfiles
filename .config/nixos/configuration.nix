@@ -210,6 +210,7 @@
     tcpdump # CLI packet capture/analyzer
     postgresql # provides psql for connecting to Postgres (Vercel/Neon/Supabase etc.)
     calc
+    nautilus # GNOME Files — GUI file manager (Mod+E in niri)
   ]
   # Packages from external flake inputs (helium, claude-code, ...), wired
   # in flake.nix and passed through via specialArgs. See flake.nix `flakePackages`.
