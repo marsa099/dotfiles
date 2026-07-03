@@ -471,6 +471,7 @@ binds {
     Mod+Shift+Z { spawn "google-chrome-stable" "--profile-directory=Profile 4" "--app=https://portal.azure.com/"; }
     Mod+M { spawn-sh "$HOME/.scripts/niri/niri-mailbox-selector focus"; }
     Mod+Shift+M { spawn-sh "$HOME/.scripts/niri/niri-mailbox-selector choose"; }
+    Mod+E hotkey-overlay-title="File manager: Nautilus" { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus org.gnome.Nautilus nautilus"; }
 
     // Use spawn-sh to run a shell command. Do this if you need pipes, multiple commands, etc.
     // Note: the entire command goes as a single argument. It's passed verbatim to `sh -c`.
