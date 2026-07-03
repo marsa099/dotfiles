@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Screen brightness OSD wrapper for niri keybinds.
+# Lets the screen dim all the way to 0 (swayosd's default min is >0), and
+# mirrors that onto the keyboard backlight: screen at 0 -> keyboard off;
+# screen lit again from 0 -> keyboard back to full.
+set -euo pipefail
+
+kbd="tpacpi::kbd_backlight"
+kbd_max="$(brightnessctl -d "$kbd" max)"
+
+case "${1:-}" in
+    raise|lower)
+        swayosd-client --brightness "$1" --min-brightness 0
+        ;;
+    *)
+        echo "usage: brightness-osd raise|lower" >&2
+        exit 1
+        ;;
+esac
+
+if [ "$(brightnessctl -d intel_backlight get)" -le 0 ]; then
+    brightnessctl -d "$kbd" set 0 >/dev/null
+elif [ "$(brightnessctl -d "$kbd" get)" -eq 0 ]; then
+    brightnessctl -d "$kbd" set "$kbd_max" >/dev/null
+fi
