@@ -25,6 +25,7 @@
     ./modules/endcord.nix
     ./modules/rust.nix
     ./modules/claude-code-autoupdate.nix
+    ./modules/hemma.nix
   ];
 
   # Use the systemd-boot EFI boot loader.
@@ -251,8 +252,9 @@
   # services.openssh.enable = true;
 
   # Open ports in the firewall.
-  # 7777 = hemma home dashboard (~/repos/hemma), LAN-only.
-  networking.firewall.allowedTCPPorts = [ 7777 ];
+  # 7777 = hemma home dashboard — now opened conditionally (only on the home
+  # WiFi) by ./modules/hemma.nix, so it is NOT listed here.
+  # networking.firewall.allowedTCPPorts = [ ];
   # networking.firewall.allowedUDPPorts = [ ... ];
   # Or disable the firewall altogether.
   # networking.firewall.enable = false;
