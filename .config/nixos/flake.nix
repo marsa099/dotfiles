@@ -32,9 +32,7 @@
     # `dsqrd-client`) that bundles quickshell/mpv/imv and starts the daemon.
     #   - dsqrd (Discord): standalone, needs a token in ~/.config/dsqrd/profiles.json
     #   - slqs  (Slack):   companion to the `slk` TUI — run slk once to auth first
-    # TEMP: our fork's notification-avatars branch until daphen merges
-    # https://github.com/daphen/dsqrd/pull/3 — then revert to github:daphen/dsqrd.
-    dsqrd.url = "github:marsa099/dsqrd/notification-avatars";
+    dsqrd.url = "github:daphen/dsqrd";
     slqs.url = "github:daphen/slqs";
   };
 
