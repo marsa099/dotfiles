@@ -5,6 +5,10 @@ Watches ~/.claude/projects/ via inotify (raw syscalls through ctypes, no deps)
 and re-parses only appended JSONL bytes, so the counter updates within ~1s of
 every Claude Code event. Falls back to a 60s polling loop if inotify fails.
 
+Daily spend aggregates are persisted to ~/.cache/waybar-claude-cost/history.json;
+when Claude Code prunes a transcript (cleanupPeriodDays), its days are folded
+into a permanent archive there, so month/all-time history survives pruning.
+
 `waybar-claude-cost --toggle` flips the display currency between USD and SEK
 (wired to on-click in the waybar config). The USD→SEK rate is fetched from
 open.er-api.com at most every 12h and cached; last known rate is used offline.
@@ -24,6 +28,8 @@ from datetime import datetime, timedelta
 PROJECTS = os.path.expanduser("~/.claude/projects")
 STATE_DIR = os.path.expanduser("~/.cache/waybar-claude-cost")
 CURRENCY_FILE = os.path.join(STATE_DIR, "currency")
+HISTORY_FILE = os.path.join(STATE_DIR, "history.json")
+SAVE_INTERVAL = 60
 RATE_FILE = os.path.join(STATE_DIR, "usd_sek")
 RATE_URL = "https://open.er-api.com/v6/latest/USD"
 RATE_MAX_AGE = 12 * 3600
@@ -122,6 +128,52 @@ def fmt(usd, currency, rate):
 
 # path -> {"offset": int, "size": int, "mtime": float, "days": {date: cost}}
 file_state = {}
+# date -> cost, carried over from transcripts that have since been deleted
+# (Claude Code prunes them after cleanupPeriodDays). Persisted with file_state
+# in HISTORY_FILE so spend history survives both pruning and restarts.
+archive = defaultdict(float)
+_history_dirty = False
+_last_save = 0.0
+
+
+def load_history():
+    try:
+        with open(HISTORY_FILE) as fh:
+            hist = json.load(fh)
+    except (OSError, ValueError):
+        return
+    for d, c in (hist.get("archive") or {}).items():
+        archive[d] += float(c)
+    for path, st in (hist.get("files") or {}).items():
+        days = defaultdict(float)
+        for d, c in (st.get("days") or {}).items():
+            days[d] = float(c)
+        file_state[path] = {"offset": int(st.get("offset", 0)),
+                            "size": int(st.get("size", -1)),
+                            "mtime": float(st.get("mtime", -1.0)),
+                            "days": days}
+
+
+def save_history():
+    global _history_dirty, _last_save
+    data = {"archive": dict(archive),
+            "files": {p: {"offset": s["offset"], "size": s.get("size", -1),
+                          "mtime": s.get("mtime", -1.0), "days": dict(s["days"])}
+                      for p, s in file_state.items()}}
+    tmp = HISTORY_FILE + ".tmp"
+    try:
+        with open(tmp, "w") as fh:
+            json.dump(data, fh)
+        os.replace(tmp, HISTORY_FILE)
+    except OSError:
+        return
+    _history_dirty = False
+    _last_save = time.time()
+
+
+def maybe_save():
+    if _history_dirty and time.time() - _last_save >= SAVE_INTERVAL:
+        save_history()
 
 
 def parse_lines(data, days):
@@ -168,6 +220,7 @@ def update_file(path, st):
 
 
 def scan():
+    global _history_dirty
     changed = False
     seen = set()
     for path in glob.glob(f"{PROJECTS}/*/*.jsonl"):
@@ -180,8 +233,12 @@ def scan():
             changed = True
     for path in list(file_state):
         if path not in seen:
+            for d, c in file_state[path]["days"].items():
+                archive[d] += c
             del file_state[path]
             changed = True
+    if changed:
+        _history_dirty = True
     return changed
 
 
@@ -191,6 +248,8 @@ last_output = None
 def emit():
     global last_output
     days = defaultdict(float)
+    for d, c in archive.items():
+        days[d] += c
     for state in file_state.values():
         for d, c in state["days"].items():
             days[d] += c
@@ -205,18 +264,25 @@ def emit():
         cls = "high"
     elif today_cost >= 500:
         cls = "medium"
-    tooltip = (
-        "Claude Code · API-equivalent spend (list price)\n"
-        f"Today:\t\t{fmt(today_cost, currency, rate)}"
-    )
+    # Two-column table: labels left, values right-aligned. The tooltip font is
+    # monospace, so space-padding lines the value column up exactly.
+    rows = [("Today:", fmt(today_cost, currency, rate), "")]
     first = now.replace(day=1)
     for _ in range(3):
         month = first.strftime("%Y-%m")
         month_cost = sum(c for d, c in days.items() if d.startswith(month))
         active_days = sum(1 for d in days if d.startswith(month))
-        tooltip += f"\n{first.strftime('%B')}:\t\t{fmt(month_cost, currency, rate)} ({active_days} active days)"
+        rows.append((first.strftime("%B") + ":", fmt(month_cost, currency, rate),
+                     f"({active_days} active days)"))
         first = (first - timedelta(days=1)).replace(day=1)
-    tooltip += f"\nAll time:\t{fmt(total, currency, rate)}"
+    rows.append(("All time:", fmt(total, currency, rate), ""))
+    lw = max(len(lbl) for lbl, _, _ in rows)
+    vw = max(len(val) for _, val, _ in rows)
+    table = "\n".join(
+        f"{lbl:<{lw}}  {val:>{vw}}" + (f"  {sfx}" if sfx else "")
+        for lbl, val, sfx in rows
+    )
+    tooltip = "Claude Code · API-equivalent spend (list price)\n" + table
     if currency == "SEK":
         tooltip += f"\n1 USD = {rate:.2f} kr"
     tooltip += "\nClick: USD ⇄ SEK"
@@ -246,7 +312,9 @@ def main():
                     watched.add(d)
 
     add_watches()
+    load_history()
     scan()
+    save_history()
     emit()
 
     while True:
@@ -264,6 +332,7 @@ def main():
                 add_watches()
         scan()
         emit()
+        maybe_save()
 
 
 if __name__ == "__main__":
