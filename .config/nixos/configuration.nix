@@ -266,11 +266,22 @@
     enable = true;
     nssmdns4 = true;
     openFirewall = true;
+    # Only the real WiFi interface — otherwise avahi also publishes address
+    # records for every docker bridge/veth, and nixos.local resolves to a
+    # useless 172.x address (add an ethernet iface here if one appears).
+    allowInterfaces = [ "wlp0s20f3" ];
     publish = {
       enable = true;
       addresses = true;
     };
   };
+  # nss-mdns refuses to resolve *.local on networks whose router answers
+  # unicast DNS for the "local." domain (e.g. Galaxen). This file's presence
+  # disables that SOA heuristic so .local always goes via mDNS.
+  environment.etc."mdns.allow".text = ''
+    .local.
+    .local
+  '';
 
   # Copy the NixOS configuration file and link it from the resulting system
   # (/run/current-system/configuration.nix). This is useful in case you
