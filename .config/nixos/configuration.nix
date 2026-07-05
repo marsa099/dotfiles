@@ -24,7 +24,6 @@
     ./modules/teams-fork.nix
     ./modules/endcord.nix
     ./modules/rust.nix
-    ./modules/claude-code-autoupdate.nix
     ./modules/hemma.nix
   ];
 
