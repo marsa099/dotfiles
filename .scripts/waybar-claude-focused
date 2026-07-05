@@ -2,9 +2,13 @@
 """Waybar module: the Claude Code session you're currently focused in, live.
 
 Reads niri's event stream and, whenever the focused window (or its title)
-changes, maps the focused terminal window to a running Claude session via
-~/.claude/sessions/<pid>.json and emits a waybar JSON line. The session's
-custom name is preferred; otherwise the terminal title (sans status glyph).
+changes, maps the focused terminal window to a running Claude session and emits
+a waybar JSON line. Live sessions come from ~/.claude/sessions/<pid>.json when
+Claude writes it; newer builds (agent-teams / Remote Control) leave that empty,
+so sessions are also discovered from /proc (a claude process carries
+CLAUDE_CODE_SESSION_ID, its resume name in --name, and Remote Control via
+CLAUDE_CODE_BRIDGE_SESSION_ID). The session's custom name is preferred;
+otherwise the terminal title (sans status glyph).
 Empty text when the focused window isn't a Claude session, so the module hides.
 
 Event-driven, so the label flips the instant you switch windows — no polling.
@@ -64,13 +68,81 @@ def ancestors(pid, limit=25):
     return chain
 
 
-def load_registry():
-    """Live sessions only (procStart-verified): list of dicts with pid/name/…"""
+def _read_environ(pid):
+    try:
+        with open(f"/proc/{pid}/environ", "rb") as fh:
+            raw = fh.read()
+    except OSError:
+        return {}
+    env = {}
+    for part in raw.split(b"\0"):
+        if b"=" in part:
+            k, _, v = part.partition(b"=")
+            env[k.decode("utf-8", "replace")] = v.decode("utf-8", "replace")
+    return env
+
+
+def _cmdline_name(pid):
+    """The `--name <x>` a claude process was launched with, or None."""
+    try:
+        with open(f"/proc/{pid}/cmdline", "rb") as fh:
+            args = [a.decode("utf-8", "replace") for a in fh.read().split(b"\0") if a]
+    except OSError:
+        return None
+    for i, a in enumerate(args):
+        if a == "--name" and i + 1 < len(args):
+            return args[i + 1]
+    return None
+
+
+def scan_proc_registry():
+    """Live claude sessions discovered from /proc — the source once newer builds
+    (agent-teams / Remote Control) stopped writing ~/.claude/sessions/<pid>.json.
+    Matching here is by process ancestry (see label_for), so only pid/name/remote
+    are needed; busy/idle status isn't exposed outside Claude's runtime (None)."""
+    candidates = {}  # pid -> env
+    try:
+        entries = os.listdir("/proc")
+    except OSError:
+        return []
+    for entry in entries:
+        if not entry.isdigit():
+            continue
+        pid = int(entry)
+        try:
+            with open(f"/proc/{pid}/comm") as fh:
+                comm = fh.read().strip()
+        except OSError:
+            continue
+        if "claude" not in comm and comm != "node":
+            continue
+        env = _read_environ(pid)
+        if env.get("CLAUDE_CODE_SESSION_ID"):
+            candidates[pid] = env
     out = []
+    for pid, env in candidates.items():
+        # Skip a child claude/node subprocess; keep the top-level session process.
+        if ppid_of(pid) in candidates:
+            continue
+        out.append({
+            "pid": pid,
+            "name": _cmdline_name(pid),
+            "status": None,
+            "remote": env.get("CLAUDE_CODE_BRIDGE_SESSION_ID") is not None,
+        })
+    return out
+
+
+def load_registry():
+    """Live sessions (list of dicts with pid/name/status/remote). Unions the
+    procStart-verified ~/.claude/sessions registry (older builds) with /proc
+    discovery (newer builds, where that registry is empty)."""
+    out = []
+    seen_pids = set()
     try:
         files = os.listdir(REGISTRY)
     except OSError:
-        return out
+        files = []
     for fn in files:
         if not fn.endswith(".json"):
             continue
@@ -88,6 +160,11 @@ def load_registry():
             "status": r.get("status"),
             "remote": r.get("bridgeSessionId") is not None,
         })
+        seen_pids.add(pid)
+    for s in scan_proc_registry():
+        if s["pid"] not in seen_pids:
+            out.append(s)
+            seen_pids.add(s["pid"])
     return out
 
 
