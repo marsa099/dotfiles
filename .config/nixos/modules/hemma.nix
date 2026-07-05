@@ -1,6 +1,6 @@
 # hemma — apartment dashboard (~/repos/hemma), run as a system service that is
-# gated on being connected to the home WiFi. Off that WiFi the service refuses
-# to start and TCP 7777 is closed in the firewall.
+# gated on being connected to a trusted WiFi. Off those networks the service
+# refuses to start and TCP 7777 is closed in the firewall.
 {
   config,
   lib,
@@ -9,17 +9,22 @@
 }:
 
 let
-  homeSsid = "Alpaca Industries";
+  allowedSsids = [
+    "Alpaca Industries"
+    "Galaxen"
+  ];
   wifiIface = "wlp0s20f3";
   port = 7777;
   appDir = "/home/martin/repos/hemma";
   user = "martin";
 
-  # Exit 0 iff the active WiFi connection is the home network. Used both as the
-  # service ExecCondition and by the firewall/dispatcher logic below.
+  # Exit 0 iff the active WiFi connection is one of the trusted networks. Used
+  # both as the service ExecCondition and by the firewall/dispatcher logic below.
   onHomeWifi = pkgs.writeShellScript "hemma-on-home-wifi" ''
     ${pkgs.networkmanager}/bin/nmcli -t -f active,ssid dev wifi 2>/dev/null \
-      | ${pkgs.gnugrep}/bin/grep -qx "yes:${homeSsid}"
+      | ${pkgs.gnugrep}/bin/grep -qxF ${
+        lib.concatMapStringsSep " " (s: ''-e "yes:${s}"'') allowedSsids
+      }
   '';
 
   # Reacts to WiFi changes: re-evaluate the firewall (which re-checks the SSID
@@ -65,6 +70,10 @@ in
     wantedBy = [ "multi-user.target" ];
     wants = [ "network-online.target" ];
     after = [ "network-online.target" "NetworkManager.service" ];
+    # No start-rate limit: the hot-reload path unit restarts on every save, and
+    # a crash-looping dashboard should keep retrying (RestartSec throttles it)
+    # rather than lock itself out until the next WiFi change.
+    unitConfig.StartLimitIntervalSec = 0;
     serviceConfig = {
       Type = "simple";
       User = user;
@@ -115,9 +124,14 @@ in
   };
   systemd.services.hemma-reload = {
     description = "Restart hemma when server.py changes";
+    # Plain restart (not try-restart) so a crashed/stopped hemma comes back on
+    # the next code save too; ExecCondition still keeps it off untrusted WiFi.
     serviceConfig = {
       Type = "oneshot";
-      ExecStart = "${pkgs.systemd}/bin/systemctl try-restart hemma.service";
+      ExecStart = pkgs.writeShellScript "hemma-reload" ''
+        ${pkgs.systemd}/bin/systemctl reset-failed hemma.service 2>/dev/null || true
+        ${pkgs.systemd}/bin/systemctl restart hemma.service
+      '';
     };
   };
 }
