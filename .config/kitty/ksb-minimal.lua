@@ -39,6 +39,34 @@ require("kitty-scrollback").setup({
 			-- (yank_register defaults to the unnamed register). Disable that.
 			yank_register_enabled = false,
 		},
+		callbacks = {
+			-- The plugin hardcodes --add-wrap-markers on `kitty @ get-text` so blank
+			-- screen rows become real buffer lines, padding the buffer to full terminal
+			-- height (its cursor math needs that). We don't want the padding: once the
+			-- plugin is done positioning, strip the trailing blank lines and park the
+			-- cursor on the last content line (= the prompt row), like the terminal.
+			-- Content shorter than the window then renders from the top, exactly as it
+			-- did in the terminal.
+			after_ready = function(kitty_data)
+				local buf = vim.api.nvim_get_current_buf()
+				local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+				local last = #lines
+				while last > 1 and lines[last]:match("^%s*$") do
+					last = last - 1
+				end
+				if last < #lines then
+					-- finished terminal buffer: modifiable can be toggled to edit it
+					vim.bo[buf].modifiable = true
+					vim.api.nvim_buf_set_lines(buf, last, -1, false, {})
+					vim.bo[buf].modifiable = false
+				end
+				-- if kitty was scrolled up when opened, the plugin preserved that view;
+				-- moving the cursor to the last line would yank it back down — skip.
+				if (kitty_data.scrolled_by or 0) <= 0 then
+					vim.api.nvim_win_set_cursor(0, { last, 0 })
+				end
+			end,
+		},
 	},
 })
 
@@ -92,20 +120,13 @@ vim.api.nvim_create_autocmd("FileType", {
 			vim.wo[win].colorcolumn = ""
 			-- don't shove the view up when the cursor sits on the last line
 			vim.wo[win].scrolloff = 0
+			-- trailing blank padding is stripped in after_ready, so the region below
+			-- the content is end-of-buffer; hide the '~' markers to look like the terminal
+			vim.wo[win].fillchars = "eob: "
 		end
 		apply()
-		vim.schedule(function()
-			apply()
-			-- cursor to the middle of the window WITHOUT scrolling, so the plugin's
-			-- terminal-matching view alignment is preserved (G would anchor the last
-			-- captured blank line at the bottom and shove the content up a few rows).
-			local win = vim.fn.bufwinid(ev.buf)
-			if win == -1 then
-				win = vim.api.nvim_get_current_win()
-			end
-			vim.api.nvim_win_call(win, function()
-				vim.cmd("normal! M")
-			end)
-		end)
+		-- the plugin forces its own window options after the filetype is set, so
+		-- re-apply once more on the next tick to win the race
+		vim.schedule(apply)
 	end,
 })
