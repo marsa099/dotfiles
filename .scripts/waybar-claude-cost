@@ -223,7 +223,10 @@ def scan():
     global _history_dirty
     changed = False
     seen = set()
-    for path in glob.glob(f"{PROJECTS}/*/*.jsonl"):
+    # Recursive: main transcripts live at PROJECTS/<proj>/<session>.jsonl, but
+    # subagent transcripts moved to PROJECTS/<proj>/<session>/subagents/*.jsonl
+    # in a newer Claude Code release — a plain */*.jsonl glob silently drops them.
+    for path in glob.glob(f"{PROJECTS}/**/*.jsonl", recursive=True):
         seen.add(path)
         try:
             st = os.stat(path)
@@ -306,7 +309,9 @@ def main():
     def add_watches():
         if fd < 0:
             return
-        for d in [PROJECTS, STATE_DIR] + glob.glob(f"{PROJECTS}/*"):
+        dirs = [PROJECTS, STATE_DIR] + glob.glob(f"{PROJECTS}/**/", recursive=True)
+        for d in dirs:
+            d = d.rstrip("/") or d
             if d not in watched and os.path.isdir(d):
                 if libc.inotify_add_watch(fd, d.encode(), MASK) >= 0:
                     watched.add(d)
