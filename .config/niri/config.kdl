@@ -478,13 +478,6 @@ binds {
     // For example, this is a standard bind to toggle the screen reader (orca).
     Super+Alt+S allow-when-locked=true hotkey-overlay-title=null { spawn-sh "pkill orca || exec orca"; }
 
-    // Claude Code permission prompt responses (via tmux send-keys)
-    Mod+Ctrl+Y hotkey-overlay-title=null { spawn "claude-notify-respond" "1"; }
-    Mod+Ctrl+A hotkey-overlay-title=null { spawn "claude-notify-respond" "2"; }
-    Mod+Ctrl+N hotkey-overlay-title=null { spawn "claude-notify-respond" "3"; }
-    Mod+Ctrl+P hotkey-overlay-title=null { spawn "claude-notify-navigate"; }
-    Mod+Ctrl+O hotkey-overlay-title=null { spawn "claude-notify-goto"; }
-
     // Toggle Do Not Disturb (dunst pause)
     Mod+Ctrl+D hotkey-overlay-title=null { spawn "qs" "-p" "/home/martin/repos/qs-picker/shell.qml" "ipc" "call" "dnd" "toggle"; }
 
