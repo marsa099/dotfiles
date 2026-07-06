@@ -6,7 +6,7 @@
   "permissions": {
     "defaultMode": "auto"
   },
-  "model": "claude-fable-5[1m]",
+  "model": "opus",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -16,37 +16,42 @@
             "command": "p=$(jq -r '.prompt // \"\"'); name=$(echo \"$p\" | sed -nE 's|^/rename[[:space:]]+(.*[^[:space:]])[[:space:]]*$|\\1|p'); [ -n \"${TMUX:-}\" ] && [ -n \"$name\" ] && tmux rename-window \"$name\"; exit 0"
           }
         ]
-      }
-    ],
-    "PermissionRequest": [
+      },
       {
-        "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "claude-notify-permission-request"
+            "command": "/home/martin/repos/qs-picker/scripts/claude-session-register"
           }
         ]
       }
     ],
-    "PostToolUse": [
+    "SessionStart": [
       {
-        "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "claude-notify-post-tool-use"
+            "command": "/home/martin/repos/qs-picker/scripts/claude-session-register"
           }
         ]
       }
     ],
-    "Notification": [
+    "Stop": [
       {
-        "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "claude-notify-notification"
+            "command": "/home/martin/repos/qs-picker/scripts/claude-session-register"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/martin/repos/qs-picker/scripts/claude-session-register"
           }
         ]
       }
