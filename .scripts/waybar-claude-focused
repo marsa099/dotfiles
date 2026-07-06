@@ -83,15 +83,17 @@ def _read_environ(pid):
 
 
 def _cmdline_name(pid):
-    """The `--name <x>` a claude process was launched with, or None."""
+    """The `--name <x>` / `-n <x>` a claude process was launched with, or None."""
     try:
         with open(f"/proc/{pid}/cmdline", "rb") as fh:
             args = [a.decode("utf-8", "replace") for a in fh.read().split(b"\0") if a]
     except OSError:
         return None
     for i, a in enumerate(args):
-        if a == "--name" and i + 1 < len(args):
+        if a in ("--name", "-n") and i + 1 < len(args):
             return args[i + 1]
+        if a.startswith("--name="):
+            return a.split("=", 1)[1]
     return None
 
 
@@ -137,8 +139,7 @@ def load_registry():
     """Live sessions (list of dicts with pid/name/status/remote). Unions the
     procStart-verified ~/.claude/sessions registry (older builds) with /proc
     discovery (newer builds, where that registry is empty)."""
-    out = []
-    seen_pids = set()
+    by_pid = {}
     try:
         files = os.listdir(REGISTRY)
     except OSError:
@@ -154,18 +155,26 @@ def load_registry():
         pid = r.get("pid")
         if not pid or starttime_of(pid) != str(r.get("procStart")):
             continue
-        out.append({
+        entry = {
             "pid": pid,
             "name": r.get("name"),
             "status": r.get("status"),
             "remote": r.get("bridgeSessionId") is not None,
-        })
-        seen_pids.add(pid)
+        }
+        # A session can have two registry files (Claude's own <pid>.json and
+        # the register hook's <sessionId>.json); merge per pid, preferring
+        # non-null name/status over a sparser duplicate.
+        prev = by_pid.get(pid)
+        if prev:
+            for k in ("name", "status"):
+                if entry[k] is None:
+                    entry[k] = prev[k]
+            entry["remote"] = entry["remote"] or prev["remote"]
+        by_pid[pid] = entry
     for s in scan_proc_registry():
-        if s["pid"] not in seen_pids:
-            out.append(s)
-            seen_pids.add(s["pid"])
-    return out
+        if s["pid"] not in by_pid:
+            by_pid[s["pid"]] = s
+    return list(by_pid.values())
 
 
 def strip_glyph(title):
