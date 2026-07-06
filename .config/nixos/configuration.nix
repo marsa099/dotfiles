@@ -194,9 +194,8 @@
     wev # tool to see keycodes for key input etc
     brightnessctl # brightness control via keyboard brightness keys
     unstable.swayosd # on-screen display for brightness/volume changes (0.3.1 did NOT fix the DRM-connector SIGABRT — supervised by swayosd.service user unit instead)
-    unstable.quickshell # QML desktop-shell toolkit — powers ~/repos/qs-picker (Helium profile picker; future bar/notifications)
-    dunst # notification daemon
-    libnotify # provides notify-send for sending desktop notifications
+    unstable.quickshell # QML desktop-shell toolkit — powers ~/repos/qs-picker (Helium profile picker + bar + notifications; replaced dunst)
+    libnotify # provides notify-send for sending desktop notifications (received by qs-picker NotifService)
     pass # password manager (pass)
     terraform
     spotify-player

@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-dunstctl set-paused toggle
-pkill -SIGRTMIN+10 waybar

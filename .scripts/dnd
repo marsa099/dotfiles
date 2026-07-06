@@ -1,6 +1,0 @@
-#!/usr/bin/env bash
-if [ "$(dunstctl is-paused)" = "true" ]; then
-    echo '{"text":"󰽥    DO NOT DISTURB","tooltip":"Do Not Disturb: ON","class":"active"}'
-else
-    echo '{"text":"","tooltip":"Notifications active","class":"inactive"}'
-fi
