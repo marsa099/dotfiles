@@ -165,7 +165,7 @@
   hardware.bluetooth.enable = true;
   services.blueman.enable = true;
 
-  # Battery monitoring (required by waybar battery module)
+  # Battery monitoring (battery % in the qs-picker bar)
   services.upower.enable = true;
 
   # Vial (the GUI app for remapping QMK/Vial keyboards, installed below) talks to
@@ -191,7 +191,6 @@
     vial
     tmux
     git
-    waybar
     wget
     fuzzel
     rofi
@@ -226,7 +225,7 @@
     pass # password manager (pass)
     terraform
     spotify-player
-    wtype # To be able to send keystrokes to a terminal from dunst notification for claude notifications
+    wtype # sends keystrokes for the claude-code-notify respond flow (replaced dunst)
     cloc # Count Lines Of Code
     sqlcmd # MS SQL CLI client
     kanshi # dynamic monitor configuration
