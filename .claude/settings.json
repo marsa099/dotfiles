@@ -6,7 +6,7 @@
   "permissions": {
     "defaultMode": "auto"
   },
-  "model": "opus",
+  "model": "fable",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -71,7 +71,7 @@
     "enabled": true,
     "mode": "hold"
   },
-  "theme": "custom:dotfiles-dark",
+  "theme": "custom:dotfiles-light",
   "preferredNotifChannel": "notifications_disabled",
   "remoteControlAtStartup": true,
   "agentPushNotifEnabled": true,
