@@ -30,6 +30,19 @@
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
+  # Cap the boot menu (and kernels copied to the ESP) at the 10 newest
+  # generations — this is the cold-rollback depth available at the boot screen.
+  boot.loader.systemd-boot.configurationLimit = 10;
+
+  # Weekly GC of generations older than 30 days, so the store stays bounded and
+  # generations don't re-accumulate (they had piled up to ~200 before). This is
+  # independent of configurationLimit above: the limit bounds /boot, this bounds
+  # /nix/store. Anything newer than 30 days is always kept.
+  nix.gc = {
+    automatic = true;
+    dates = "weekly";
+    options = "--delete-older-than 30d";
+  };
 
   # Blacklist kernel modules that are unused here but serve only as local-root
   # attack surface, auto-loadable by unprivileged users:
