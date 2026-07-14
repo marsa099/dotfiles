@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Add a Slack workspace to slqs without installing slk.
+# slqs reads tokens from ~/.local/share/slqs/tokens/<team_id>.json — the same
+# JSON format slk writes. This grabs your browser session creds, verifies them
+# against Slack (auth.test), fills in team_id/team_name, and writes the file.
+#
+# You need two values from a logged-in Slack browser tab (app.slack.com):
+#   1. xoxc token  — DevTools Console:  JSON.parse(localStorage.localConfig_v2)
+#      .teams[ Object.keys(JSON.parse(localStorage.localConfig_v2).teams)[0] ].token
+#   2. d cookie    — DevTools > Application > Cookies > https://app.slack.com > "d"
+#                    (HttpOnly, so it can't be read from the Console — copy it here)
+set -euo pipefail
+
+TOKDIR="${XDG_DATA_HOME:-$HOME/.local/share}/slqs/tokens"
+mkdir -p "$TOKDIR"
+
+read -rsp "Paste xoxc token (xoxc-...): " XOXC; echo
+read -rsp "Paste d cookie value (xoxd-...): " DCOOKIE; echo
+
+[ -n "$XOXC" ] && [ -n "$DCOOKIE" ] || { echo "both values are required" >&2; exit 1; }
+
+echo "verifying with Slack..."
+resp=$(curl -s -X POST "https://slack.com/api/auth.test" \
+    --data-urlencode "token=$XOXC" \
+    --cookie "d=$DCOOKIE")
+
+if [ "$(echo "$resp" | jq -r '.ok')" != "true" ]; then
+    echo "auth failed: $(echo "$resp" | jq -r '.error // "unknown error"')" >&2
+    exit 1
+fi
+
+TEAM_ID=$(echo "$resp" | jq -r '.team_id')
+TEAM_NAME=$(echo "$resp" | jq -r '.team')
+USER=$(echo "$resp" | jq -r '.user')
+
+OUT="$TOKDIR/$TEAM_ID.json"
+jq -n --arg t "$XOXC" --arg c "$DCOOKIE" --arg id "$TEAM_ID" --arg n "$TEAM_NAME" \
+    '{access_token:$t, cookie:$c, team_id:$id, team_name:$n}' > "$OUT"
+chmod 600 "$OUT"
+
+echo "saved workspace '$TEAM_NAME' (as $USER, $TEAM_ID)"
+echo "  -> $OUT"
+echo "restart the slqs daemon to pick it up:  pkill -x slqs; slqs >/tmp/slqs.log 2>&1 &"
