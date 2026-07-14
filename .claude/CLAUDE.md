@@ -56,17 +56,28 @@ My iOS apps (SwiftUI + XcodeGen `project.yml`, e.g. `notesapp-ios`, `helloworld`
 # dsqrd / slqs — updating the desktop chat clients
 The Discord (`dsqrd`) and Slack (`slqs`) Wayland clients are installed system-wide via the NixOS config at `~/.config/nixos/flake.nix`, which pins them as flake inputs from `github:daphen/dsqrd` and `github:daphen/slqs` (NOT from any local checkout — pulling `~/repos/dsqrd` does nothing to the running system). To update: `update-dsqrd` (or `update-dsqrd slqs`) — a `~/.scripts/` helper that bumps the flake lock, runs `sudo nixos-rebuild switch --flake ~/.config/nixos`, then restarts the long-running daemon + Quickshell UI (a rebuild swaps the binary but won't restart already-running processes). `update-dsqrd --check` only reports whether a newer `main` exists (exit 10 = update available). Both clients run a headless daemon (`dsqrd.py` / `slqs` binary) plus a `qs -p .../share/<app>/ui` UI process; the `*-client` wrapper starts the daemon then execs the UI.
 
-# Marking a Claude session done (qs-picker session overview)
+Both clients' theme hardcodes "GeistMono Nerd Font" but the nix packages don't depend on it — if it's missing, all text silently falls back to DejaVu Sans (proportional, wobbly). It's installed user-level in `~/.local/share/fonts/`; the proper home is `pkgs.nerd-fonts.geist-mono` in `fonts.packages`. A quickshell UI only picks up newly installed fonts after a UI restart.
+
+slqs auth: no `slk` tool on this machine — write `~/.local/share/slqs/tokens/<teamID>.json` by hand with `access_token` (xoxc-…, from `localStorage.localConfig_v2` on a loaded app.slack.com client tab) and `cookie` (the HttpOnly `d` cookie value, kept URL-encoded, from DevTools cookies panel). Re-do this if the browser session that minted them is signed out.
+
+# Ending a Claude session (qs-picker session overview)
 The qs-picker Claude session overview has a lifecycle "status" column (ongoing /
-done / restarted / n/a). When I tell you, in a session, that **the whole session
-is done/finished/complete** — i.e. the entire session's work is wrapped up, not
-just one task — run:
+done / parked / restarted / n/a). When I tell you, in a session, to end the
+**whole session** — not just one task — pick the marker by what I said:
 
-    ~/repos/qs-picker/scripts/claude-sessions --mark-done
+- I say it's **done/finished/complete** ("mark as done", "ok this session is
+  done", "we're finished here", "this session is complete") → run:
 
-It auto-detects the current session from the process tree, records it as `done`
-in the overview, and closes this terminal window (so the session goes inactive).
-Only run it when I clearly mean the session as a whole is over (e.g. "ok this
-session is done", "we're finished here", "this session is complete") — NOT for
-"that task is done" / "that's finished" about a single piece of work. After
-running it, stop; the window closes itself.
+      ~/repos/qs-picker/scripts/claude-sessions --mark-done
+
+- I just want to **end/close the session** without calling it done ("end
+  session", "close this session", "park this", "that's enough for now" — the
+  work is unfinished) → run:
+
+      ~/repos/qs-picker/scripts/claude-sessions --mark-parked
+
+Both auto-detect the current session from the process tree, record the status
+(`done` or `parked`) in the overview, and close this terminal window (so the
+session goes inactive). Only run them when I clearly mean the session as a
+whole — NOT for "that task is done" / "that's finished" about a single piece of
+work. After running either, stop; the window closes itself.
