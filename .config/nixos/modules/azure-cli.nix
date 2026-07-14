@@ -1,8 +1,11 @@
 # Azure CLI with DevOps extension for NixOS.
 #
-# Uses unstable channel because stable has a Python namespace packaging bug
-# (nixpkgs#490035) that breaks all `az deployment` commands (e.g. `az deployment
-# sub what-if`) with "'NoneType' object has no attribute '__name__'".
+# Was on the unstable channel because 25.11 stable had a Python namespace
+# packaging bug (nixpkgs#490035) that broke all `az deployment` commands (e.g.
+# `az deployment sub what-if`) with "'NoneType' object has no attribute
+# '__name__'". Fixed by nixpkgs#490296 and verified clean in 26.05 stable
+# (2.86.0), so this uses plain pkgs now. If you ever need a newer az than the
+# stable branch carries, re-pin just this back to unstable.
 #
 # NixOS azure-cli can't install the Python keyring package, so
 # `az devops login` fails. This wrapper reads the PAT from GNOME Keyring
@@ -43,10 +46,10 @@
 #   waybar (build/release read):
 #     secret-tool store --label="Azure DevOps PAT (waybar)" service azure-devops type waybar
 
-{ pkgs, unstable, ... }:
+{ pkgs, ... }:
 
 let
-  az-unwrapped = unstable.azure-cli.withExtensions [ unstable.azure-cli.extensions.azure-devops ];
+  az-unwrapped = pkgs.azure-cli.withExtensions [ pkgs.azure-cli.extensions.azure-devops ];
   az-wrapped = pkgs.symlinkJoin {
     name = "azure-cli-wrapped";
     paths = [ az-unwrapped ];
