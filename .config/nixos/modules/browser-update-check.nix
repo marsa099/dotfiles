@@ -54,8 +54,15 @@ in
     wantedBy = [ "timers.target" ];
     timerConfig = {
       OnCalendar = "daily";
-      Persistent = true; # catch up after the laptop was off
-      RandomizedDelaySec = "30m";
+      # If the daily run was missed because the machine was off/suspended,
+      # Persistent triggers it as soon as the user session comes back up on the
+      # next power-on — the missed check is not skipped, just deferred to boot.
+      Persistent = true;
+      # Small delay only (not "as soon as" defeating): gives the session's
+      # notification daemon (qs-picker NotifService) a moment to start after
+      # login, so a catch-up notification on boot is actually delivered rather
+      # than fired into a dead bus and dropped.
+      RandomizedDelaySec = "2m";
     };
   };
 }
