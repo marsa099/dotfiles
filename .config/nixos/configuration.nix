@@ -31,6 +31,12 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
+  # Mitigate CVE-2026-31431 ("Copy Fail"): the AF_ALG AEAD interface
+  # (algif_aead) is auto-loadable by unprivileged users and is the sole attack
+  # surface for the local-root page-cache write. Nothing here uses it, so
+  # blacklisting it severs the exploit chain independent of kernel patch status.
+  boot.blacklistedKernelModules = [ "algif_aead" ];
+
   nix.settings.experimental-features = [
     "nix-command"
     "flakes"
