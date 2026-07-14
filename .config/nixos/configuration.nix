@@ -31,11 +31,19 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  # Mitigate CVE-2026-31431 ("Copy Fail"): the AF_ALG AEAD interface
-  # (algif_aead) is auto-loadable by unprivileged users and is the sole attack
-  # surface for the local-root page-cache write. Nothing here uses it, so
-  # blacklisting it severs the exploit chain independent of kernel patch status.
-  boot.blacklistedKernelModules = [ "algif_aead" ];
+  # Blacklist kernel modules that are unused here but serve only as local-root
+  # attack surface, auto-loadable by unprivileged users:
+  #   algif_aead      - CVE-2026-31431 "Copy Fail" (AF_ALG AEAD page-cache write)
+  #   esp4/esp6       - CVE-2026-43284 "Dirty Frag" (xfrm/ESP page-cache write)
+  #   rxrpc           - CVE-2026-43500 "Dirty Frag" (RxRPC page-cache write)
+  # This machine uses no AF_ALG AEAD, no IPsec/ESP VPN, and no AFS/rxrpc, so
+  # blacklisting severs each exploit chain with no functional cost.
+  boot.blacklistedKernelModules = [
+    "algif_aead"
+    "esp4"
+    "esp6"
+    "rxrpc"
+  ];
 
   nix.settings.experimental-features = [
     "nix-command"
