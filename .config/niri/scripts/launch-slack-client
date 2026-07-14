@@ -7,7 +7,8 @@
 export PATH="/etc/profiles/per-user/$USER/bin:/run/current-system/sw/bin:$PATH"
 
 # `U` in the UI applies an available update via this host-side command.
-export SLK_UPDATE_CMD="$HOME/.scripts/update-dsqrd slqs"
+# Run in a terminal that stays open (--hold) so the outcome is always readable.
+export SLK_UPDATE_CMD="kitty --hold -e $HOME/.scripts/update-dsqrd slqs"
 
 # Reap windowless slqs UI orphans before launching. A failed config load leaves
 # quickshell alive without mapping a window; niri-jump-or-exec then can't focus
