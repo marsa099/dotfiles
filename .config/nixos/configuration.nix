@@ -49,8 +49,15 @@
   #   algif_aead      - CVE-2026-31431 "Copy Fail" (AF_ALG AEAD page-cache write)
   #   esp4/esp6       - CVE-2026-43284 "Dirty Frag" (xfrm/ESP page-cache write)
   #   rxrpc           - CVE-2026-43500 "Dirty Frag" (RxRPC page-cache write)
-  # This machine uses no AF_ALG AEAD, no IPsec/ESP VPN, and no AFS/rxrpc, so
-  # blacklisting severs each exploit chain with no functional cost.
+  #
+  # REDUNDANT for these specific CVEs: all three are fixed at the source in the
+  # kernel we now run (6.18.38 >> the May 2026 fixes), so the blacklist no longer
+  # provides the patch.
+  # KEPT anyway as defence-in-depth: this machine uses no AF_ALG AEAD, no
+  # IPsec/ESP VPN, and no AFS/rxrpc, so permanently blocking unprivileged
+  # autoload of these modules shrinks the attack surface against *future* bugs in
+  # them (this same "unprivileged autoload -> page-cache write -> root" class hit
+  # three times in 2026) at zero functional cost.
   boot.blacklistedKernelModules = [
     "algif_aead"
     "esp4"
