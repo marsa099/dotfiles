@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# new-ios-app — scaffold a new iOS app and wire it to the Mac build pipeline.
+# Usage: new-ios-app <slug> [AppName] ["Display Name"]
+#   slug      git repo + Mac bare-repo name (kebab ok, e.g. hello2)
+#   AppName   Xcode scheme / project name, single token (default: slug sanerad)
+#   Display   text shown in the app (default: AppName)
+#
+# Host/user/team are kept OUT of this (dotfile-tracked) script. Put them in
+# ~/.config/ios-deploy.conf (keep it untracked):
+#   MAC_HOST=<mac>.local
+#   MAC_USER=<user>
+#   TEAM_ID=<apple-team-id>
+
+CONF="${IOS_DEPLOY_CONF:-$HOME/.config/ios-deploy.conf}"
+if [ ! -f "$CONF" ]; then
+  echo "Saknar config: $CONF (rader: MAC_HOST=, MAC_USER=, TEAM_ID=)" >&2
+  exit 1
+fi
+# shellcheck source=/dev/null
+source "$CONF"
+: "${MAC_HOST:?MAC_HOST saknas i $CONF}"
+: "${MAC_USER:?MAC_USER saknas i $CONF}"
+: "${TEAM_ID:?TEAM_ID saknas i $CONF}"
+
+SLUG="${1:-}"
+if [ -z "$SLUG" ]; then
+  echo "Användning: new-ios-app <slug> [AppName] [\"Display Name\"]" >&2
+  exit 1
+fi
+NAME="${2:-$(printf '%s' "$SLUG" | sed 's/[^A-Za-z0-9]//g')}"
+DISPLAY="${3:-$NAME}"
+BUNDLE="koderiet.$NAME"
+
+TEMPLATE="$HOME/repos/ios-template"
+DEST="$HOME/repos/$SLUG"
+
+[ -d "$TEMPLATE" ] || { echo "Saknar mall: $TEMPLATE" >&2; exit 1; }
+[ -e "$DEST" ]     && { echo "Finns redan: $DEST" >&2; exit 1; }
+
+echo "==> Skapar $DEST  (app: $NAME, bundle: $BUNDLE)"
+cp -R "$TEMPLATE" "$DEST"
+cd "$DEST"
+rm -rf .git Generated
+
+# Byt ut mall-namnet i project.yml + swift-källor (hoppa över binärer).
+grep -rlI 'iOSTemplate' . | while IFS= read -r f; do
+  sed -i "s/iOSTemplate/$NAME/g" "$f"
+done
+[ -f "Sources/iOSTemplateApp.swift" ] && mv "Sources/iOSTemplateApp.swift" "Sources/${NAME}App.swift"
+
+# Säkerställ rätt team-id.
+sed -i "s/DEVELOPMENT_TEAM: .*/DEVELOPMENT_TEAM: $TEAM_ID/" project.yml
+
+# Färsk hello-world-vy.
+cat > Sources/ContentView.swift <<EOF
+import SwiftUI
+
+struct ContentView: View {
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "hand.wave.fill")
+                .font(.system(size: 64))
+                .foregroundStyle(.tint)
+            Text("Hej, $DISPLAY! 👋")
+                .font(.largeTitle.bold())
+            Text("Skriven på Linux, byggd på Mac, levererad till iPhone.")
+                .font(.headline)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal)
+        }
+        .padding()
+    }
+}
+EOF
+
+git init -b main -q
+git add -A
+git commit -q -m "init $NAME"
+
+echo "==> Sätter upp Mac-pipeline på $MAC_USER@$MAC_HOST"
+ssh "$MAC_USER@$MAC_HOST" "
+  set -e
+  git init --bare -q \"\$HOME/builds/$SLUG.git\"
+  cp \"\$HOME/builds/ios-template.git/hooks/post-receive\" \"\$HOME/builds/$SLUG.git/hooks/post-receive\"
+  chmod +x \"\$HOME/builds/$SLUG.git/hooks/post-receive\"
+"
+
+git remote add mac "ssh://$MAC_USER@$MAC_HOST/Users/$MAC_USER/builds/$SLUG.git"
+
+# Visa app-taket innan push.
+echo "==> App-status på telefonen:"
+ssh "$MAC_USER@$MAC_HOST" "~/builds/apps.sh list" 2>/dev/null || true
+
+echo "==> Pushar (bygger på Macen, ~1 min)…"
+git push -u mac main
+
+echo
+echo "Bygglogg:"
+ssh "$MAC_USER@$MAC_HOST" "tail -6 \"\$HOME/builds/$SLUG-last-build.log\"" 2>/dev/null || true
