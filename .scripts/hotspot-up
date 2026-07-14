@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# hotspot-up — wake the iPhone Personal Hotspot over Bluetooth, hand off to
+# Wi-Fi at full speed, then drop the slow BT link. Recreates macOS Instant
+# Hotspot for this Linux laptop. Launched from fuzzel.
+set -uo pipefail
+
+WIFI_CON="martin"           # NM Wi-Fi profile / hotspot SSID
+BT_CON="martin Network"     # NM Bluetooth PAN profile (wakes the hotspot)
+WIFI_DEV="wlp0s20f3"
+
+notify() {
+  if command -v notify-send >/dev/null 2>&1; then
+    notify-send -a "Hotspot" -i network-wireless "Hotspot" "$1"
+  fi
+  echo "$1"
+}
+
+# Already on the hotspot? Nothing to do.
+if nmcli -t -f NAME connection show --active 2>/dev/null | grep -qx "$WIFI_CON"; then
+  notify "Already connected to $WIFI_CON"
+  exit 0
+fi
+
+notify "Waking iPhone over Bluetooth…"
+nmcli connection up "$BT_CON" >/dev/null 2>&1 || true
+
+# Poll for the hotspot's Wi-Fi beacon, then connect and drop Bluetooth.
+for _ in $(seq 1 20); do
+  nmcli device wifi rescan ifname "$WIFI_DEV" >/dev/null 2>&1 || true
+  if nmcli -t -f SSID device wifi list ifname "$WIFI_DEV" 2>/dev/null | grep -qx "$WIFI_CON"; then
+    if nmcli connection up "$WIFI_CON" >/dev/null 2>&1; then
+      notify "Connected to $WIFI_CON — dropping Bluetooth"
+      nmcli connection down "$BT_CON" >/dev/null 2>&1 || true
+      exit 0
+    fi
+  fi
+  sleep 1
+done
+
+# Wi-Fi never showed up — leave the BT link so there's at least some connectivity.
+notify "Wi-Fi didn't appear — staying on Bluetooth link"
+exit 1
