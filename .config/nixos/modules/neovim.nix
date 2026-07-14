@@ -8,7 +8,7 @@
     tree-sitter # nvim-treesitter uses this CLI to download and build parsers
     gcc # C compiler needed by tree-sitter to compile parsers
     nodejs # needed by typescript-language-server runtime
-    nodePackages.typescript-language-server
+    typescript-language-server
     lua-language-server # Lua LSP (Mason binary broken on NixOS due to dynamic linking)
     stylua # Lua formatter (Mason binary broken on NixOS due to dynamic linking)
     nixd # Nix LSP (evaluates the flake to provide NixOS options completion)
