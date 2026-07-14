@@ -25,6 +25,7 @@
     ./modules/endcord.nix
     ./modules/rust.nix
     ./modules/hemma.nix
+    ./modules/browser-update-check.nix
   ];
 
   # Use the systemd-boot EFI boot loader.
