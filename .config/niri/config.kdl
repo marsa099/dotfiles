@@ -13,6 +13,10 @@ environment {
     // Browser config for spawn-or-focus keybindings (change here to switch default browser)
     BROWSER "zen-beta"
     BROWSER_APP_ID "zen-beta"
+    // Fallback for the chat clients' in-app `U` update keybind. The per-app
+    // launch scripts override this (e.g. "update-dsqrd slqs"); this catches
+    // manual relaunches that would otherwise lose the env var entirely.
+    SLK_UPDATE_CMD "kitty --hold -e /home/martin/.scripts/update-dsqrd"
 }
 
 // Workspaces are dynamic - created/removed as needed
@@ -306,6 +310,10 @@ spawn-sh-at-startup "dsqrd >/tmp/dsqrd.log 2>&1"
 // and notifications fire when the window is closed.
 spawn-sh-at-startup "$HOME/repos/tmqs/run-tmqs.sh >/tmp/tmqs.log 2>&1"
 
+// Messenger (msqs) daemon — same deal again (Mod+Y). Needs the local
+// synapse + mautrix-meta services from the NixOS msqs module.
+spawn-sh-at-startup "$HOME/repos/msqs/run-msqs.sh >/tmp/msqs.log 2>&1"
+
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
 // spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"
 
@@ -456,6 +464,9 @@ binds {
     // app-id, so jump-or-exec matches by window title ("discord-client").
     Mod+D { spawn-sh "$HOME/.config/niri/scripts/niri-jump-or-exec title:discord-client $HOME/.config/niri/scripts/launch-discord-client"; }
     Mod+Shift+D { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus org.endcord 'ghostty --class=org.endcord -e endcord'"; }
+    // Native QML/Quickshell Facebook Messenger client (msqs), via the local
+    // mautrix-meta bridge. Mod+Y = the least-bad free key; rebind at will.
+    Mod+Y { spawn-sh "$HOME/.config/niri/scripts/niri-jump-or-exec title:messenger-client $HOME/.config/niri/scripts/launch-messenger-client"; }
     // Mod+S: cycle open Helium windows; if none are open, summon the qs-picker
     // profile launcher instead. Mod+Shift+S always summons the picker.
     Mod+S { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus helium 'qs -p /home/martin/repos/qs-picker/shell.qml ipc call helium-picker toggle'"; }
