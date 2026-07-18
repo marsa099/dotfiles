@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Launch the native QML Facebook Messenger client (msqs). Ensures the msqs
+# daemon is running (a thin Matrix client against the local mautrix-meta
+# bridge), then opens the Quickshell UI pointed at msqs's socket.
+# niri-jump-or-exec focuses an existing window instead of calling this when
+# one is already open.
+export PATH="/etc/profiles/per-user/$USER/bin:/run/current-system/sw/bin:$PATH"
+export SLK_SOCK=msqs
+
+REPO="$HOME/repos/msqs"
+
+# Media viewer for enlarging images/video (`v` on a message, or click a
+# thumbnail): imv for images/gifs, mpv for video.
+export SLK_MEDIA_VIEWER="$REPO/media-viewer.sh"
+
+# The UI's vendored QsLib (icons, Theme) lives under ui/vendor.
+export QML2_IMPORT_PATH="$REPO/ui/vendor${QML2_IMPORT_PATH:+:$QML2_IMPORT_PATH}"
+
+# In-app update: `U` on the "update available" banner runs this (pull + restart).
+export SLK_UPDATE_CMD="kitty --hold -e $REPO/update-msqs.sh"
+
+# Reap windowless msqs UI orphans before launching (same failure mode as tmqs:
+# a failed config load leaves quickshell alive without a window).
+WIN_PIDS=" $(niri msg --json windows 2>/dev/null | python3 -c 'import json,sys;[print(w.get("pid")) for w in json.load(sys.stdin)]' 2>/dev/null | tr "\n" " ") "
+for p in /proc/[0-9]*; do
+    exe=$(readlink "$p/exe" 2>/dev/null) || continue
+    case "$exe" in *quickshell*) ;; *) continue ;; esac
+    case "$(tr '\0' ' ' < "$p/cmdline" 2>/dev/null)" in *msqs/ui*) ;; *) continue ;; esac
+    pid=${p#/proc/}
+    case "$WIN_PIDS" in *" $pid "*) ;; *) kill "$pid" 2>/dev/null ;; esac
+done
+
+# Start the daemon if it isn't already up (nix-shell pulls matrix-nio + httpx).
+pgrep -f 'msqs\.py' >/dev/null 2>&1 || \
+    setsid nohup "$REPO/run-msqs.sh" >/tmp/msqs.log 2>&1 </dev/null &
+
+exec qs -p "$REPO/ui"
