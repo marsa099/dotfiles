@@ -11,6 +11,10 @@ application/x-extension-xhtml=helium-router.desktop
 application/x-extension-xht=helium-router.desktop
 x-scheme-handler/discord=vesktop.desktop
 x-scheme-handler/claude-cli=claude-code-url-handler.desktop
+x-scheme-handler/mailto=userapp-Thunderbird-54SJS3.desktop
+x-scheme-handler/mid=userapp-Thunderbird-54SJS3.desktop
+message/rfc822=userapp-Thunderbird-54SJS3.desktop
+x-scheme-handler/net.thunderbird=userapp-Thunderbird-GY4IS3.desktop
 
 [Added Associations]
 x-scheme-handler/http=helium-router.desktop;
@@ -23,3 +27,7 @@ application/x-extension-shtml=helium-router.desktop;
 application/xhtml+xml=helium-router.desktop;
 application/x-extension-xhtml=helium-router.desktop;
 application/x-extension-xht=helium-router.desktop;
+x-scheme-handler/mailto=userapp-Thunderbird-54SJS3.desktop;
+x-scheme-handler/mid=userapp-Thunderbird-54SJS3.desktop;
+message/rfc822=userapp-Thunderbird-54SJS3.desktop;
+x-scheme-handler/net.thunderbird=userapp-Thunderbird-GY4IS3.desktop;
