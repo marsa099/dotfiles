@@ -6,6 +6,12 @@ IMPORTANT: Always use English for commit messages, never Swedish or other langua
 
 IMPORTANT: Do NOT add Claude Code attribution or co-authored-by lines to commit messages. Keep commits clean and concise.
 
+# sudo on this machine (NixOS)
+`sudo nixos-rebuild` is **passwordless** for martin (NOPASSWD rule scoped to `/run/current-system/sw/bin/nixos-rebuild` in configuration.nix) — set up precisely so agent-driven rebuilds don't block. So `update-dsqrd` and any `nixos-rebuild switch` run fully headless: just run them directly, no terminal popup or user hand-off needed. Do NOT probe with `sudo -n true` — the rule is command-scoped, so that probe fails and misleads; probe with `sudo -n nixos-rebuild list-generations` if needed. All other sudo commands still need a password.
+
+# Vercel CLI on this machine (NixOS)
+The Vercel CLI is not (and can't easily be) installed globally — `npm i -g` fails on NixOS and nixpkgs has no `vercel` package (only the unrelated `vercel-pkg`). Use `npx -y vercel <cmd>` instead; it's already authenticated (token in home dir, account `marsa099`), so no login step is needed.
+
 # Code Style Rules
 IMPORTANT: NEVER add trailing whitespaces after lines or whitespace-only lines. This applies to ALL projects FOREVER. When writing or editing code:
 - No trailing whitespaces at the end of lines
