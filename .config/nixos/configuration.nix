@@ -177,6 +177,17 @@
   # Battery monitoring (battery % in the qs-picker bar)
   services.upower.enable = true;
 
+  # Battery longevity: hold charge at 75-80% instead of 100% (EC runs the
+  # laptop straight from AC above the stop threshold, so the battery idles).
+  # `tlp fullcharge` temporarily lifts the cap for a long day out.
+  services.tlp = {
+    enable = true;
+    settings = {
+      START_CHARGE_THRESH_BAT0 = 75;
+      STOP_CHARGE_THRESH_BAT0 = 80;
+    };
+  };
+
   # Vial (the GUI app for remapping QMK/Vial keyboards, installed below) talks to
   # the keyboard over a /dev/hidraw* device. By default those nodes are root-only,
   # so Vial shows "No devices detected" until we grant the logged-in user access.
