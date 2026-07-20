@@ -34,6 +34,8 @@
     #   - slqs  (Slack):   companion to the `slk` TUI — run slk once to auth first
     dsqrd.url = "github:daphen/dsqrd";
     slqs.url = "github:daphen/slqs";
+    #   - mlqs  (Mail):    Go daemon + vendored QML UI, same daemon/client split
+    mlqs.url = "github:daphen/mlqs";
   };
 
   outputs =
@@ -49,6 +51,7 @@
       bt-keyboard-bridge,
       dsqrd,
       slqs,
+      mlqs,
       ...
     }:
     let
@@ -66,6 +69,8 @@
         dsqrd.packages.${system}.dsqrd-client
         slqs.packages.${system}.slqs
         slqs.packages.${system}.slqs-client
+        mlqs.packages.${system}.mlqs
+        mlqs.packages.${system}.mlqs-client
       ];
     in
     {
