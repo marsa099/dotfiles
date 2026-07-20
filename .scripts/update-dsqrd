@@ -1,13 +1,21 @@
 #!/usr/bin/env bash
 # One-command updater for dsqrd (and slqs/mlqs).
 #
-# The NixOS system installs dsqrd from `github:daphen/dsqrd`, pinned in
-# ~/.config/nixos/flake.lock — NOT from any local checkout. So "there's a new
-# version" means: bump that pin, rebuild, then restart the long-running daemon
-# + UI (a rebuild swaps the binary but won't restart already-running procs).
+# The NixOS system installs each app from the GitHub repo pinned as its flake
+# input in ~/.config/nixos/flake.lock — NOT from any local checkout. Which repo
+# is read from the flake itself (dsqrd tracks the marsa099 fork, slqs daphen).
+# So "there's a new version" means: bump that pin, rebuild, then restart the
+# long-running daemon + UI (a rebuild swaps the binary but won't restart
+# already-running procs).
+#
+# dsqrd is a FORK of daphen/dsqrd, so its update is two-legged: first merge
+# daphen's upstream main into the marsa099 fork (auto if clean; a conflict is
+# handed to Claude/opus 4.8 to resolve), then bump the lock + rebuild + restart.
+# --check reports both legs (upstream->fork to merge, fork->system to build).
+# slqs/mlqs are not forks — they just track daphen directly (single leg).
 #
 # Usage:
-#   update-dsqrd            update dsqrd, rebuild, restart its daemon + UI
+#   update-dsqrd            merge daphen upstream, rebuild, restart daemon + UI
 #   update-dsqrd --check    only report whether an update is available
 #   update-dsqrd slqs       same flow but for slqs instead of dsqrd
 #   update-dsqrd mlqs       same flow but for mlqs (mail)
@@ -29,8 +37,16 @@ locked_rev() {
         | python3 -c "import json,sys; print(json.load(sys.stdin)['locks']['nodes']['$1']['locked']['rev'])"
 }
 remote_rev() {
-    # latest main on the GitHub repo this input tracks
-    git ls-remote "https://github.com/daphen/$1.git" main | cut -f1
+    # latest commit on whatever GitHub repo+ref this flake input actually tracks
+    # (read from the input's `original`, so forks / branch pins Just Work — e.g.
+    # dsqrd tracks marsa099's fork, slqs still tracks daphen). No `ref` in the
+    # original means the repo's default branch, which `ls-remote HEAD` resolves.
+    local owner repo ref
+    read -r owner repo ref < <(
+        nix flake metadata "$NIXOS" --json 2>/dev/null \
+            | python3 -c "import json,sys; o=json.load(sys.stdin)['locks']['nodes']['$1']['original']; print(o.get('owner',''), o.get('repo','$1'), o.get('ref','HEAD'))"
+    )
+    git ls-remote "https://github.com/$owner/$repo.git" "$ref" | cut -f1
 }
 installed_rev() {
     # rev baked into the installed package, so a half-applied update (lock
@@ -42,6 +58,88 @@ installed_rev() {
         *) echo "" ;;
     esac
 }
+
+# --- dsqrd fork <- daphen upstream sync -------------------------------------
+# dsqrd is a fork: `main` on the marsa099 fork is what Nix builds, but new
+# upstream features land on daphen's main and have to be MERGED in. So a dsqrd
+# update is two-legged — first fold daphen's main into the fork (auto when it
+# merges clean; hand a conflict to Claude/opus 4.8), then bump+rebuild against
+# the fork as usual. Real merges need a checkout, so this drives the local one.
+DSQRD_REPO="$HOME/repos/dsqrd"
+DSQRD_UPSTREAM_REMOTE="origin"   # daphen/dsqrd in that checkout
+DSQRD_FORK_REMOTE="fork"         # marsa099/dsqrd in that checkout
+
+# Count of daphen-main commits not yet in the fork's main (0 = caught up).
+# Fetches quietly first; any failure (offline, no checkout) reports 0 so the
+# update degrades to the plain fork-vs-system path instead of erroring.
+upstream_pending() {
+    [ -d "$DSQRD_REPO/.git" ] || { echo 0; return; }
+    git -C "$DSQRD_REPO" fetch --quiet "$DSQRD_UPSTREAM_REMOTE" main 2>/dev/null || { echo 0; return; }
+    git -C "$DSQRD_REPO" fetch --quiet "$DSQRD_FORK_REMOTE" main 2>/dev/null || true
+    git -C "$DSQRD_REPO" rev-list --count "$DSQRD_FORK_REMOTE/main..$DSQRD_UPSTREAM_REMOTE/main" 2>/dev/null || echo 0
+}
+
+# Merge daphen's upstream main into the fork's main and push it. Clean merge is
+# silent; a conflict drops into Claude (opus 4.8) in the repo to resolve, then
+# we verify the merge actually committed before pushing. Refuses on a dirty tree
+# so it never clobbers local edits.
+sync_upstream() {
+    local pending; pending="$(upstream_pending)"
+    if [ "$pending" -eq 0 ]; then
+        echo "==> fork already current with daphen upstream"
+        return 0
+    fi
+    echo "==> daphen upstream has $pending new commit(s) — merging into the fork"
+    if [ -n "$(git -C "$DSQRD_REPO" status --porcelain)" ]; then
+        echo "!! $DSQRD_REPO has uncommitted changes — skipping the upstream merge."
+        echo "   commit or stash there, then re-run to pull daphen's changes."
+        return 0
+    fi
+    git -C "$DSQRD_REPO" checkout main
+    # catch local main up to the pushed fork main before merging upstream
+    if ! git -C "$DSQRD_REPO" merge --ff-only "$DSQRD_FORK_REMOTE/main" 2>/dev/null; then
+        echo "!! local main and $DSQRD_FORK_REMOTE/main diverged — reconcile $DSQRD_REPO manually"; exit 1
+    fi
+    if git -C "$DSQRD_REPO" merge --no-edit "$DSQRD_UPSTREAM_REMOTE/main"; then
+        echo "==> clean merge — pushing fork main"
+        git -C "$DSQRD_REPO" push "$DSQRD_FORK_REMOTE" main
+        return 0
+    fi
+    echo "!! merge conflict — handing off to Claude (opus 4.8) in $DSQRD_REPO"
+    if [ ! -t 0 ]; then
+        echo "   (no interactive terminal — aborting merge; run update-dsqrd from a real"
+        echo "    terminal or the in-app U so the opus-4.8 conflict handoff can be interactive)"
+        git -C "$DSQRD_REPO" merge --abort 2>/dev/null || true
+        exit 1
+    fi
+    ( cd "$DSQRD_REPO" && claude --model claude-opus-4-8 \
+        "You are in $DSQRD_REPO partway through 'git merge origin/main' — merging daphen's upstream dsqrd into my fork's main — and there are merge conflicts. Resolve every conflict so that BOTH my fork's additions (notably the Microsoft Copilot catch-up button: ui/CopilotPanel.qml plus its composer/Backend/shell wiring) AND daphen's upstream changes stay intact and working. Then 'git add' the resolved files and 'git commit --no-edit' to complete the merge. Do NOT push and do NOT run nixos-rebuild — the update script does that. When the merge is committed, stop." ) || true
+    if git -C "$DSQRD_REPO" ls-files -u | grep -q . || [ -f "$DSQRD_REPO/.git/MERGE_HEAD" ]; then
+        echo "!! merge still unresolved after Claude — aborting; fix manually in $DSQRD_REPO"; exit 1
+    fi
+    echo "==> conflict resolved — pushing fork main"
+    git -C "$DSQRD_REPO" push "$DSQRD_FORK_REMOTE" main
+}
+
+# dsqrd: reconcile with daphen first. In --check, report both legs and signal
+# via exit 10; on execution, merge upstream, then fall through to bump+rebuild
+# against the (possibly advanced) fork main.
+if [ "$APP" = "dsqrd" ]; then
+    if [ -n "${CHECK:-}" ]; then
+        PENDING="$(upstream_pending)"
+        OLD="$(locked_rev dsqrd)"; NEW="$(remote_rev dsqrd)"; INSTALLED="$(installed_rev dsqrd)"
+        AVAIL=""
+        [ "$PENDING" -gt 0 ] && { echo "dsqrd: $PENDING new upstream commit(s) from daphen to merge"; AVAIL=1; }
+        if [ "$OLD" != "$NEW" ]; then
+            echo "dsqrd: ${OLD:0:7} -> ${NEW:0:7} to build"; AVAIL=1
+        elif [ -n "$INSTALLED" ] && [ "$INSTALLED" != "$OLD" ]; then
+            echo "dsqrd: interrupted build to finish (${INSTALLED:0:7})"; AVAIL=1
+        fi
+        [ -n "$AVAIL" ] && exit 10
+        echo "dsqrd is up to date (${OLD:0:7}, current with daphen)."; exit 0
+    fi
+    sync_upstream
+fi
 
 OLD="$(locked_rev "$APP")"
 NEW="$(remote_rev "$APP")"
