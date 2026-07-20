@@ -144,6 +144,24 @@
         "type": "github"
       }
     },
+    "mlqs": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_5"
+      },
+      "locked": {
+        "lastModified": 1784213534,
+        "narHash": "sha256-Zk4pi5ZYlSXbgJzG7wP0DnoKzxKAW/heTFu1lVBK8gI=",
+        "owner": "daphen",
+        "repo": "mlqs",
+        "rev": "33a1806d4614ab55465c06df741cec0f9d61e7f7",
+        "type": "github"
+      },
+      "original": {
+        "owner": "daphen",
+        "repo": "mlqs",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1779560665,
@@ -226,6 +244,22 @@
     },
     "nixpkgs_5": {
       "locked": {
+        "lastModified": 1783224372,
+        "narHash": "sha256-8i/87eeoqiGE4yOTjwSA3Eh/ziJRQEmd/unYU+K27sk=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "d407951447dcd00442e97087bf374aad70c04cea",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_6": {
+      "locked": {
         "lastModified": 1783856661,
         "narHash": "sha256-ZGP04e+Q6WyQJGA9ZvI5CL6+heGQldbAG9U1T9NGvmU=",
         "owner": "NixOS",
@@ -240,7 +274,7 @@
         "type": "github"
       }
     },
-    "nixpkgs_6": {
+    "nixpkgs_7": {
       "locked": {
         "lastModified": 1782467914,
         "narHash": "sha256-pGvFkM8N0xEkIIXDe5YYfbEAvHrk4IxBrjB/x8OomhE=",
@@ -264,7 +298,8 @@
         "dsqrd": "dsqrd",
         "endcord-src": "endcord-src",
         "helium-browser": "helium-browser",
-        "nixpkgs": "nixpkgs_5",
+        "mlqs": "mlqs",
+        "nixpkgs": "nixpkgs_6",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "slqs": "slqs",
         "teams-for-linux-fork": "teams-for-linux-fork"
@@ -272,7 +307,7 @@
     },
     "slqs": {
       "inputs": {
-        "nixpkgs": "nixpkgs_6"
+        "nixpkgs": "nixpkgs_7"
       },
       "locked": {
         "lastModified": 1784025393,

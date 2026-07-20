@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-command updater for dsqrd (and slqs).
+# One-command updater for dsqrd (and slqs/mlqs).
 #
 # The NixOS system installs dsqrd from `github:daphen/dsqrd`, pinned in
 # ~/.config/nixos/flake.lock — NOT from any local checkout. So "there's a new
@@ -10,6 +10,7 @@
 #   update-dsqrd            update dsqrd, rebuild, restart its daemon + UI
 #   update-dsqrd --check    only report whether an update is available
 #   update-dsqrd slqs       same flow but for slqs instead of dsqrd
+#   update-dsqrd mlqs       same flow but for mlqs (mail)
 set -euo pipefail
 # On any failure, say exactly what broke — this runs in a kitty --hold window
 # from the in-app `U` keybind, so the message stays on screen.
@@ -19,8 +20,8 @@ NIXOS="$HOME/.config/nixos"
 APP="${1:-dsqrd}"
 case "$APP" in
     --check) CHECK=1; APP="dsqrd" ;;
-    dsqrd|slqs) CHECK="${2:-}"; [ "$CHECK" = "--check" ] && CHECK=1 || CHECK="" ;;
-    *) echo "unknown app: $APP (expected dsqrd or slqs)" >&2; exit 1 ;;
+    dsqrd|slqs|mlqs) CHECK="${2:-}"; [ "$CHECK" = "--check" ] && CHECK=1 || CHECK="" ;;
+    *) echo "unknown app: $APP (expected dsqrd, slqs or mlqs)" >&2; exit 1 ;;
 esac
 
 locked_rev() {
@@ -87,6 +88,13 @@ case "$APP" in
         sleep 1
         SLK_UPDATE_CMD="kitty --hold -e $HOME/.scripts/update-dsqrd slqs" \
             setsid nohup slqs-client >/tmp/slqs.log 2>&1 </dev/null &
+        ;;
+    mlqs)
+        # no SLK_UPDATE_CMD hook — mlqs only toasts update availability in-app
+        pkill -f '/bin/mlqs$' 2>/dev/null || true
+        pkill -f 'quickshell.* -p .*/share/mlqs/ui' 2>/dev/null || true
+        sleep 1
+        setsid nohup mlqs-client >/tmp/mlqs.log 2>&1 </dev/null &
         ;;
 esac
 
