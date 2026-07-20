@@ -28,19 +28,42 @@ let
       }
   '';
 
-  # Reacts to WiFi changes: re-evaluate the firewall (which re-checks the SSID
-  # and opens/closes 7777) and start/stop hemma accordingly.
+  # Converge firewall + service with the current WiFi, from ground truth: the
+  # SSID decides the desired state, the actual iptables rule decides whether
+  # the firewall needs a reload (so the periodic timer is a no-op in steady
+  # state instead of churning the firewall every tick). Idempotent — safe to
+  # run from the dispatcher, the timer, and resume, in any order.
+  portRule = "nixos-fw -i ${wifiIface} -p tcp --dport ${toString port} -j nixos-fw-accept";
+  netgateApply = pkgs.writeShellScript "hemma-netgate-apply" ''
+    if ${onHomeWifi}; then
+      ${pkgs.iptables}/bin/iptables -C ${portRule} 2>/dev/null \
+        || ${pkgs.systemd}/bin/systemctl reload-or-restart firewall.service 2>/dev/null || true
+      ${pkgs.systemd}/bin/systemctl reset-failed hemma.service 2>/dev/null || true
+      ${pkgs.systemd}/bin/systemctl start hemma.service 2>/dev/null || true
+    else
+      if ${pkgs.iptables}/bin/iptables -C ${portRule} 2>/dev/null; then
+        ${pkgs.systemd}/bin/systemctl reload-or-restart firewall.service 2>/dev/null || true
+      fi
+      ${pkgs.systemd}/bin/systemctl stop hemma.service 2>/dev/null || true
+    fi
+  '';
+
+  # Reacts to WiFi changes. On an "up" event nmcli often still reports the
+  # connection as activating — deciding right away would judge a whitelisted
+  # SSID as "away", stop hemma, and nothing would retry until the next event.
+  # So on up-ish events, wait (up to 15 s) for the SSID to settle first; on
+  # down events converge immediately (fail closed fast).
   dispatcher = pkgs.writeShellScript "hemma-netgate" ''
     case "$2" in
-      up|down|connectivity-change|vpn-up|vpn-down) ;;
+      up|connectivity-change|vpn-up)
+        for _ in $(seq 1 15); do
+          ${onHomeWifi} && break
+          sleep 1
+        done ;;
+      down|vpn-down) ;;
       *) exit 0 ;;
     esac
-    ${pkgs.systemd}/bin/systemctl reload-or-restart firewall.service 2>/dev/null || true
-    if ${onHomeWifi}; then
-      ${pkgs.systemd}/bin/systemctl start hemma.service
-    else
-      ${pkgs.systemd}/bin/systemctl stop hemma.service
-    fi
+    exec ${netgateApply}
   '';
 in
 {
@@ -64,6 +87,26 @@ in
     }
   ];
 
+  # Safety net: the dispatcher only fires on NetworkManager events, and a
+  # missed/raced event used to leave hemma down (or the port closed) on a
+  # whitelisted SSID until the next event or a reboot. This re-converges
+  # every minute; steady state is a no-op (see netgateApply).
+  systemd.timers.hemma-netgate = {
+    description = "Periodically converge hemma with the current WiFi";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnBootSec = "30s";
+      OnUnitActiveSec = "60s";
+    };
+  };
+  systemd.services.hemma-netgate = {
+    description = "Converge hemma service + firewall with the current WiFi";
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${netgateApply}";
+    };
+  };
+
   systemd.services.hemma = {
     description = "hemma — apartment dashboard";
     # wantedBy so a rebuild/boot starts it — ExecCondition still gates it to the
@@ -75,6 +118,7 @@ in
     # a crash-looping dashboard should keep retrying (RestartSec throttles it)
     # rather than lock itself out until the next WiFi change.
     unitConfig.StartLimitIntervalSec = 0;
+    environment.PYTHONUNBUFFERED = "1";
     serviceConfig = {
       Type = "simple";
       User = user;
