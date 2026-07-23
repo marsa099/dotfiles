@@ -6,6 +6,28 @@
 # Slack, the CLI, etc. land in the "right" profile instead of always Private.
 BOOKMARKS="$HOME/repos/qs-picker/scripts/bookmarks"
 
+focus_profile() {
+    local dir="$1" id pid cmd
+
+    command -v niri >/dev/null && command -v jq >/dev/null || return 0
+    # A warm Chromium handoff adds the tab to an existing window without asking
+    # niri to cross workspaces. Match the window by its browser process rather
+    # than focusing whichever Helium profile happened to be used most recently.
+    for _ in $(seq 40); do
+        while IFS=$'\t' read -r id pid; do
+            [ -r "/proc/$pid/cmdline" ] || continue
+            cmd=$(tr '\0' ' ' <"/proc/$pid/cmdline")
+            case "$cmd" in
+                *"--user-data-dir=$HOME/.config/helium-$dir"*)
+                    niri msg action focus-window --id "$id" >/dev/null 2>&1
+                    return 0
+                    ;;
+            esac
+        done < <(niri msg --json windows 2>/dev/null | jq -r '.[] | select(.pid != null) | [.id, .pid] | @tsv')
+        sleep 0.15
+    done
+}
+
 launch() {
     local url="$1" dir="Private" port=9226 out
     if [ -n "$url" ]; then
@@ -20,6 +42,7 @@ launch() {
            --profile-directory="$dir" \
            --remote-debugging-port="$port" ${url:+"$url"} \
            </dev/null >/dev/null 2>&1 &
+    focus_profile "$dir" </dev/null >/dev/null 2>&1 &
 }
 
 if [ "$#" -eq 0 ]; then
