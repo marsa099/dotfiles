@@ -12,6 +12,7 @@ let
   allowedSsids = [
     "Alpaca Industries"
     "Galaxen"
+    "Sundby Guest"
     "dlink-5GHz-2B40"
   ];
   wifiIface = "wlp0s20f3";
