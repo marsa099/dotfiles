@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Join the clipboard's lines into one line, so a hard-wrapped command/URL copied
+# out of a TUI (Claude Code, pagers, ...) pastes as a single runnable line.
+# Leading indentation on continuation lines is dropped; nothing is inserted at
+# the join, which is what you want for a URL split mid-path.
+# Bound to Ctrl+Shift+J in kitty.conf.
+wl-paste --no-newline \
+  | awk '{ sub(/^[ \t]+/, ""); sub(/[ \t]+$/, ""); printf "%s", $0 }' \
+  | wl-copy --trim-newline
