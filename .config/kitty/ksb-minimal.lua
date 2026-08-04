@@ -70,12 +70,13 @@ require("kitty-scrollback").setup({
 	},
 })
 
--- Strip trailing whitespace from each yanked line before it reaches the clipboard.
--- Kitty pads every captured row out to the full terminal width with spaces, so a
--- block selection drags along a lot of trailing padding. Leading whitespace is left
--- intact (it's real indentation for copied code).
+-- Strip leading AND trailing whitespace from each yanked line before it reaches the
+-- clipboard. Kitty pads every captured row out to the full terminal width with spaces,
+-- so a block selection drags along a lot of trailing padding. Indentation goes too:
+-- what gets yanked out of here is almost always a command, where the pager's leading
+-- whitespace is noise, not structure.
 vim.api.nvim_create_autocmd("TextYankPost", {
-	group = vim.api.nvim_create_augroup("KsbTrimTrailingOnYank", { clear = true }),
+	group = vim.api.nvim_create_augroup("KsbTrimOnYank", { clear = true }),
 	callback = function()
 		local ev = vim.v.event
 		if ev.operator ~= "y" then
@@ -83,7 +84,7 @@ vim.api.nvim_create_autocmd("TextYankPost", {
 		end
 		local trimmed, changed = {}, false
 		for _, line in ipairs(ev.regcontents) do
-			local t = line:gsub("%s+$", "")
+			local t = line:gsub("^%s+", ""):gsub("%s+$", "")
 			changed = changed or t ~= line
 			trimmed[#trimmed + 1] = t
 		end
