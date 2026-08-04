@@ -82,18 +82,26 @@ vim.api.nvim_create_autocmd("TextYankPost", {
 		if ev.operator ~= "y" then
 			return
 		end
-		local trimmed, changed = {}, false
+		local trimmed = {}
 		for _, line in ipairs(ev.regcontents) do
-			local t = line:gsub("^%s+", ""):gsub("%s+$", "")
-			changed = changed or t ~= line
-			trimmed[#trimmed + 1] = t
+			trimmed[#trimmed + 1] = line:gsub("^%s+", ""):gsub("%s+$", "")
 		end
-		if not changed then
-			return
+		-- blank rows at either end of the selection paste as leading/trailing newlines;
+		-- drop them. Never empty the register: an all-blank yank collapses to one "".
+		while #trimmed > 1 and trimmed[#trimmed] == "" do
+			table.remove(trimmed)
 		end
+		while #trimmed > 1 and trimmed[1] == "" do
+			table.remove(trimmed, 1)
+		end
+		-- No early-out when nothing was trimmed: the clipboard mirror below has to run on
+		-- every yank, since it is what strips the linewise trailing newline.
 		local regname = ev.regname ~= "" and ev.regname or '"'
 		vim.fn.setreg(regname, trimmed, ev.regtype) -- setreg does not re-fire TextYankPost
-		vim.fn.setreg("+", trimmed, ev.regtype) -- mirror to the system clipboard
+		-- Mirror to the system clipboard as CHARWISE regardless of how it was yanked: a
+		-- linewise ('V') register puts a trailing newline on the clipboard, which makes a
+		-- pasted command submit itself in a shell. Charwise ends at the last character.
+		vim.fn.setreg("+", trimmed, "v")
 	end,
 })
 
