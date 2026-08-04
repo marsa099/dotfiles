@@ -20,6 +20,15 @@ let
   appDir = "/home/martin/repos/hemma";
   user = "martin";
 
+  # hemma is otherwise pure stdlib; Plejd is the exception. Its lights are a
+  # BLE mesh with no LAN API at all (the Plejd Gateway's :8080 only talks to
+  # Plejd's cloud), so plejd.py needs a Bluetooth stack — bleak — plus AES for
+  # the mesh payloads. Nothing else in the app imports either.
+  python = pkgs.python3.withPackages (ps: [
+    ps.bleak
+    ps.cryptography
+  ]);
+
   # Exit 0 iff the active WiFi connection is one of the trusted networks. Used
   # both as the service ExecCondition and by the firewall/dispatcher logic below.
   onHomeWifi = pkgs.writeShellScript "hemma-on-home-wifi" ''
@@ -126,7 +135,7 @@ in
       Group = "users";
       WorkingDirectory = appDir;
       ExecCondition = "${onHomeWifi}";
-      ExecStart = "${pkgs.python3}/bin/python3 ${appDir}/server.py";
+      ExecStart = "${python}/bin/python3 ${appDir}/server.py";
       Restart = "on-failure";
       RestartSec = 2;
     };
