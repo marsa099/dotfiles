@@ -184,6 +184,7 @@ in
       "${appDir}/philips.py"
       "${appDir}/cast.py"
       "${appDir}/svt.py"
+      "${appDir}/yale.py"
     ];
   };
   systemd.services.hemma-reload = {
