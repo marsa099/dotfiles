@@ -173,9 +173,18 @@ in
   # Hot reload: restart hemma when server.py changes. try-restart keeps it a
   # no-op while the service is stopped (i.e. off the home WiFi).
   systemd.paths.hemma-reload = {
-    description = "Watch hemma server.py for changes (hot reload)";
+    description = "Watch hemma python sources for changes (hot reload)";
     wantedBy = [ "multi-user.target" ];
-    pathConfig.PathModified = "${appDir}/server.py";
+    # every python module, not just server.py — an edit that only touches
+    # e.g. plejd.py must restart the server too (imports are loaded once)
+    pathConfig.PathModified = [
+      "${appDir}/server.py"
+      "${appDir}/plejd.py"
+      "${appDir}/webos.py"
+      "${appDir}/philips.py"
+      "${appDir}/cast.py"
+      "${appDir}/svt.py"
+    ];
   };
   systemd.services.hemma-reload = {
     description = "Restart hemma when server.py changes";
