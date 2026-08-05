@@ -32,10 +32,11 @@
     # `dsqrd-client`) that bundles quickshell/mpv/imv and starts the daemon.
     #   - dsqrd (Discord): standalone, needs a token in ~/.config/dsqrd/profiles.json
     #   - slqs  (Slack):   companion to the `slk` TUI — run slk once to auth first
-    dsqrd.url = "github:daphen/dsqrd";
+    dsqrd.url = "github:marsa099/dsqrd";
     slqs.url = "github:daphen/slqs";
     #   - mlqs  (Mail):    Go daemon + vendored QML UI, same daemon/client split
-    mlqs.url = "github:daphen/mlqs";
+    # Test smart IMAP threading on the fork before proposing it upstream.
+    mlqs.url = "github:marsa099/mlqs/imap-smart-threading";
   };
 
   outputs =
