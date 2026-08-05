@@ -192,7 +192,7 @@ layout {
         //
         // The focus ring only draws around the active window, so the only place
         // where you can see its inactive-color is on other monitors.
-        inactive-color "#3A3A3A"
+        inactive-color "#999999"
 
         // You can also use gradients. They take precedence over solid colors.
         // Gradients are rendered the same as CSS linear-gradient(angle, from, to).
@@ -217,7 +217,7 @@ layout {
 
         width 3
         active-color "#FF570D"
-        inactive-color "#3A3A3A"
+        inactive-color "#999999"
 
         // Color of the border around windows that request your attention.
         urgent-color "#9b0000"
@@ -427,7 +427,7 @@ window-rule {
 
     border {
         active-color "#FF570D"
-        inactive-color "#3A3A3A"
+        inactive-color "#999999"
     }
 }
 
@@ -461,8 +461,10 @@ binds {
     Mod+T { spawn-sh "$HOME/.config/niri/scripts/niri-jump-or-exec title:teams-client $HOME/.config/niri/scripts/launch-teams-client"; }
     Mod+Shift+T { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus teams-for-linux $HOME/.scripts/teams-launcher"; }
     // Native QML/Quickshell Discord client (dsqrd). Windows share the org.quickshell
-    // app-id, so jump-or-exec matches by window title ("discord-client").
-    Mod+D { spawn-sh "$HOME/.config/niri/scripts/niri-jump-or-exec title:discord-client $HOME/.config/niri/scripts/launch-discord-client"; }
+    // app-id, so jump-or-exec matches by window title (upstream renamed it
+    // "discord-client" → "dsqrd" 2026-07-22; anchored so terminals with dsqrd in
+    // the title don't match).
+    Mod+D { spawn-sh "$HOME/.config/niri/scripts/niri-jump-or-exec title:^dsqrd$ $HOME/.config/niri/scripts/launch-discord-client"; }
     Mod+Shift+D { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus org.endcord 'ghostty --class=org.endcord -e endcord'"; }
     // Native QML/Quickshell Facebook Messenger client (msqs), via the local
     // mautrix-meta bridge. Mod+Y = the least-bad free key; rebind at will.
@@ -476,8 +478,8 @@ binds {
 
     Mod+X { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus org.lazyjira 'kitty --class=org.lazyjira -e $HOME/.local/bin/lazyjira'"; }
     Mod+Shift+X { spawn "kitty" "--class=org.lazyjira" "-e" "/home/martin/.local/bin/lazyjira"; }
-    Mod+C hotkey-overlay-title="Claude session switcher" { spawn "qs" "-p" "/home/martin/repos/qs-picker/shell.qml" "ipc" "call" "claude-picker" "toggle"; }
-    Mod+Shift+C hotkey-overlay-title="New Claude session" { spawn "qs" "-p" "/home/martin/repos/qs-picker/shell.qml" "ipc" "call" "new-claude-session" "toggle"; }
+    Mod+C hotkey-overlay-title="Claude + Pi session switcher" { spawn "qs" "-p" "/home/martin/repos/qs-picker/shell.qml" "ipc" "call" "claude-picker" "toggle"; }
+    Mod+Shift+C hotkey-overlay-title="New Claude/Pi session" { spawn "qs" "-p" "/home/martin/repos/qs-picker/shell.qml" "ipc" "call" "new-claude-session" "toggle"; }
     Mod+Z { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus chrome-portal.azure.com__-Profile_4 'google-chrome-stable --profile-directory=\"Profile 4\" --app=\"https://portal.azure.com/\"'"; }
     Mod+Shift+Z { spawn "google-chrome-stable" "--profile-directory=Profile 4" "--app=https://portal.azure.com/"; }
     Mod+M { spawn-sh "$HOME/.scripts/niri/niri-mailbox-selector focus"; }
