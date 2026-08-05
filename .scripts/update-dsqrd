@@ -3,19 +3,18 @@
 #
 # The NixOS system installs each app from the GitHub repo pinned as its flake
 # input in ~/.config/nixos/flake.lock — NOT from any local checkout. Which repo
-# is read from the flake itself (dsqrd tracks the marsa099 fork, slqs daphen).
-# So "there's a new version" means: bump that pin, rebuild, then restart the
-# long-running daemon + UI (a rebuild swaps the binary but won't restart
-# already-running procs).
+# is read from the flake itself (dsqrd and slqs track daphen; mlqs tracks the
+# marsa099 fork). So "there's a new version" means: bump that pin, rebuild, then
+# restart the long-running daemon + UI (a rebuild swaps the binary but won't
+# restart already-running procs).
 #
-# dsqrd and mlqs are FORKS of daphen's repos, so their update is two-legged:
-# first merge daphen's upstream main into the marsa099 fork (auto if clean; a
-# conflict is handed to pi to resolve), then bump the lock + rebuild
-# + restart. --check reports both legs (upstream->fork to merge, fork->system to
-# build). slqs is not a fork — it just tracks daphen directly (single leg).
+# mlqs is a fork of daphen's repo, so its update is two-legged: first merge
+# daphen's upstream main into the marsa099 fork (auto if clean; a conflict is
+# handed to pi to resolve), then bump the lock + rebuild + restart. dsqrd and
+# slqs track daphen directly and use the single-leg update flow.
 #
 # Usage:
-#   update-dsqrd            merge daphen upstream, rebuild, restart daemon + UI
+#   update-dsqrd            update from daphen, rebuild, restart daemon + UI
 #   update-dsqrd --check    only report whether an update is available
 #   update-dsqrd slqs       same flow but for slqs instead of dsqrd
 #   update-dsqrd mlqs       same flow but for mlqs (mail)
@@ -39,7 +38,7 @@ locked_rev() {
 remote_rev() {
     # latest commit on whatever GitHub repo+ref this flake input actually tracks
     # (read from the input's `original`, so forks / branch pins Just Work — e.g.
-    # dsqrd tracks marsa099's fork, slqs still tracks daphen). No `ref` in the
+    # mlqs tracks marsa099's fork while dsqrd and slqs track daphen). No `ref` in the
     # original means the repo's default branch, which `ls-remote HEAD` resolves.
     local owner repo ref
     read -r owner repo ref < <(
@@ -72,23 +71,12 @@ running_rev() {
     grep -o "DSQRD_REV='[0-9a-f]*'" "$root/bin/dsqrd" 2>/dev/null | cut -d"'" -f2 || true
 }
 
-# --- fork <- daphen upstream sync -------------------------------------------
-# dsqrd and mlqs are FORKS of daphen's repos: `main` on the marsa099 fork is what
-# Nix builds, but new upstream features land on daphen's main and have to be
-# MERGED in. So their update is two-legged — first fold daphen's main into the
-# fork (auto when it merges clean; hand a conflict to pi), then
-# bump+rebuild against the fork. slqs is not a fork (tracks daphen directly),
-# single leg. Real merges need a checkout, so this drives the local one.
-#
-# The fork checkout and its remote names differ per app, so parameterize them.
-# (In ~/repos/dsqrd origin=daphen, fork=marsa099; in ~/repos/mlqs it's the other
-# way round: origin=marsa099, upstream=daphen.)
+# --- mlqs fork <- daphen upstream sync --------------------------------------
+# mlqs is built from the marsa099 fork, while new upstream features land on
+# daphen's main and must be merged before the lock is bumped. Real merges need a
+# checkout, so this drives the local one (origin=marsa099, upstream=daphen).
 IS_FORK=""; FORK_REPO=""; UPREMOTE=""; FORKREMOTE=""; CONFLICT_HINT=""
 case "$APP" in
-    dsqrd)
-        IS_FORK=1; FORK_REPO="$HOME/repos/dsqrd"; UPREMOTE="origin"; FORKREMOTE="fork"
-        CONFLICT_HINT="BOTH my fork's additions (notably the Microsoft Copilot catch-up button: ui/CopilotPanel.qml plus its composer/Backend/shell wiring) AND daphen's upstream changes stay intact and working"
-        ;;
     mlqs)
         IS_FORK=1; FORK_REPO="$HOME/repos/mlqs"; UPREMOTE="upstream"; FORKREMOTE="origin"
         CONFLICT_HINT="BOTH my fork's additions (notably the IMAP/SMTP vendor in internal/imap/ with its config/auth/daemon wiring, and the dual-repo update check + Shift+U apply keybind) AND daphen's upstream changes stay intact and working"
@@ -156,7 +144,7 @@ sync_upstream() {
     git -C "$FORK_REPO" push "$FORKREMOTE" main
 }
 
-# Forks (dsqrd, mlqs): reconcile with daphen first. In --check, report both legs
+# For mlqs, reconcile the fork with daphen first. In --check, report both legs
 # and signal via exit 10; on execution, merge upstream, then fall through to
 # bump+rebuild against the (possibly advanced) fork main.
 if [ -n "$IS_FORK" ]; then
