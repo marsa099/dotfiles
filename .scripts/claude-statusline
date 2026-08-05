@@ -3,6 +3,11 @@ set -euo pipefail
 
 input=$(cat)
 
+# Claude supplies its own cumulative API-equivalent cost in every status-line
+# payload. Record only per-session increases; this also covers prompts sent via
+# Remote Control because they run in this same local Claude process.
+printf '%s' "$input" | "$HOME/.scripts/claude-cost-record" || true
+
 dim=$'\033[2m'
 bold=$'\033[1m'
 rst=$'\033[0m'
