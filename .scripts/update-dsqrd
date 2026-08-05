@@ -8,11 +8,11 @@
 # long-running daemon + UI (a rebuild swaps the binary but won't restart
 # already-running procs).
 #
-# dsqrd is a FORK of daphen/dsqrd, so its update is two-legged: first merge
-# daphen's upstream main into the marsa099 fork (auto if clean; a conflict is
-# handed to Claude/opus 4.8 to resolve), then bump the lock + rebuild + restart.
-# --check reports both legs (upstream->fork to merge, fork->system to build).
-# slqs/mlqs are not forks — they just track daphen directly (single leg).
+# dsqrd and mlqs are FORKS of daphen's repos, so their update is two-legged:
+# first merge daphen's upstream main into the marsa099 fork (auto if clean; a
+# conflict is handed to pi to resolve), then bump the lock + rebuild
+# + restart. --check reports both legs (upstream->fork to merge, fork->system to
+# build). slqs is not a fork — it just tracks daphen directly (single leg).
 #
 # Usage:
 #   update-dsqrd            merge daphen upstream, rebuild, restart daemon + UI
@@ -58,85 +58,122 @@ installed_rev() {
         *) echo "" ;;
     esac
 }
+running_rev() {
+    # A rebuild replaces the installed wrapper but cannot replace an already
+    # running daemon. Read the revision from that process's old store package so
+    # U can repair a stale daemon instead of incorrectly saying "up to date".
+    [ "$1" = dsqrd ] || { echo ""; return; }
+    local pid script root
+    pid="$(pgrep -fo 'share/dsqrd/dsqrd\.py' 2>/dev/null || true)"
+    [ -n "$pid" ] || { echo ""; return; }
+    script="$(tr '\0' '\n' < "/proc/$pid/cmdline" 2>/dev/null | grep '/share/dsqrd/dsqrd\.py$' | head -1 || true)"
+    [ -n "$script" ] || { echo ""; return; }
+    root="$(dirname "$(dirname "$(dirname "$script")")")"
+    grep -o "DSQRD_REV='[0-9a-f]*'" "$root/bin/dsqrd" 2>/dev/null | cut -d"'" -f2 || true
+}
 
-# --- dsqrd fork <- daphen upstream sync -------------------------------------
-# dsqrd is a fork: `main` on the marsa099 fork is what Nix builds, but new
-# upstream features land on daphen's main and have to be MERGED in. So a dsqrd
-# update is two-legged — first fold daphen's main into the fork (auto when it
-# merges clean; hand a conflict to Claude/opus 4.8), then bump+rebuild against
-# the fork as usual. Real merges need a checkout, so this drives the local one.
-DSQRD_REPO="$HOME/repos/dsqrd"
-DSQRD_UPSTREAM_REMOTE="origin"   # daphen/dsqrd in that checkout
-DSQRD_FORK_REMOTE="fork"         # marsa099/dsqrd in that checkout
+# --- fork <- daphen upstream sync -------------------------------------------
+# dsqrd and mlqs are FORKS of daphen's repos: `main` on the marsa099 fork is what
+# Nix builds, but new upstream features land on daphen's main and have to be
+# MERGED in. So their update is two-legged — first fold daphen's main into the
+# fork (auto when it merges clean; hand a conflict to pi), then
+# bump+rebuild against the fork. slqs is not a fork (tracks daphen directly),
+# single leg. Real merges need a checkout, so this drives the local one.
+#
+# The fork checkout and its remote names differ per app, so parameterize them.
+# (In ~/repos/dsqrd origin=daphen, fork=marsa099; in ~/repos/mlqs it's the other
+# way round: origin=marsa099, upstream=daphen.)
+IS_FORK=""; FORK_REPO=""; UPREMOTE=""; FORKREMOTE=""; CONFLICT_HINT=""
+case "$APP" in
+    dsqrd)
+        IS_FORK=1; FORK_REPO="$HOME/repos/dsqrd"; UPREMOTE="origin"; FORKREMOTE="fork"
+        CONFLICT_HINT="BOTH my fork's additions (notably the Microsoft Copilot catch-up button: ui/CopilotPanel.qml plus its composer/Backend/shell wiring) AND daphen's upstream changes stay intact and working"
+        ;;
+    mlqs)
+        IS_FORK=1; FORK_REPO="$HOME/repos/mlqs"; UPREMOTE="upstream"; FORKREMOTE="origin"
+        CONFLICT_HINT="BOTH my fork's additions (notably the IMAP/SMTP vendor in internal/imap/ with its config/auth/daemon wiring, and the dual-repo update check + Shift+U apply keybind) AND daphen's upstream changes stay intact and working"
+        ;;
+esac
 
 # Count of daphen-main commits not yet in the fork's main (0 = caught up).
-# Fetches quietly first; any failure (offline, no checkout) reports 0 so the
-# update degrades to the plain fork-vs-system path instead of erroring.
+# Fetches quietly first; any failure (offline, no checkout, not a fork) reports 0
+# so the update degrades to the plain fork-vs-system path instead of erroring.
 upstream_pending() {
-    [ -d "$DSQRD_REPO/.git" ] || { echo 0; return; }
-    git -C "$DSQRD_REPO" fetch --quiet "$DSQRD_UPSTREAM_REMOTE" main 2>/dev/null || { echo 0; return; }
-    git -C "$DSQRD_REPO" fetch --quiet "$DSQRD_FORK_REMOTE" main 2>/dev/null || true
-    git -C "$DSQRD_REPO" rev-list --count "$DSQRD_FORK_REMOTE/main..$DSQRD_UPSTREAM_REMOTE/main" 2>/dev/null || echo 0
+    [ -n "$IS_FORK" ] && [ -d "$FORK_REPO/.git" ] || { echo 0; return; }
+    git -C "$FORK_REPO" fetch --quiet "$UPREMOTE" main 2>/dev/null || { echo 0; return; }
+    git -C "$FORK_REPO" fetch --quiet "$FORKREMOTE" main 2>/dev/null || true
+    git -C "$FORK_REPO" rev-list --count "$FORKREMOTE/main..$UPREMOTE/main" 2>/dev/null || echo 0
+}
+
+resolve_conflicts() {
+    echo "!! merge conflict — handing off to pi in $FORK_REPO"
+    if ! command -v pi >/dev/null 2>&1; then
+        echo "!! pi is not installed or not on PATH — leaving the merge for manual resolution"
+        exit 1
+    fi
+    ( cd "$FORK_REPO" && pi --no-session --approve \
+        "You are in $FORK_REPO partway through 'git merge $UPREMOTE/main' — merging daphen's upstream $APP into my fork's main — and there are merge conflicts. Resolve every conflict so that $CONFLICT_HINT. Then 'git add' the resolved files and 'git commit --no-edit' to complete the merge. Do NOT push and do NOT run nixos-rebuild — the update script does that. When the merge is committed, stop." ) || true
+    if git -C "$FORK_REPO" ls-files -u | grep -q . || [ -f "$FORK_REPO/.git/MERGE_HEAD" ]; then
+        echo "!! merge still unresolved after pi — fix manually in $FORK_REPO"; exit 1
+    fi
 }
 
 # Merge daphen's upstream main into the fork's main and push it. Clean merge is
-# silent; a conflict drops into Claude (opus 4.8) in the repo to resolve, then
-# we verify the merge actually committed before pushing. Refuses on a dirty tree
-# so it never clobbers local edits.
+# silent; a conflict is resolved by pi in the repo, then we verify the merge
+# actually committed before pushing. Refuses on an unrelated dirty tree so it
+# never clobbers local edits; an interrupted merge is resumed through pi.
 sync_upstream() {
+    if [ -f "$FORK_REPO/.git/MERGE_HEAD" ] || git -C "$FORK_REPO" ls-files -u | grep -q .; then
+        echo "==> resuming existing conflicted merge"
+        resolve_conflicts
+        echo "==> conflict resolved — pushing fork main"
+        git -C "$FORK_REPO" push "$FORKREMOTE" main
+        return 0
+    fi
     local pending; pending="$(upstream_pending)"
     if [ "$pending" -eq 0 ]; then
         echo "==> fork already current with daphen upstream"
         return 0
     fi
     echo "==> daphen upstream has $pending new commit(s) — merging into the fork"
-    if [ -n "$(git -C "$DSQRD_REPO" status --porcelain)" ]; then
-        echo "!! $DSQRD_REPO has uncommitted changes — skipping the upstream merge."
+    if [ -n "$(git -C "$FORK_REPO" status --porcelain)" ]; then
+        echo "!! $FORK_REPO has uncommitted changes — skipping the upstream merge."
         echo "   commit or stash there, then re-run to pull daphen's changes."
         return 0
     fi
-    git -C "$DSQRD_REPO" checkout main
+    git -C "$FORK_REPO" checkout main
     # catch local main up to the pushed fork main before merging upstream
-    if ! git -C "$DSQRD_REPO" merge --ff-only "$DSQRD_FORK_REMOTE/main" 2>/dev/null; then
-        echo "!! local main and $DSQRD_FORK_REMOTE/main diverged — reconcile $DSQRD_REPO manually"; exit 1
+    if ! git -C "$FORK_REPO" merge --ff-only "$FORKREMOTE/main" 2>/dev/null; then
+        echo "!! local main and $FORKREMOTE/main diverged — reconcile $FORK_REPO manually"; exit 1
     fi
-    if git -C "$DSQRD_REPO" merge --no-edit "$DSQRD_UPSTREAM_REMOTE/main"; then
+    if git -C "$FORK_REPO" merge --no-edit "$UPREMOTE/main"; then
         echo "==> clean merge — pushing fork main"
-        git -C "$DSQRD_REPO" push "$DSQRD_FORK_REMOTE" main
+        git -C "$FORK_REPO" push "$FORKREMOTE" main
         return 0
     fi
-    echo "!! merge conflict — handing off to Claude (opus 4.8) in $DSQRD_REPO"
-    if [ ! -t 0 ]; then
-        echo "   (no interactive terminal — aborting merge; run update-dsqrd from a real"
-        echo "    terminal or the in-app U so the opus-4.8 conflict handoff can be interactive)"
-        git -C "$DSQRD_REPO" merge --abort 2>/dev/null || true
-        exit 1
-    fi
-    ( cd "$DSQRD_REPO" && claude --model claude-opus-4-8 \
-        "You are in $DSQRD_REPO partway through 'git merge origin/main' — merging daphen's upstream dsqrd into my fork's main — and there are merge conflicts. Resolve every conflict so that BOTH my fork's additions (notably the Microsoft Copilot catch-up button: ui/CopilotPanel.qml plus its composer/Backend/shell wiring) AND daphen's upstream changes stay intact and working. Then 'git add' the resolved files and 'git commit --no-edit' to complete the merge. Do NOT push and do NOT run nixos-rebuild — the update script does that. When the merge is committed, stop." ) || true
-    if git -C "$DSQRD_REPO" ls-files -u | grep -q . || [ -f "$DSQRD_REPO/.git/MERGE_HEAD" ]; then
-        echo "!! merge still unresolved after Claude — aborting; fix manually in $DSQRD_REPO"; exit 1
-    fi
+    resolve_conflicts
     echo "==> conflict resolved — pushing fork main"
-    git -C "$DSQRD_REPO" push "$DSQRD_FORK_REMOTE" main
+    git -C "$FORK_REPO" push "$FORKREMOTE" main
 }
 
-# dsqrd: reconcile with daphen first. In --check, report both legs and signal
-# via exit 10; on execution, merge upstream, then fall through to bump+rebuild
-# against the (possibly advanced) fork main.
-if [ "$APP" = "dsqrd" ]; then
+# Forks (dsqrd, mlqs): reconcile with daphen first. In --check, report both legs
+# and signal via exit 10; on execution, merge upstream, then fall through to
+# bump+rebuild against the (possibly advanced) fork main.
+if [ -n "$IS_FORK" ]; then
     if [ -n "${CHECK:-}" ]; then
         PENDING="$(upstream_pending)"
-        OLD="$(locked_rev dsqrd)"; NEW="$(remote_rev dsqrd)"; INSTALLED="$(installed_rev dsqrd)"
+        OLD="$(locked_rev "$APP")"; NEW="$(remote_rev "$APP")"; INSTALLED="$(installed_rev "$APP")"; RUNNING="$(running_rev "$APP")"
         AVAIL=""
-        [ "$PENDING" -gt 0 ] && { echo "dsqrd: $PENDING new upstream commit(s) from daphen to merge"; AVAIL=1; }
+        [ "$PENDING" -gt 0 ] && { echo "$APP: $PENDING new upstream commit(s) from daphen to merge"; AVAIL=1; }
         if [ "$OLD" != "$NEW" ]; then
-            echo "dsqrd: ${OLD:0:7} -> ${NEW:0:7} to build"; AVAIL=1
+            echo "$APP: ${OLD:0:7} -> ${NEW:0:7} to build"; AVAIL=1
         elif [ -n "$INSTALLED" ] && [ "$INSTALLED" != "$OLD" ]; then
-            echo "dsqrd: interrupted build to finish (${INSTALLED:0:7})"; AVAIL=1
+            echo "$APP: interrupted build to finish (${INSTALLED:0:7})"; AVAIL=1
+        elif [ -n "$RUNNING" ] && [ "$RUNNING" != "$OLD" ]; then
+            echo "$APP: stale running daemon ${RUNNING:0:7} -> ${OLD:0:7} to restart"; AVAIL=1
         fi
         [ -n "$AVAIL" ] && exit 10
-        echo "dsqrd is up to date (${OLD:0:7}, current with daphen)."; exit 0
+        echo "$APP is up to date (${OLD:0:7}, current with daphen)."; exit 0
     fi
     sync_upstream
 fi
@@ -144,11 +181,16 @@ fi
 OLD="$(locked_rev "$APP")"
 NEW="$(remote_rev "$APP")"
 INSTALLED="$(installed_rev "$APP")"
+RUNNING="$(running_rev "$APP")"
+SKIP_REBUILD=""
 
 if [ "$OLD" = "$NEW" ]; then
     if [ -n "$INSTALLED" ] && [ "$INSTALLED" != "$OLD" ]; then
         echo "$APP: lock is current (${OLD:0:7}) but installed build is ${INSTALLED:0:7} — finishing interrupted update"
         [ -n "${CHECK:-}" ] && exit 10
+    elif [ -n "$RUNNING" ] && [ "$RUNNING" != "$OLD" ]; then
+        echo "$APP: installed build is current (${OLD:0:7}) but daemon is ${RUNNING:0:7} — restarting stale process"
+        SKIP_REBUILD=1
     else
         echo "$APP is up to date (${OLD:0:7})."
         exit 0
@@ -161,13 +203,15 @@ else
     nix flake update "$APP" --flake "$NIXOS"
 fi
 
-echo "==> nixos-rebuild switch"
-# Use the setuid sudo wrapper explicitly — when launched from the in-app `U`
-# keybind, PATH may resolve sudo to the non-setuid copy in
-# /run/current-system/sw/bin, which fails with "must be owned by uid 0".
-SUDO=/run/wrappers/bin/sudo
-[ -x "$SUDO" ] || SUDO=sudo
-"$SUDO" nixos-rebuild switch --flake "$NIXOS"
+if [ -z "$SKIP_REBUILD" ]; then
+    echo "==> nixos-rebuild switch"
+    # Use the setuid sudo wrapper explicitly — when launched from the in-app `U`
+    # keybind, PATH may resolve sudo to the non-setuid copy in
+    # /run/current-system/sw/bin, which fails with "must be owned by uid 0".
+    SUDO=/run/wrappers/bin/sudo
+    [ -x "$SUDO" ] || SUDO=sudo
+    "$SUDO" nixos-rebuild switch --flake "$NIXOS"
+fi
 
 echo "==> restarting $APP daemon + UI"
 # Match the running processes by their store UI/daemon paths. This script's own
@@ -188,11 +232,11 @@ case "$APP" in
             setsid nohup slqs-client >/tmp/slqs.log 2>&1 </dev/null &
         ;;
     mlqs)
-        # no SLK_UPDATE_CMD hook — mlqs only toasts update availability in-app
         pkill -f '/bin/mlqs$' 2>/dev/null || true
         pkill -f 'quickshell.* -p .*/share/mlqs/ui' 2>/dev/null || true
         sleep 1
-        setsid nohup mlqs-client >/tmp/mlqs.log 2>&1 </dev/null &
+        SLK_UPDATE_CMD="kitty --hold -e $HOME/.scripts/update-dsqrd mlqs" \
+            setsid nohup mlqs-client >/tmp/mlqs.log 2>&1 </dev/null &
         ;;
 esac
 
