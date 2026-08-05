@@ -83,6 +83,20 @@ Both clients' theme hardcodes "GeistMono Nerd Font" but the nix packages don't d
 
 slqs auth: no `slk` tool on this machine — write `~/.local/share/slqs/tokens/<teamID>.json` by hand with `access_token` (xoxc-…, from `localStorage.localConfig_v2` on a loaded app.slack.com client tab) and `cookie` (the HttpOnly `d` cookie value, kept URL-encoded, from DevTools cookies panel). Re-do this if the browser session that minted them is signed out.
 
+# Proxmox home server (sundby-pve) — Immich + NVIDIA GPU transcoding
+Host `sundby-pve` at 192.168.1.203 (PVE 9 / Debian trixie, kernel 6.17). GTX 1070 (Pascal) used for Immich video transcoding. Immich runs in **Docker inside unprivileged LXC 100 `media`** (`/docker/immich`, nesting=1); VM 101 `servarr` is unrelated.
+
+Set up 2026-08-03. The non-obvious parts:
+- **Driver must be the 580 branch** (580.178.04 as of now, from `download.nvidia.com/XFree86/Linux-x86_64/`). Debian trixie's `nvidia-driver` is 550 and its DKMS build **fails on kernel 6.16+**; the 595 production branch **dropped Pascal**. So 580 is the only window — install via the `.run` installer with `--dkms --silent` on the host, and the *same version* inside the LXC with `--no-kernel-module --silent` (userspace libs only; ABI must match exactly or you get "Driver/library version mismatch").
+- Host needs `/etc/modules-load.d/nvidia.conf` (nvidia, nvidia_uvm) + a udev rule to create/chmod the device nodes at boot, else they vanish after reboot.
+- LXC access = four `dev0`–`dev3` lines in `/etc/pve/lxc/100.conf` for `/dev/nvidia0`, `nvidiactl`, `nvidia-uvm`, `nvidia-uvm-tools`, all `mode=0666` (unprivileged container).
+- Inside the LXC: nvidia-container-toolkit **with `nvidia-ctk config --set nvidia-container-cli.no-cgroups --in-place`** — mandatory, an unprivileged LXC can't write cgroup device rules.
+- `docker exec immich_server nvidia-smi` **fails by design** — Immich's nvenc block requests gpu/compute/video capabilities, not `utility`. Verify with `ls /usr/lib/x86_64-linux-gnu/libnvidia-encode*` instead, or `nvidia-smi dmon -s u` on the host (its first column is the GPU *index*, not a utilization number — the ones that matter are `enc`/`dec`).
+- Immich compose: `hwaccel.transcoding.yml` must be downloaded next to `docker-compose.yml`, then the `extends:` block under `immich-server` uncommented with `service: nvenc`.
+- Transcoding settings tuned for 4K60 drone footage (DJI Mini 4 Pro): policy `bitrate`, maxBitrate `50M`, targetResolution `original`, h264, preset `slow`, accel `nvenc` + hardware decoding. Defaults would have downscaled everything to 720p. Originals are never touched — the transcode is a separate file in `encoded-video/`, and downloads always return the original, so Immich is safe as an archive.
+- **Real-time transcoding (v3.0+, HLS, web app only) was tried and deliberately turned off.** The ceiling is NVDEC, not NVENC: one 4K60 HEVC stream pushes `dec` to 90%+, and decode is always of the *source*, so even a viewer on the 480p rung costs a full 4K60 decode — i.e. ~1 concurrent realtime 4K viewer, hit long before the 3–5 NVENC session limit. Pre-generated transcodes are served as static HTTP with zero GPU involvement and scale to dozens of viewers. Downside of offline-only: a single rendition, no adaptive fallback, so 50M assumes LAN/good broadband.
+- Other 1070 limits: no AV1, and D-Log M footage looks flat regardless (Immich has no LUT support) — shoot Normal or HLG.
+
 # Ending a Claude session (qs-picker session overview)
 The qs-picker Claude session overview has a lifecycle "status" column (ongoing /
 done / parked / restarted / n/a). When I tell you, in a session, to end the
