@@ -11,7 +11,7 @@ environment {
     TERMINAL "kitty"
     TERMINAL_APP_ID "kitty"
     // Browser config for spawn-or-focus keybindings (change here to switch default browser)
-    BROWSER "zen-beta"
+    BROWSER "/home/martin/.scripts/helium-router"
     BROWSER_APP_ID "zen-beta"
     // Fallback for the chat clients' in-app `U` update keybind. The per-app
     // launch scripts override this (e.g. "update-dsqrd slqs"); this catches
