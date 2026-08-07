@@ -452,6 +452,7 @@ binds {
     Mod+Space hotkey-overlay-title="Run an Application: fuzzel" { spawn "fuzzel"; }
     Mod+B hotkey-overlay-title="Helium profile picker" { spawn "qs" "-p" "/home/martin/repos/qs-picker/shell.qml" "ipc" "call" "helium-picker" "toggle"; }
     Mod+Shift+B hotkey-overlay-title="Add bookmark" { spawn "qs" "-p" "/home/martin/repos/qs-picker/shell.qml" "ipc" "call" "add-bookmark" "toggle"; }
+    Mod+Shift+Space hotkey-overlay-title="recap — daily digest" { spawn "qs" "-p" "/home/martin/repos/qs-picker/shell.qml" "ipc" "call" "recap" "toggle"; }
     Super+Alt+L hotkey-overlay-title="Lock the Screen: ORION secure terminal" { spawn "/home/martin/repos/qs-picker/scripts/lock"; }
 
     // Spawn-or-focus keybindings (focus existing window, cycle through instances, or spawn new)
