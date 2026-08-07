@@ -32,6 +32,13 @@
     # `dsqrd-client`) that bundles quickshell/mpv/imv and starts the daemon.
     #   - dsqrd (Discord): standalone, needs a token in ~/.config/dsqrd/profiles.json
     #   - slqs  (Slack):   companion to the `slk` TUI — run slk once to auth first
+    # dsqrd tracks my fork, which is daphen's main plus exactly three things:
+    # `dsqrd-cli`, the `open` deep-link command, and the update-repo env vars
+    # below that drive the in-app update badge + AI-assisted upstream merge.
+    # Everything else (Copilot panel, issues panel) was dropped once daphen
+    # shipped his own agent/summary feature upstream.
+    # TODO: switch to "github:marsa099/dsqrd" once that fork is public — nix
+    # fetches unauthenticated, so a private fork 404s on commits/HEAD.
     dsqrd.url = "github:daphen/dsqrd";
     slqs.url = "github:daphen/slqs";
     #   - mlqs  (Mail):    Go daemon + vendored QML UI, same daemon/client split
