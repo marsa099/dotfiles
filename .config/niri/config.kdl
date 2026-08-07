@@ -154,7 +154,7 @@ layout {
     }
 
     // You can also customize the heights that "switch-preset-window-height" toggles between.
-    // (Unbound — Mod+Shift+R was freed for the recap overlay's neighbourhood.)
+    // (The action is currently unbound — it went unused.)
     // preset-window-heights { }
 
     // You can change the default width of the new windows.
