@@ -153,7 +153,8 @@ layout {
         // fixed 1920
     }
 
-    // You can also customize the heights that "switch-preset-window-height" (Mod+Shift+R) toggles between.
+    // You can also customize the heights that "switch-preset-window-height" toggles between.
+    // (Unbound — Mod+Shift+R was freed for the recap overlay's neighbourhood.)
     // preset-window-heights { }
 
     // You can change the default width of the new windows.
@@ -662,7 +663,6 @@ binds {
     Mod+R { switch-preset-column-width; }
     // Cycling through the presets in reverse order is also possible.
     // Mod+R { switch-preset-column-width-back; }
-    Mod+Shift+R { switch-preset-window-height; }
     Mod+Ctrl+R { reset-window-height; }
     Mod+F { maximize-column; }
     Mod+Shift+F { fullscreen-window; }
