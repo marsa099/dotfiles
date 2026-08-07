@@ -37,9 +37,11 @@
     # below that drive the in-app update badge + AI-assisted upstream merge.
     # Everything else (Copilot panel, issues panel) was dropped once daphen
     # shipped his own agent/summary feature upstream.
-    # TODO: switch to "github:marsa099/dsqrd" once that fork is public — nix
-    # fetches unauthenticated, so a private fork 404s on commits/HEAD.
-    dsqrd.url = "github:daphen/dsqrd";
+    # dsqrd tracks my fork: daphen's main plus exactly three things — dsqrd-cli,
+    # the `open` deep-link command, and the DSQRD_*_REPO env vars that drive the
+    # in-app update badge + AI-assisted upstream merge. (Must stay a *public*
+    # fork: nix fetches unauthenticated and a private repo 404s on commits/HEAD.)
+    dsqrd.url = "github:marsa099/dsqrd";
     slqs.url = "github:daphen/slqs";
     #   - mlqs  (Mail):    Go daemon + vendored QML UI, same daemon/client split
     # Test smart IMAP threading on the fork before proposing it upstream.
