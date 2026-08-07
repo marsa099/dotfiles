@@ -58,11 +58,11 @@
         "nixpkgs": "nixpkgs_4"
       },
       "locked": {
-        "lastModified": 1786128715,
-        "narHash": "sha256-wGVWgswqk3o1lEFEEDaDXBPysjCpMzrOsmxvxFTNT3M=",
+        "lastModified": 1786133424,
+        "narHash": "sha256-xo94L77mCGj00mhcpQj8u5qKU8zBo5ARo+ufABpMsrI=",
         "owner": "marsa099",
         "repo": "dsqrd",
-        "rev": "3cb25a7c76ad151fa3e831875c5ec92f4a6ae039",
+        "rev": "bd99cfa89c12c100748f9b9ed44a079047731eed",
         "type": "github"
       },
       "original": {
