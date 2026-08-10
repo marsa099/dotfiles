@@ -55,6 +55,13 @@ profile office_wall_window {
     output "Dell Inc. DELL U2515H 9X2VY58L023L" mode 2560x1440@60Hz position 4096,0 scale 1.0
 }
 
+# Johans desk setup - Laptop + Dual Dell monitors (U2515H left, P2418D right)
+profile work-johans-desk {
+    output "California Institute of Technology 0x1404 Unknown" mode 1920x1200@60Hz position 0,0 scale 1.25
+    output "Dell Inc. DELL U2515H 9X2VY58L01WL" mode 2560x1440@60Hz position 1536,0 scale 1.0
+    output "Dell Inc. DELL P2418D MY3ND8CQ0J4T" mode 2560x1440@60Hz position 4096,0 scale 1.0
+}
+
 # Add more profiles below as you connect to different monitor setups
 # Example:
 # profile work_dual {
