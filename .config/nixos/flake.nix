@@ -32,16 +32,13 @@
     # `dsqrd-client`) that bundles quickshell/mpv/imv and starts the daemon.
     #   - dsqrd (Discord): standalone, needs a token in ~/.config/dsqrd/profiles.json
     #   - slqs  (Slack):   companion to the `slk` TUI — run slk once to auth first
-    # dsqrd tracks my fork, which is daphen's main plus exactly three things:
-    # `dsqrd-cli`, the `open` deep-link command, and the update-repo env vars
-    # below that drive the in-app update badge + AI-assisted upstream merge.
-    # Everything else (Copilot panel, issues panel) was dropped once daphen
-    # shipped his own agent/summary feature upstream.
-    # dsqrd tracks my fork: daphen's main plus exactly three things — dsqrd-cli,
-    # the `open` deep-link command, and the DSQRD_*_REPO env vars that drive the
-    # in-app update badge + AI-assisted upstream merge. (Must stay a *public*
-    # fork: nix fetches unauthenticated and a private repo 404s on commits/HEAD.)
-    dsqrd.url = "github:marsa099/dsqrd";
+    # dsqrd tracks daphen directly again (2026-08-10). The marsa099 fork only
+    # still carries `dsqrd-cli`, and that runs out of ~/repos/dsqrd rather than
+    # the package, so a stock build loses nothing — the `open` command it needs
+    # is upstream now. The launcher's pgrep fix is upstream PR #11; until that
+    # merges, a stray process with "dsqrd.py" in its argv can block the daemon
+    # from starting (symptom: UI comes up empty on a dead socket).
+    dsqrd.url = "github:daphen/dsqrd";
     slqs.url = "github:daphen/slqs";
     #   - mlqs  (Mail):    Go daemon + vendored QML UI, same daemon/client split
     # Test smart IMAP threading on the fork before proposing it upstream.
