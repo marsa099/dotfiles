@@ -203,63 +203,66 @@
 
   # List packages installed in system profile.
   # You can use https://search.nixos.org/ to find more packages (and options).
-  environment.systemPackages = with pkgs; [
-    mkcert
-    vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
-    ghostty
-    kitty
-    vial
-    tmux
-    git
-    wget
-    fuzzel
-    rofi
-    gh # gh cli
-    zoxide
-    eza # modern ls replacement with icons (used by ls/ll/la/lt aliases in .bashrc)
-    xwayland-satellite # XWayland bridge for niri, needed by X11 apps
-    teams-for-linux
-    signal-desktop
-    swaybg
-    wl-clipboard
-    grim # region capture backend for the qs-picker keyboard screenshot (Print)
-    imagemagick # crops the frozen grim snapshot for the qs-picker region screenshot
-    imv # image viewer for tmqs media enlarging (SLK_MEDIA_VIEWER -> media-viewer.sh)
-    mpv # video player for tmqs media enlarging
-    aerc # vim-like terminal email client
-    w3m # HTML->text renderer used by aerc's html filter
-    chafa # renders images to terminal graphics (kitty protocol) for inline aerc images
-    jq
-    python3
-    glib # provides gsettings - a CLI tool that reads/writes GNOME/GTK settings (e.g. dark/light mode preference that apps like Ghostty and Firefox listen to)
-    # neovim + LSPs/formatters/tools provided by modules/neovim.nix
-    # roslyn-ls provided by modules/roslyn-ls.nix
-    # dotnet-sdk_10 provided by modules/dotnet.nix
-    television # fuzzy finder TUI
-    bat # cat clone with syntax highlighting, used by television for previews
-    wev # tool to see keycodes for key input etc
-    brightnessctl # brightness control via keyboard brightness keys
-    swayosd # on-screen display for brightness/volume changes (26.05 stable is 0.3.1, same as unstable; 0.3.1 still has the DRM-connector SIGABRT — supervised by swayosd.service user unit instead)
-    unstable.quickshell # QML desktop-shell toolkit — powers ~/repos/qs-picker (Helium profile picker + bar + notifications; replaced dunst)
-    libnotify # provides notify-send for sending desktop notifications (received by qs-picker NotifService)
-    pass # password manager (pass)
-    terraform
-    spotify-player
-    wtype # sends keystrokes for the claude-code-notify respond flow (replaced dunst)
-    cloc # Count Lines Of Code
-    sqlcmd # MS SQL CLI client
-    kanshi # dynamic monitor configuration
-    sox # audio recording, required by claude code /voice
-    pavucontrol # GUI mixer for PipeWire/PulseAudio (route apps between sinks/sources)
-    tcpdump # CLI packet capture/analyzer
-    postgresql # provides psql for connecting to Postgres (Vercel/Neon/Supabase etc.)
-    calc
-    nautilus # GNOME Files — GUI file manager (Mod+E in niri)
-    yazi # Apparently needed for dsqrd on u (as in upload)
-  ]
-  # Packages from external flake inputs (helium, claude-code, ...), wired
-  # in flake.nix and passed through via specialArgs. See flake.nix `flakePackages`.
-  ++ flakePackages;
+  environment.systemPackages =
+    with pkgs;
+    [
+      mkcert
+      vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
+      ghostty
+      kitty
+      vial
+      tmux
+      git
+      wget
+      fuzzel
+      rofi
+      gh # gh cli
+      zoxide
+      eza # modern ls replacement with icons (used by ls/ll/la/lt aliases in .bashrc)
+      xwayland-satellite # XWayland bridge for niri, needed by X11 apps
+      teams-for-linux
+      signal-desktop
+      swaybg
+      wl-clipboard
+      grim # region capture backend for the qs-picker keyboard screenshot (Print)
+      imagemagick # crops the frozen grim snapshot for the qs-picker region screenshot
+      imv # image viewer for tmqs media enlarging (SLK_MEDIA_VIEWER -> media-viewer.sh)
+      mpv # video player for tmqs media enlarging
+      aerc # vim-like terminal email client
+      w3m # HTML->text renderer used by aerc's html filter
+      chafa # renders images to terminal graphics (kitty protocol) for inline aerc images
+      jq
+      python3
+      glib # provides gsettings - a CLI tool that reads/writes GNOME/GTK settings (e.g. dark/light mode preference that apps like Ghostty and Firefox listen to)
+      # neovim + LSPs/formatters/tools provided by modules/neovim.nix
+      # roslyn-ls provided by modules/roslyn-ls.nix
+      # dotnet-sdk_10 provided by modules/dotnet.nix
+      television # fuzzy finder TUI
+      bat # cat clone with syntax highlighting, used by television for previews
+      wev # tool to see keycodes for key input etc
+      brightnessctl # brightness control via keyboard brightness keys
+      swayosd # on-screen display for brightness/volume changes (26.05 stable is 0.3.1, same as unstable; 0.3.1 still has the DRM-connector SIGABRT — supervised by swayosd.service user unit instead)
+      unstable.quickshell # QML desktop-shell toolkit — powers ~/repos/qs-picker (Helium profile picker + bar + notifications; replaced dunst)
+      libnotify # provides notify-send for sending desktop notifications (received by qs-picker NotifService)
+      pass # password manager (pass)
+      terraform
+      spotify-player
+      wtype # sends keystrokes for the claude-code-notify respond flow (replaced dunst)
+      cloc # Count Lines Of Code
+      sqlcmd # MS SQL CLI client
+      kanshi # dynamic monitor configuration
+      sox # audio recording, required by claude code /voice
+      pavucontrol # GUI mixer for PipeWire/PulseAudio (route apps between sinks/sources)
+      tcpdump # CLI packet capture/analyzer
+      postgresql # provides psql for connecting to Postgres (Vercel/Neon/Supabase etc.)
+      calc
+      nautilus # GNOME Files — GUI file manager (Mod+E in niri)
+      yazi # Apparently needed for dsqrd on u (as in upload)
+      obsidian
+    ]
+    # Packages from external flake inputs (helium, claude-code, ...), wired
+    # in flake.nix and passed through via specialArgs. See flake.nix `flakePackages`.
+    ++ flakePackages;
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
@@ -272,13 +275,17 @@
   # Passwordless sudo scoped to nixos-rebuild only, so automated/agent-driven
   # rebuilds don't get stuck on the TTY password prompt. Normal sudo still
   # requires a password for everything else.
-  security.sudo.extraRules = [{
-    users = [ "martin" ];
-    commands = [{
-      command = "/run/current-system/sw/bin/nixos-rebuild";
-      options = [ "NOPASSWD" ];
-    }];
-  }];
+  security.sudo.extraRules = [
+    {
+      users = [ "martin" ];
+      commands = [
+        {
+          command = "/run/current-system/sw/bin/nixos-rebuild";
+          options = [ "NOPASSWD" ];
+        }
+      ];
+    }
+  ];
 
   programs.gnupg.agent = {
     enable = true;
