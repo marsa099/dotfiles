@@ -281,6 +281,10 @@ layout {
     }
 }
 
+// Zen mode overrides only the normal layout gaps. The optional cache file is
+// created/removed by scripts/toggle-zen-mode, and niri watches it for live reloads.
+include optional=true "~/.cache/niri/zen-mode.kdl"
+
 // Add lines like this to spawn processes at startup.
 // Note that running niri as a session supports xdg-desktop-autostart,
 // which may be more convenient to use.
@@ -484,6 +488,7 @@ binds {
     Mod+Shift+C hotkey-overlay-title="New Claude/Pi session" { spawn "qs" "-p" "/home/martin/repos/qs-picker/shell.qml" "ipc" "call" "new-claude-session" "toggle"; }
     Mod+Z { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus chrome-portal.azure.com__-Profile_4 'google-chrome-stable --profile-directory=\"Profile 4\" --app=\"https://portal.azure.com/\"'"; }
     Mod+Shift+Z { spawn "google-chrome-stable" "--profile-directory=Profile 4" "--app=https://portal.azure.com/"; }
+    Mod+Ctrl+Z repeat=false hotkey-overlay-title="Toggle zen mode" { spawn "/home/martin/.config/niri/scripts/toggle-zen-mode"; }
     Mod+M { spawn-sh "$HOME/.scripts/niri/niri-mailbox-selector focus"; }
     Mod+Shift+M { spawn-sh "$HOME/.scripts/niri/niri-mailbox-selector choose"; }
     Mod+E hotkey-overlay-title="File manager: Nautilus" { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus org.gnome.Nautilus nautilus"; }
