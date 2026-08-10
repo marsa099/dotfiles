@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# This optional niri include is also watched by qs-picker's ZenState singleton,
+# making one file the source of truth for both window gaps and bar visibility.
+state_dir="${HOME}/.cache/niri"
+state_file="${state_dir}/zen-mode.kdl"
+lock_file="${state_dir}/zen-mode.lock"
+
+mkdir -p "${state_dir}"
+exec 9>"${lock_file}"
+flock 9
+
+# Freeze the current frame while niri relays out the windows and Quickshell
+# releases or restores the bar's exclusive zone.
+niri msg action do-screen-transition --delay-ms 100 >/dev/null 2>&1 || true
+
+if [[ -e "${state_file}" ]]; then
+    rm -f -- "${state_file}"
+else
+    tmp_file=$(mktemp "${state_dir}/.zen-mode.kdl.XXXXXX")
+    trap 'rm -f -- "${tmp_file}"' EXIT
+    printf 'layout { gaps 0; }\n' >"${tmp_file}"
+    mv -f -- "${tmp_file}" "${state_file}"
+    trap - EXIT
+fi
