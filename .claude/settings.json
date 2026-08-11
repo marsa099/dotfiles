@@ -6,7 +6,7 @@
   "permissions": {
     "defaultMode": "auto"
   },
-  "model": "opus",
+  "model": "fable",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -62,7 +62,16 @@
     "command": "~/.scripts/claude-statusline"
   },
   "enabledPlugins": {
-    "vercel@claude-plugins-official": true
+    "vercel@claude-plugins-official": true,
+    "i-have-adhd@i-have-adhd": true
+  },
+  "extraKnownMarketplaces": {
+    "i-have-adhd": {
+      "source": {
+        "source": "github",
+        "repo": "ayghri/i-have-adhd"
+      }
+    }
   },
   "effortLevel": "high",
   "awaySummaryEnabled": false,
