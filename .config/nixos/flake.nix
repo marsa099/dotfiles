@@ -41,8 +41,10 @@
     dsqrd.url = "github:daphen/dsqrd";
     slqs.url = "github:daphen/slqs";
     #   - mlqs  (Mail):    Go daemon + vendored QML UI, same daemon/client split
-    # Test smart IMAP threading on the fork before proposing it upstream.
-    mlqs.url = "github:marsa099/mlqs/imap-smart-threading";
+    # mlqs tracks daphen directly too (2026-08-12). The IMAP/SMTP vendor was
+    # merged upstream (PR #3) and the smart-threading experiment was dropped in
+    # favor of daphen's RFC-5256 threading; the fork branch is archived locally.
+    mlqs.url = "github:daphen/mlqs";
   };
 
   outputs =

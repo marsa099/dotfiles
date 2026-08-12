@@ -8,10 +8,11 @@
 # restart the long-running daemon + UI (a rebuild swaps the binary but won't
 # restart already-running procs).
 #
-# mlqs is a fork of daphen's repo, so its update is two-legged: first merge
-# daphen's upstream main into the marsa099 fork (auto if clean; a conflict is
-# handed to pi to resolve), then bump the lock + rebuild + restart. dsqrd and
-# slqs track daphen directly and use the single-leg update flow.
+# All three track daphen directly (mlqs since 2026-08-12) and use the same
+# single-leg flow: bump the lock, rebuild, restart. The IS_FORK machinery below
+# is kept for the day an app diverges onto a fork again: set the app's case in
+# the fork block and its update becomes two-legged (merge daphen's main into
+# the fork first; a conflict is handed to pi to resolve).
 #
 # Usage:
 #   update-dsqrd            update from daphen, rebuild, restart daemon + UI
@@ -71,17 +72,12 @@ running_rev() {
     grep -o "DSQRD_REV='[0-9a-f]*'" "$root/bin/dsqrd" 2>/dev/null | cut -d"'" -f2 || true
 }
 
-# --- mlqs fork <- daphen upstream sync --------------------------------------
-# mlqs is built from the marsa099 fork, while new upstream features land on
-# daphen's main and must be merged before the lock is bumped. Real merges need a
+# --- fork <- daphen upstream sync (currently unused) -------------------------
+# When an app is built from a marsa099 fork, upstream features land on daphen's
+# main and must be merged before the lock is bumped. Real merges need a
 # checkout, so this drives the local one (origin=marsa099, upstream=daphen).
+# No app takes this path right now (mlqs went back to daphen 2026-08-12).
 IS_FORK=""; FORK_REPO=""; UPREMOTE=""; FORKREMOTE=""; CONFLICT_HINT=""
-case "$APP" in
-    mlqs)
-        IS_FORK=1; FORK_REPO="$HOME/repos/mlqs"; UPREMOTE="upstream"; FORKREMOTE="origin"
-        CONFLICT_HINT="BOTH my fork's additions (notably the IMAP/SMTP vendor in internal/imap/ with its config/auth/daemon wiring, and the dual-repo update check + Shift+U apply keybind) AND daphen's upstream changes stay intact and working"
-        ;;
-esac
 
 # Count of daphen-main commits not yet in the fork's main (0 = caught up).
 # Fetches quietly first; any failure (offline, no checkout, not a fork) reports 0
