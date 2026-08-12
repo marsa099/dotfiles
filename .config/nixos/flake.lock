@@ -149,16 +149,15 @@
         "nixpkgs": "nixpkgs_5"
       },
       "locked": {
-        "lastModified": 1786123694,
-        "narHash": "sha256-/oHnb5rMH+bDJYDcF9tfJAS4riNkSFQz6V8a33nheEc=",
-        "owner": "marsa099",
+        "lastModified": 1786542110,
+        "narHash": "sha256-ffYFLWRTlEkU1Wb0ll8flRttnUPF3Y1G9OSvuN4uDN0=",
+        "owner": "daphen",
         "repo": "mlqs",
-        "rev": "e9d8700826c0b3775df77651dd942c1fa3655805",
+        "rev": "c3473d0dc3d475c8646a00c416e35b62651834cd",
         "type": "github"
       },
       "original": {
-        "owner": "marsa099",
-        "ref": "imap-smart-threading",
+        "owner": "daphen",
         "repo": "mlqs",
         "type": "github"
       }
