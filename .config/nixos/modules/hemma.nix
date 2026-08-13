@@ -14,6 +14,7 @@ let
     "Galaxen"
     "Sundby Guest"
     "dlink-5GHz-2B40"
+    "deco"
   ];
   wifiIface = "wlp0s20f3";
   port = 7777;
