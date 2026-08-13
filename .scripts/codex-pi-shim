@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# NOT the real codex CLI. dsqrd/mlqs summaries only support claude-cli or
+# codex-cli as keyless providers; this shim (symlinked as ~/.local/bin/codex)
+# translates the daemon's `codex exec ... -o <file> [-m <model>] -` call into
+# `pi` (ChatGPT OAuth, provider openai-codex). Prompt arrives on stdin.
+# Remove if a real codex CLI is ever installed, or if dsqrd grows pi support.
+out="" model="gpt-5.5"
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -o) out="$2"; shift 2 ;;
+    -m) model="$2"; shift 2 ;;
+    *) shift ;;
+  esac
+done
+resp=$(pi -p --provider openai-codex --model "$model" --no-tools --no-session) || exit 1
+if [[ -n "$out" ]]; then
+  printf '%s\n' "$resp" > "$out"
+else
+  printf '%s\n' "$resp"
+fi
