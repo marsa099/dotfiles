@@ -27,6 +27,8 @@
     ./modules/hemma.nix
     ./modules/browser-update-check.nix
     ./modules/msqs.nix
+    ./modules/tailscale.nix
+    ./modules/pi-crust.nix
   ];
 
   # Use the systemd-boot EFI boot loader.
