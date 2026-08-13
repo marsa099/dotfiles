@@ -6,6 +6,28 @@
 # Slack, the CLI, etc. land in the "right" profile instead of always Private.
 BOOKMARKS="$HOME/repos/qs-picker/scripts/bookmarks"
 
+# SIS-tenant Teams deep links go to the teams-for-linux app instead of a
+# browser profile. A second `teams-for-linux <url>` instance hands the URL to
+# the running app, which loads it if it matches its meetupJoinRegEx
+# (/l/message, /l/chat, /l/channel, /l/meetup-join, /meet/, ...).
+SIS_TENANT="59176df8-78c5-4eb6-aa88-4f0778ef5cb0"
+
+focus_teams() {
+    local id
+    command -v niri >/dev/null && command -v jq >/dev/null || return 0
+    # The app sits minimized in the tray with no mapped window until the URL
+    # handoff calls window.show() — poll until the window exists.
+    for _ in $(seq 40); do
+        id=$(niri msg --json windows 2>/dev/null |
+             jq -r '[.[] | select((.app_id // "") | test("teams"; "i"))][0].id // empty')
+        if [ -n "$id" ]; then
+            niri msg action focus-window --id "$id" >/dev/null 2>&1
+            return 0
+        fi
+        sleep 0.15
+    done
+}
+
 focus_profile() {
     local dir="$1" id pid cmd
 
@@ -30,6 +52,13 @@ focus_profile() {
 
 launch() {
     local url="$1" dir="Private" port=9226 out
+    case "${url,,}" in
+        *teams.microsoft.com*"$SIS_TENANT"*)
+            setsid teams-for-linux "$url" </dev/null >/dev/null 2>&1 &
+            focus_teams </dev/null >/dev/null 2>&1 &
+            return
+            ;;
+    esac
     if [ -n "$url" ]; then
         out=$("$BOOKMARKS" route "$url" 2>/dev/null)
         [ -n "$out" ] && read -r dir port <<<"$out"
