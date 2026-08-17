@@ -149,11 +149,11 @@
         "nixpkgs": "nixpkgs_5"
       },
       "locked": {
-        "lastModified": 1786542110,
-        "narHash": "sha256-ffYFLWRTlEkU1Wb0ll8flRttnUPF3Y1G9OSvuN4uDN0=",
+        "lastModified": 1786616505,
+        "narHash": "sha256-TNZpIhJzvk3TEM+XqmSXXg091n4LjbcnUntrQXCpuv4=",
         "owner": "daphen",
         "repo": "mlqs",
-        "rev": "c3473d0dc3d475c8646a00c416e35b62651834cd",
+        "rev": "9061cce7557c5f78c803ee9c99635a69345c2bd1",
         "type": "github"
       },
       "original": {
