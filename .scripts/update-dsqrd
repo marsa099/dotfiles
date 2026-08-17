@@ -71,16 +71,16 @@ locked_rev() {
         | python3 -c "import json,sys; print(json.load(sys.stdin)['locks']['nodes']['$1']['locked']['rev'])"
 }
 remote_rev() {
-    # latest commit on whatever GitHub repo+ref this flake input actually tracks
-    # (read from the input's `original`, so forks / branch pins Just Work — e.g.
-    # mlqs tracks marsa099's fork while dsqrd and slqs track daphen). No `ref` in the
-    # original means the repo's default branch, which `ls-remote HEAD` resolves.
-    local owner repo ref
-    read -r owner repo ref < <(
+    # Latest commit on whatever remote+ref this flake input actually tracks.
+    # Support both Nix's `github:` fetcher and generic `git+https:` inputs; dsqrd
+    # uses the latter so an outage of GitHub's codeload archive service does not
+    # block updates when normal Git transport is healthy.
+    local url ref
+    read -r url ref < <(
         nix flake metadata "$NIXOS" --json 2>/dev/null \
-            | python3 -c "import json,sys; o=json.load(sys.stdin)['locks']['nodes']['$1']['original']; print(o.get('owner',''), o.get('repo','$1'), o.get('ref','HEAD'))"
+            | python3 -c "import json,sys; o=json.load(sys.stdin)['locks']['nodes']['$1']['original']; url=o.get('url') or f\"https://github.com/{o['owner']}/{o.get('repo','$1')}.git\"; print(url, o.get('ref','HEAD'))"
     )
-    git ls-remote "https://github.com/$owner/$repo.git" "$ref" | cut -f1
+    git ls-remote "$url" "$ref" | cut -f1
 }
 installed_rev() {
     # rev baked into the installed package, so a half-applied update (lock
