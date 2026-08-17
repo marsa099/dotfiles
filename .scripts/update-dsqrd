@@ -15,21 +15,55 @@
 # the fork first; a conflict is handed to pi to resolve).
 #
 # Usage:
-#   update-dsqrd            update from daphen, rebuild, restart daemon + UI
-#   update-dsqrd --check    only report whether an update is available
-#   update-dsqrd slqs       same flow but for slqs instead of dsqrd
-#   update-dsqrd mlqs       same flow but for mlqs (mail)
+#   update-dsqrd [app]           update, rebuild, restart daemon + UI
+#   update-dsqrd [app] --check   only report whether an update is available
+# app = dsqrd | slqs | mlqs (nix-built), or tmqs | msqs (handed off to their
+# repo updaters). With no app named, the invoking client is auto-detected —
+# see detect_app below; from a plain terminal the default is dsqrd.
 set -euo pipefail
 # On any failure, say exactly what broke — this runs in a kitty --hold window
 # from the in-app `U` keybind, so the message stays on screen.
 trap 'echo; echo "!! update-dsqrd FAILED at line $LINENO: $BASH_COMMAND" >&2' ERR
 
 NIXOS="$HOME/.config/nixos"
-APP="${1:-dsqrd}"
+
+# The in-app `U` keybind runs SLK_UPDATE_CMD, and the niri-wide fallback value
+# carries no app argument — so a client relaunched outside its launch script
+# (manual run, or an updater restarting a sibling app) used to always land on
+# the dsqrd update ("dsqrd is up to date" from inside mlqs). When no app is
+# named, walk up the process tree to the quickshell UI that invoked us and
+# read the app from its `-p .../<app>/ui` path instead.
+detect_app() {
+    local pid="${1:-$$}" cmdline hops=0
+    while [ "$hops" -lt 10 ]; do
+        case "$pid" in ''|*[!0-9]*|1) break ;; esac
+        cmdline="$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true)"
+        case "$cmdline" in
+            *dsqrd/ui*) echo dsqrd; return ;;
+            *slqs/ui*)  echo slqs;  return ;;
+            *mlqs/ui*)  echo mlqs;  return ;;
+            *tmqs/ui*)  echo tmqs;  return ;;
+            *msqs/ui*)  echo msqs;  return ;;
+        esac
+        pid="$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')"
+        hops=$((hops + 1))
+    done
+    echo dsqrd
+}
+
+APP="${1:-}"
 case "$APP" in
-    --check) CHECK=1; APP="dsqrd" ;;
-    dsqrd|slqs|mlqs) CHECK="${2:-}"; [ "$CHECK" = "--check" ] && CHECK=1 || CHECK="" ;;
-    *) echo "unknown app: $APP (expected dsqrd, slqs or mlqs)" >&2; exit 1 ;;
+    "") CHECK=""; APP="$(detect_app)" ;;
+    --check) CHECK=1; APP="$(detect_app)" ;;
+    dsqrd|slqs|mlqs|tmqs|msqs) CHECK="${2:-}"; [ "$CHECK" = "--check" ] && CHECK=1 || CHECK="" ;;
+    *) echo "unknown app: $APP (expected dsqrd, slqs, mlqs, tmqs or msqs)" >&2; exit 1 ;;
+esac
+
+# tmqs and msqs run from their repo checkouts with their own updaters — this
+# script only ever reaches them via detection (their launch scripts normally
+# set an explicit SLK_UPDATE_CMD), so hand off wholesale.
+case "$APP" in
+    tmqs|msqs) exec "$HOME/repos/$APP/update-$APP.sh" ${CHECK:+--check} ;;
 esac
 
 locked_rev() {
