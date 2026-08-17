@@ -15,8 +15,11 @@ if [[ -n "$NIRI_SOCKET" ]]; then
     command -v tmux &>/dev/null && tmux set-environment -g NIRI_SOCKET "$NIRI_SOCKET" 2>/dev/null
 fi
 
-# Make sure ^[[200~ is not a part of the paste output from the clipboard
-bind 'set enable-bracketed-paste off'
+# Bracketed paste stays ON (readline default). It was disabled here for years
+# ("^[[200~ in paste output"), but with it off kitty sends multiline pastes raw:
+# each newline accepts a line, kitty's shell integration marks every PS2 line as
+# a redrawable prompt (OSC 133;A;k=s), and the display collapses into garbage.
+# If a specific program ever shows literal ^[[200~ again, fix it there instead.
 
 # When resizing a terminal emulator, Bash may not receive the resize signal. 
 # This will cause typed text to not wrap correctly and overlap the prompt. 
