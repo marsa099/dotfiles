@@ -14,8 +14,9 @@ environment {
     BROWSER "/home/martin/.scripts/helium-router"
     BROWSER_APP_ID "zen-beta"
     // Fallback for the chat clients' in-app `U` update keybind. The per-app
-    // launch scripts override this (e.g. "update-dsqrd slqs"); this catches
-    // manual relaunches that would otherwise lose the env var entirely.
+    // launch scripts override this with an explicit app; when they don't,
+    // update-dsqrd auto-detects the invoking client from the process tree
+    // (it used to default to dsqrd, so U inside mlqs updated dsqrd).
     SLK_UPDATE_CMD "kitty --hold -e /home/martin/.scripts/update-dsqrd"
 }
 
