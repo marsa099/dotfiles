@@ -38,7 +38,9 @@
     # is upstream now. The launcher's pgrep fix is upstream PR #11; until that
     # merges, a stray process with "dsqrd.py" in its argv can block the daemon
     # from starting (symptom: UI comes up empty on a dead socket).
-    dsqrd.url = "github:daphen/dsqrd";
+    # Use generic Git transport instead of the `github:` fetcher: GitHub's
+    # codeload archive endpoint can return prolonged 429s while Git fetch works.
+    dsqrd.url = "git+https://github.com/daphen/dsqrd.git?ref=main";
     slqs.url = "github:daphen/slqs";
     #   - mlqs  (Mail):    Go daemon + vendored QML UI, same daemon/client split
     # mlqs tracks daphen directly too (2026-08-12). The IMAP/SMTP vendor was
