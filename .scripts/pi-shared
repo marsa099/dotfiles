@@ -6,7 +6,7 @@ const os = require("node:os");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 
-const VERSION = "0.2.0";
+const VERSION = "0.3.0";
 const SESSION_PREFIX = "pi-remote-";
 
 function extensionServerPath(env = process.env, home = os.homedir()) {
@@ -42,17 +42,21 @@ function parseArguments(argv, cwd = process.cwd()) {
   if (wrapperArgs.includes("-h") || wrapperArgs.includes("--help")) return { command: "help", piArgs: [] };
   if (wrapperArgs.includes("-v") || wrapperArgs.includes("--version")) return { command: "version", piArgs: [] };
 
-  const commands = new Set(["attach", "help", "kill", "list", "new", "open", "token", "url", "version"]);
+  const commands = new Set(["attach", "help", "kill", "list", "migrate", "new", "open", "qr", "token", "url", "version"]);
   const first = wrapperArgs[0];
   const command = first && commands.has(first) ? first : "open";
   const positionals = command === "open" ? wrapperArgs : wrapperArgs.slice(1);
 
-  if (["help", "list", "token", "url", "version"].includes(command) && (positionals.length > 0 || piArgs.length > 0)) {
+  if (["help", "list", "qr", "token", "url", "version"].includes(command) && (positionals.length > 0 || piArgs.length > 0)) {
     throw new Error(`${command} does not accept arguments`);
   }
   if (["attach", "kill"].includes(command)) {
     if (positionals.length !== 1 || piArgs.length > 0) throw new Error(`Usage: pi-shared ${command} <name>`);
     return { command, reference: positionals[0], piArgs: [] };
+  }
+  if (command === "migrate") {
+    if (positionals.length > 1 || piArgs.length > 0) throw new Error("Usage: pi-shared migrate [session-file-or-id]");
+    return { command, reference: positionals[0] || null, piArgs: [] };
   }
   if (["new", "open"].includes(command)) {
     if (positionals.length > 1) throw new Error(`Usage: pi-shared ${command === "open" ? "[name]" : "new [name]"} [-- <pi-arguments>]`);
@@ -105,6 +109,136 @@ function resolveSession(reference, sessions) {
   return null;
 }
 
+function remoteUrl(config) {
+  const host = config.host.includes(":") && !config.host.startsWith("[") ? `[${config.host}]` : config.host;
+  return `http://${host}:${config.port}`;
+}
+
+function pairingUrl(config, code) {
+  return `${remoteUrl(config)}/#pair=${encodeURIComponent(code)}`;
+}
+
+async function requestPairingCode(config, fetchImplementation = globalThis.fetch) {
+  let response;
+  try {
+    response = await fetchImplementation(`${remoteUrl(config)}/api/pair`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${config.token}` },
+      signal: AbortSignal.timeout(5000),
+    });
+  } catch (error) {
+    throw new Error(`Pi Remote is not reachable at ${remoteUrl(config)}. Start the shared session, then retry.`, { cause: error });
+  }
+  if (!response.ok) {
+    throw new Error(`Pi Remote refused QR pairing (${response.status})`);
+  }
+  const payload = await response.json();
+  if (typeof payload.code !== "string" || !payload.code) throw new Error("Pi Remote returned an invalid pairing code");
+  return payload;
+}
+
+function renderQr(url, env = process.env, spawn = spawnSync) {
+  const args = ["-t", "ANSIUTF8", "-l", "M", "-m", "2", "-o", "-", url];
+  const configured = env.PI_REMOTE_QRENCODE;
+  let command = configured || "qrencode";
+  let commandArgs = args;
+  let result = spawn(command, commandArgs, { stdio: "inherit" });
+  if (!configured && result.error?.code === "ENOENT") {
+    command = "nix";
+    commandArgs = ["run", "nixpkgs#qrencode", "--", ...args];
+    result = spawn(command, commandArgs, { stdio: "inherit" });
+  }
+  if (result.error) throw result.error;
+  if (result.status !== 0) throw new Error(`${command} exited with status ${result.status}`);
+}
+
+async function printPairingQr(env = process.env, home = os.homedir()) {
+  const config = loadRemoteConfig(env, home);
+  const pairing = await requestPairingCode(config);
+  process.stdout.write("Scan with your phone camera. This code works once and expires in 2 minutes.\n\n");
+  renderQr(pairingUrl(config, pairing.code), env);
+}
+
+function sessionRoot(env = process.env, home = os.homedir()) {
+  return env.PI_SHARED_SESSION_ROOT || path.join(home, ".pi", "agent", "sessions");
+}
+
+function listSessionFiles(root) {
+  if (!fs.existsSync(root)) return [];
+  const files = [];
+  const directories = [root];
+  while (directories.length > 0) {
+    const directory = directories.pop();
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const file = path.join(directory, entry.name);
+      if (entry.isDirectory()) directories.push(file);
+      else if (entry.isFile() && entry.name.endsWith(".jsonl")) {
+        files.push({ file, mtimeMs: fs.statSync(file).mtimeMs });
+      }
+    }
+  }
+  return files.sort((left, right) => right.mtimeMs - left.mtimeMs);
+}
+
+function readSessionMetadata(file) {
+  const descriptor = fs.openSync(file, "r");
+  try {
+    const buffer = Buffer.alloc(32 * 1024);
+    const bytes = fs.readSync(descriptor, buffer, 0, buffer.length, 0);
+    const lines = buffer.subarray(0, bytes).toString("utf8").split("\n").slice(0, 32);
+    let header = null;
+    let name = null;
+    for (const line of lines) {
+      if (!line) continue;
+      let entry;
+      try { entry = JSON.parse(line); } catch { continue; }
+      if (entry.type === "session" && !header) header = entry;
+      if (entry.type === "session_info" && typeof entry.name === "string") name = entry.name;
+      if (header && name) break;
+    }
+    if (!header || typeof header.id !== "string" || typeof header.cwd !== "string") {
+      throw new Error(`Not a Pi session file: ${file}`);
+    }
+    return { file, id: header.id, cwd: header.cwd, name: name || path.basename(header.cwd) || "migrated" };
+  } finally {
+    fs.closeSync(descriptor);
+  }
+}
+
+function resolveMigrationSession(reference, env = process.env, home = os.homedir()) {
+  if (reference) {
+    const direct = path.resolve(reference);
+    if (fs.existsSync(direct) && fs.statSync(direct).isFile()) return readSessionMetadata(direct);
+  }
+  const files = listSessionFiles(sessionRoot(env, home));
+  if (files.length === 0) throw new Error("No Pi session files were found");
+  if (!reference) return readSessionMetadata(files[0].file);
+  const matches = files.filter(({ file }) => path.basename(file).toLowerCase().includes(reference.toLowerCase()));
+  if (matches.length === 0) throw new Error(`Pi session not found: ${reference}`);
+  if (matches.length > 1) throw new Error(`Pi session reference is ambiguous: ${reference}`);
+  return readSessionMetadata(matches[0].file);
+}
+
+function activeSessionPids(file, procRoot = "/proc") {
+  const target = path.resolve(file);
+  const pids = [];
+  let entries;
+  try { entries = fs.readdirSync(procRoot, { withFileTypes: true }); } catch { return pids; }
+  for (const entry of entries) {
+    if (!entry.isDirectory() || !/^\d+$/.test(entry.name)) continue;
+    try {
+      const processRoot = path.join(procRoot, entry.name);
+      const environment = fs.readFileSync(path.join(processRoot, "environ"), "utf8").split("\0");
+      const sessionValue = environment.find((value) => value.startsWith("PI_SESSION_FILE="))?.slice(16);
+      const command = fs.readFileSync(path.join(processRoot, "cmdline"), "utf8").split("\0");
+      if ((sessionValue && path.resolve(sessionValue) === target) || command.includes(target)) pids.push(Number(entry.name));
+    } catch {
+      // Processes can exit or deny inspection while /proc is being scanned.
+    }
+  }
+  return pids;
+}
+
 function printSessions(sessions) {
   if (sessions.length === 0) {
     process.stdout.write("No Pi Remote sessions.\n");
@@ -150,25 +284,37 @@ function printHelp() {
   process.stdout.write("  pi-shared attach <name>\n");
   process.stdout.write("  pi-shared list\n");
   process.stdout.write("  pi-shared kill <name>\n");
+  process.stdout.write("  pi-shared migrate [session]     Reopen a legacy session remotely\n");
+  process.stdout.write("  pi-shared qr                    Scan to sign in on a phone\n");
   process.stdout.write("  pi-shared url\n");
-  process.stdout.write("  pi-shared token\n\n");
+  process.stdout.write("  pi-shared token                 Manual fallback\n\n");
   process.stdout.write("Detach the laptop with Ctrl-B then D. Pi keeps running in tmux.\n");
   process.stdout.write("The phone connects to the URL and renders semantic events independently.\n");
 }
 
-function run(argv = process.argv.slice(2), env = process.env, home = os.homedir()) {
+async function run(argv = process.argv.slice(2), env = process.env, home = os.homedir()) {
   const parsed = parseArguments(argv);
   if (parsed.command === "help") return printHelp();
   if (parsed.command === "version") return process.stdout.write(`${VERSION}\n`);
+  if (parsed.command === "qr") return printPairingQr(env, home);
   if (parsed.command === "token") return process.stdout.write(`${loadRemoteConfig(env, home).token}\n`);
-  if (parsed.command === "url") {
-    const config = loadRemoteConfig(env, home);
-    const host = config.host.includes(":") && !config.host.startsWith("[") ? `[${config.host}]` : config.host;
-    return process.stdout.write(`http://${host}:${config.port}\n`);
-  }
+  if (parsed.command === "url") return process.stdout.write(`${remoteUrl(loadRemoteConfig(env, home))}\n`);
 
   const sessions = listSessions();
   if (parsed.command === "list") return printSessions(sessions);
+  if (parsed.command === "migrate") {
+    if (sessions.length > 0) {
+      throw new Error(`A Pi Remote session already exists: ${sessions[0].name}`);
+    }
+    const legacy = resolveMigrationSession(parsed.reference, env, home);
+    const activePids = activeSessionPids(legacy.file, env.PI_SHARED_PROC_ROOT || "/proc");
+    if (activePids.length > 0) {
+      throw new Error(`Session is still running (PID ${activePids.slice(0, 3).join(", ")}). Exit the old Pi, then run pi-shared migrate again.`);
+    }
+    process.stdout.write(`Migrating ${legacy.name}: ${legacy.file}\n`);
+    const migrated = createSession({ cwd: legacy.cwd, name: legacy.name, piArgs: ["--session", legacy.file] }, env, home);
+    return attachSession(migrated, env);
+  }
   if (parsed.command === "attach" || parsed.command === "kill") {
     const session = resolveSession(parsed.reference, sessions);
     if (!session) throw new Error(`Pi Remote session not found: ${parsed.reference}`);
@@ -194,20 +340,27 @@ function run(argv = process.argv.slice(2), env = process.env, home = os.homedir(
 }
 
 if (require.main === module) {
-  try {
-    run();
-  } catch (error) {
+  run().catch((error) => {
     process.stderr.write(`pi-shared: ${error instanceof Error ? error.message : String(error)}\n`);
     process.exitCode = 1;
-  }
+  });
 }
 
 module.exports = {
   SESSION_PREFIX,
+  activeSessionPids,
   defaultSessionName,
   extensionServerPath,
+  listSessionFiles,
   loadRemoteConfig,
+  pairingUrl,
   parseArguments,
+  remoteUrl,
+  readSessionMetadata,
+  renderQr,
+  requestPairingCode,
+  resolveMigrationSession,
   resolveSession,
+  sessionRoot,
   tmuxSessionName,
 };

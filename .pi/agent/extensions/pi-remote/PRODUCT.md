@@ -34,6 +34,7 @@ Pi runs persistently inside a laptop tmux session. The laptop is the only termin
 - Abort the active agent run.
 - Report connection, working, queued, and error states clearly.
 - Bind HTTP only to the configured Tailscale address and require a persistent private access token.
+- Pair a phone through a short-lived, one-use QR code while retaining the access token as a manual fallback.
 - The first version supports one remotely exposed Pi process on the configured port.
 - The first version does not mirror terminal bytes, synchronize drafts, provide full Pi settings/session management, or transfer image payloads.
 

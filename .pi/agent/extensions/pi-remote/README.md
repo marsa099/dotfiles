@@ -15,11 +15,12 @@ The phone never receives ANSI bytes, terminal dimensions, or laptop keystrokes. 
 
 ```bash
 pi-shared                 # create or attach the persistent tmux session
+pi-shared qr              # scan once to open and sign in on the phone
 pi-shared url             # print the Tailscale-only browser URL
-pi-shared token           # print the private browser login token
+pi-shared token           # manual login fallback
 ```
 
-Open the URL on a phone connected to the same Tailscale network and enter the token once. The browser keeps an HttpOnly, same-site session cookie.
+Run `pi-shared qr` and scan the terminal with a phone connected to the same Tailscale network. The QR contains a random one-time pairing code—not the long-lived access token—and expires after two minutes. The browser exchanges it for an HttpOnly, same-site session cookie and immediately removes the pairing code from its address.
 
 Detach the laptop with `Ctrl-B`, then `D`. Pi and the mobile renderer continue running inside tmux. Reattach with:
 
@@ -40,6 +41,17 @@ Or start and stop it inside an existing Pi process:
 /remote status
 /remote stop
 ```
+
+If that process started before the Pi Remote extension was installed, run `/reload` once before `/remote start`. This exposes the existing process immediately, but it remains tied to its original terminal.
+
+To move a legacy session into persistent tmux, first run `/quit` in the old Pi. Then run this once from the shell:
+
+```bash
+pi-shared migrate                 # reopen the newest Pi session remotely
+pi-shared migrate <session-id>    # choose a specific session when needed
+```
+
+Migration refuses to reopen a session file while its old Pi process is still running.
 
 ## Core controls
 

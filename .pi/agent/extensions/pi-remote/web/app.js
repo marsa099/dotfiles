@@ -589,7 +589,9 @@ async function api(path, options = {}) {
     },
   });
   let payload = null;
-  if (response.headers.get("content-type")?.includes("application/json")) payload = await response.json();
+  if (response.status !== 204 && response.headers.get("content-type")?.includes("application/json")) {
+    payload = await response.json();
+  }
   if (!response.ok) {
     const error = new Error(payload?.error || `Request failed (${response.status})`);
     error.status = response.status;
@@ -640,14 +642,27 @@ async function startAuthenticated(snapshot) {
   connectEvents();
 }
 
+function takePairingCode() {
+  const params = new URLSearchParams(location.hash.replace(/^#/, ""));
+  const code = params.get("pair")?.trim();
+  if (!code) return null;
+  history.replaceState(null, "", `${location.pathname}${location.search}`);
+  return code;
+}
+
 async function boot() {
+  const pairingCode = takePairingCode();
   try {
+    if (pairingCode) {
+      await api("/api/pair/login", { method: "POST", body: JSON.stringify({ code: pairingCode }) });
+    }
     const snapshot = await api("/api/snapshot");
     await startAuthenticated(snapshot);
   } catch (error) {
-    if (error.status === 401) showAuth();
-    else {
-      showAuth();
+    showAuth();
+    if (pairingCode && error.status === 401) {
+      elements.authError.textContent = "That QR code expired or was already used. Run pi-shared qr again.";
+    } else if (error.status !== 401) {
       elements.authError.textContent = "Pi Remote is not reachable. Confirm that the session is running.";
     }
   }

@@ -104,10 +104,16 @@ test("loads as a real Pi extension and serves the active session", { timeout: 25
     assert.match(await page.text(), /Open your Pi session/);
 
     const config = readOrCreateConfig(env, os.homedir());
-    const login = await fetch(`${address}/api/login`, {
+    const pair = await fetch(`${address}/api/pair`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${config.token}` },
+    });
+    assert.equal(pair.status, 201);
+    const pairing = await pair.json();
+    const login = await fetch(`${address}/api/pair/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Origin: address },
-      body: JSON.stringify({ token: config.token }),
+      body: JSON.stringify({ code: pairing.code }),
     });
     assert.equal(login.status, 204);
     const cookie = login.headers.get("set-cookie").split(";", 1)[0];
