@@ -9,6 +9,8 @@ const test = require("node:test");
 const {
   SESSION_PREFIX,
   activeSessionPids,
+  allocatePort,
+  configForSession,
   defaultSessionName,
   loadRemoteConfig,
   pairingUrl,
@@ -39,9 +41,10 @@ test("parses open, lifecycle, QR, URL, and token commands", () => {
   });
   assert.deepEqual(parseArguments(["migrate"]), { command: "migrate", reference: null, piArgs: [] });
   assert.deepEqual(parseArguments(["migrate", "01abc"]), { command: "migrate", reference: "01abc", piArgs: [] });
-  assert.deepEqual(parseArguments(["qr"]), { command: "qr", piArgs: [] });
+  assert.deepEqual(parseArguments(["qr"]), { command: "qr", reference: null, piArgs: [] });
+  assert.deepEqual(parseArguments(["qr", "review"]), { command: "qr", reference: "review", piArgs: [] });
   assert.deepEqual(parseArguments(["token"]), { command: "token", piArgs: [] });
-  assert.deepEqual(parseArguments(["url"]), { command: "url", piArgs: [] });
+  assert.deepEqual(parseArguments(["url"]), { command: "url", reference: null, piArgs: [] });
   assert.throws(() => parseArguments(["kill"]), /Usage/);
   assert.throws(() => parseArguments(["list", "unexpected"]), /does not accept/);
 });
@@ -51,6 +54,18 @@ test("creates stable, tmux-safe names", () => {
   assert.equal(tmuxSessionName("API review"), `${SESSION_PREFIX}API-review`);
   assert.equal(tmuxSessionName("a:b/c"), `${SESSION_PREFIX}a-b-c`);
   assert.throws(() => tmuxSessionName("!!!"), /letter or number/);
+});
+
+test("allocates distinct ports and targets session URLs", () => {
+  const config = { host: "100.64.0.8", port: 6767, token: "a".repeat(64) };
+  const sessions = [
+    { tmuxName: `${SESSION_PREFIX}api`, name: "api", cwd: "/work/api", port: 6767 },
+    { tmuxName: `${SESSION_PREFIX}web`, name: "web", cwd: "/work/web", port: 6769 },
+  ];
+  assert.equal(allocatePort(sessions, config.port), 6768);
+  assert.equal(configForSession(config, sessions, "web").port, 6769);
+  assert.equal(configForSession(config, sessions, null).port, 6767);
+  assert.throws(() => configForSession(config, sessions, "missing"), /not found/);
 });
 
 test("creates a one-time pairing URL without exposing the persistent token", async () => {

@@ -4,7 +4,13 @@ import { fileURLToPath } from "node:url";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 
 const require = createRequire(import.meta.url);
-const { PiRemoteServer, readOrCreateConfig } = require("./server.cjs") as {
+const {
+  PiRemoteServer,
+  readOrCreateConfig,
+  readSessionRegistrations,
+  removeSessionRegistration,
+  writeSessionRegistration,
+} = require("./server.cjs") as {
   PiRemoteServer: new (options: Record<string, unknown>) => {
     start(): Promise<string>;
     close(): Promise<void>;
@@ -12,6 +18,9 @@ const { PiRemoteServer, readOrCreateConfig } = require("./server.cjs") as {
     broadcast(payload: unknown): void;
   };
   readOrCreateConfig(): { host: string; port: number; token: string; file: string };
+  readSessionRegistrations(): unknown[];
+  removeSessionRegistration(sessionId: string): void;
+  writeSessionRegistration(input: Record<string, unknown>): unknown;
 };
 
 const extensionDirectory = dirname(fileURLToPath(import.meta.url));
@@ -107,6 +116,8 @@ export default function piRemote(pi: ExtensionAPI) {
 
   let server: InstanceType<typeof PiRemoteServer> | undefined;
   let latestContext: ExtensionContext | undefined;
+  let registeredSessionId: string | undefined;
+  let registrationStartedAt = Date.now();
   let startPromise: Promise<void> | undefined;
 
   const remember = (ctx: ExtensionContext) => {
@@ -133,6 +144,30 @@ export default function piRemote(pi: ExtensionAPI) {
       state: state(ctx),
       entries: ctx.sessionManager.getBranch().map(normalizeEntry),
     };
+  };
+
+  const syncRegistration = () => {
+    if (!server) return;
+    try {
+      const current = snapshot().session as { id?: string; name?: string | null; cwd?: string } | null;
+      if (!current?.id) return;
+      if (registeredSessionId && registeredSessionId !== current.id) {
+        removeSessionRegistration(registeredSessionId);
+        registrationStartedAt = Date.now();
+      }
+      registeredSessionId = current.id;
+      writeSessionRegistration({
+        id: current.id,
+        name: current.name ?? null,
+        cwd: current.cwd ?? null,
+        address: server.address(),
+        pid: process.pid,
+        state: state(),
+        startedAt: registrationStartedAt,
+      });
+    } catch {
+      // Session discovery is supplemental and must never interrupt the active Pi process.
+    }
   };
 
   const broadcast = (type: string, payload: Record<string, unknown> = {}) => {
@@ -170,6 +205,7 @@ export default function piRemote(pi: ExtensionAPI) {
     }
 
     pi.sendUserMessage(text, delivery ? { deliverAs: delivery } : undefined);
+    syncRegistration();
     return { accepted: true, delivery: delivery ?? "now", state: state(ctx) };
   };
 
@@ -184,11 +220,15 @@ export default function piRemote(pi: ExtensionAPI) {
         token: config.token,
         webRoot: join(extensionDirectory, "web"),
         getSnapshot: snapshot,
+        getSessions: readSessionRegistrations,
         onAction: handleAction,
+        onHeartbeat: syncRegistration,
       });
       try {
         const address = await nextServer.start();
         server = nextServer;
+        registrationStartedAt = Date.now();
+        syncRegistration();
         ctx.ui.setStatus("pi-remote", ctx.ui.theme.fg("success", "remote"));
         ctx.ui.notify(`Pi Remote: ${address} — token: pi-shared token`, "info");
       } catch (error) {
@@ -204,6 +244,12 @@ export default function piRemote(pi: ExtensionAPI) {
   const stopServer = async (ctx?: ExtensionContext) => {
     const current = server;
     server = undefined;
+    try {
+      if (registeredSessionId) removeSessionRegistration(registeredSessionId);
+    } catch {
+      // Stale registrations are pruned by readers after the heartbeat timeout.
+    }
+    registeredSessionId = undefined;
     if (current) await current.close();
     ctx?.ui.setStatus("pi-remote", undefined);
   };
@@ -240,16 +286,19 @@ export default function piRemote(pi: ExtensionAPI) {
 
   pi.on("session_info_changed", (event, ctx) => {
     remember(ctx);
+    syncRegistration();
     broadcast("session", { session: snapshot().session, name: event.name ?? null });
   });
 
   pi.on("agent_start", (_event, ctx) => {
     remember(ctx);
+    syncRegistration();
     broadcast("state", { state: state(ctx) });
   });
 
   pi.on("agent_settled", (_event, ctx) => {
     remember(ctx);
+    syncRegistration();
     broadcast("state", { state: state(ctx) });
   });
 

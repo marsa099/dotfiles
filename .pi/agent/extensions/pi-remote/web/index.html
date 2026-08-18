@@ -51,9 +51,42 @@
     </section>
 
     <div class="app-shell" id="app-shell" hidden>
+      <button class="session-scrim" id="session-scrim" type="button" aria-label="Close session navigation" hidden></button>
+      <aside class="session-sidebar" id="session-sidebar" aria-label="Active Pi sessions" data-open="false" inert>
+        <div class="sidebar-header">
+          <div class="sidebar-title">
+            <div class="brand-mark" aria-hidden="true">
+              <svg viewBox="0 0 32 32">
+                <path d="M7 10.5h10.5a5.5 5.5 0 0 1 0 11H13"></path>
+                <path d="M13 6v20"></path>
+                <circle cx="23" cy="10.5" r="2"></circle>
+              </svg>
+            </div>
+            <div>
+              <h2>Pi sessions</h2>
+              <p id="session-count">Finding active sessions…</p>
+            </div>
+          </div>
+          <button class="icon-button sidebar-close" id="sidebar-close" type="button" aria-label="Close session navigation">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17"></path></svg>
+          </button>
+        </div>
+        <nav class="session-nav" aria-label="Running sessions">
+          <div class="session-list" id="session-list" aria-live="polite"></div>
+        </nav>
+        <div class="sidebar-foot">
+          <span>Each session renders independently</span>
+          <span class="sidebar-route" aria-hidden="true"><i></i><i></i><i></i></span>
+        </div>
+      </aside>
+
+      <div class="app-main">
       <header class="session-header">
         <div class="header-row">
           <div class="brand-lockup">
+            <button class="icon-button sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Open session navigation" aria-expanded="false" aria-controls="session-sidebar">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
             <div class="brand-mark" aria-hidden="true">
               <svg viewBox="0 0 32 32">
                 <path d="M7 10.5h10.5a5.5 5.5 0 0 1 0 11H13"></path>
@@ -141,6 +174,7 @@
         </form>
         <p class="composer-hint" id="composer-hint">Enter to send · Shift+Enter for a new line</p>
       </footer>
+      </div>
     </div>
 
     <script src="/app.js" defer></script>

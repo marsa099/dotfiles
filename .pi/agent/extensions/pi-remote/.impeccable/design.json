@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-18T07:50:58Z",
+  "generatedAt": "2026-08-18T09:13:13Z",
   "title": "Design System: Pi Remote",
   "extensions": {
     "colorMeta": {
@@ -138,13 +138,20 @@
       "description": "Busy-state delivery choice between steering and following up.",
       "html": "<div class=\"ds-segment\"><button>Steer next</button><button aria-pressed=\"true\">Follow up</button></div>",
       "css": ".ds-segment{display:flex;width:max-content;border:1px solid #deded9;border-radius:999px;padding:.16rem;background:#efefec}.ds-segment button{min-height:1.85rem;border:0;border-radius:999px;padding:.3rem .65rem;background:transparent;color:#666661;font:650 .72rem ui-sans-serif,sans-serif}.ds-segment button[aria-pressed=true]{background:#fff;color:#1b1b19;box-shadow:0 2px 6px rgba(20,20,18,.08)}.ds-segment button:focus-visible{outline:3px solid color-mix(in srgb,#315eea 72%,transparent);outline-offset:1px}"
+    },
+    {
+      "name": "Session Navigation Row",
+      "kind": "nav",
+      "description": "Compact active-session switcher with literal state and project context.",
+      "html": "<a class=\"ds-session\" aria-current=\"page\" href=\"#\"><i aria-hidden=\"true\"></i><span><strong>API review</strong><small>Working · api</small></span></a>",
+      "css": ".ds-session{display:grid;min-height:3.6rem;grid-template-columns:.55rem minmax(0,1fr);align-items:center;gap:.72rem;border-radius:.75rem;padding:.55rem .7rem;background:#e9eeff;color:#1b1b19;text-decoration:none;font-family:ui-sans-serif,sans-serif}.ds-session>i{width:.5rem;height:.5rem;border-radius:50%;background:#315eea}.ds-session span{min-width:0}.ds-session strong,.ds-session small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ds-session strong{font-size:.84rem}.ds-session small{margin-top:.18rem;color:#666661;font-size:.68rem}"
     }
   ],
   "narrative": {
     "northStar": "The Clear Relay",
-    "overview": "Pi Remote uses a familiar, calm mobile conversation model while making its unique mechanism visible in one restrained gesture: a route line connecting the laptop, one Pi session, and this phone. The interface is operational rather than expressive. Conversation remains dominant; network state, tools, and queue controls appear exactly where they affect the next action.\n\nThe system follows the user's chosen ChatGPT and Claude craft bar without copying either product's branding. Neutral fields, one operational blue, flat transcript content, compact disclosures, and a fixed composer keep long coding sessions readable. It explicitly avoids fake-terminal styling, neon console imagery, and decorative dashboard chrome.",
+    "overview": "Pi Remote uses a familiar, calm mobile conversation model while making its unique mechanism visible in one restrained gesture: a route line connecting the laptop, the selected Pi session, and this phone. The interface is operational rather than expressive. Session navigation supports the conversation without competing with it; network state, tools, and queue controls appear exactly where they affect the next action.\n\nThe system follows the user's chosen ChatGPT and Claude craft bar without copying either product's branding. Neutral fields, one operational blue, flat transcript content, compact disclosures, and a fixed composer keep long coding sessions readable. It explicitly avoids fake-terminal styling, neon console imagery, and decorative dashboard chrome.",
     "keyCharacteristics": [
-      "Conversation-first hierarchy with a 46rem maximum reading column.",
+      "Conversation-first hierarchy with a 46rem maximum reading column and a supporting 17rem desktop session rail.",
       "One blue accent reserved for connection, focus, streaming, and send actions.",
       "Tool activity collapses into quiet full-width disclosure rows.",
       "Light and dark palettes follow the device color scheme.",

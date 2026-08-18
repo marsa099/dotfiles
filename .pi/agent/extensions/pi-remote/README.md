@@ -1,6 +1,6 @@
 # Pi Remote
 
-Pi Remote keeps Pi's native laptop TUI and gives the phone a separate browser renderer for the same live session.
+Pi Remote keeps each Pi process in its native laptop TUI and gives the phone a separate browser renderer with navigation across active sessions.
 
 ```text
 Pi AgentSession
@@ -14,9 +14,11 @@ The phone never receives ANSI bytes, terminal dimensions, or laptop keystrokes. 
 ## Start
 
 ```bash
-pi-shared                 # create or attach the persistent tmux session
-pi-shared qr              # scan once to open and sign in on the phone
-pi-shared url             # print the Tailscale-only browser URL
+pi-shared [name]          # create or attach a persistent tmux session
+pi-shared new <name>      # start another independently rendered session
+pi-shared list            # list active sessions and ports
+pi-shared qr [name]       # scan once to open and sign in on the phone
+pi-shared url [name]      # print a session's Tailscale-only browser URL
 pi-shared token           # manual login fallback
 ```
 
@@ -70,4 +72,4 @@ Migration refuses to reopen a session file while its old Pi process is still run
 - A random 256-bit token is stored in `~/.local/share/pi-remote/config.json` with mode `0600`.
 - State-changing requests require same-origin JSON requests and a same-site HttpOnly cookie.
 
-The first version supports one remotely exposed Pi process on the configured port.
+Pi Remote supports up to 16 active sessions on ports `6767–6782`. Each process remains isolated; the browser sidebar performs a full navigation when switching endpoints, and the host-scoped authentication cookie remains valid across the port range.

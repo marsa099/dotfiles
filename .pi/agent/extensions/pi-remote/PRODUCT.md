@@ -12,11 +12,11 @@ Static HTML, CSS, and JavaScript served directly by the Pi extension. No fronten
 
 ## Users
 
-The primary user is Martin, moving between a laptop terminal and a phone browser while working in one live Pi coding session. The phone experience is optimized for reading progress and responding quickly when away from the laptop keyboard.
+The primary user is Martin, moving between laptop terminals and a phone browser while several Pi coding sessions may be active. The phone experience is optimized for selecting one running session, reading progress, and responding quickly when away from the laptop keyboard.
 
 ## Product Purpose
 
-Pi Remote makes one active Pi session reachable from laptop and phone without sharing terminal rendering. Success means the laptop keeps Pi's normal full-width TUI while the phone receives the same conversation and can submit input through an interface rendered for its own viewport.
+Pi Remote makes active Pi sessions reachable from laptop and phone without sharing terminal rendering. Success means each laptop session keeps Pi's normal full-width TUI while the phone can select a running session, receive its conversation, and submit input through an interface rendered for its own viewport.
 
 ## Positioning
 
@@ -24,18 +24,19 @@ Pi Remote transports structured session, message, and tool events rather than AN
 
 ## Operating Context
 
-Pi runs persistently inside a laptop tmux session. The laptop is the only terminal client. The phone opens Pi Remote in a browser over the user's private Tailscale network. The user may detach the laptop while Pi continues running and remain connected from the phone.
+Each Pi process runs persistently inside its own laptop tmux session. The laptop is the only terminal client for each process. Every active session registers a separate Tailscale-only endpoint, and the phone switches between them through one session navigator. The user may detach the laptop while the Pi processes continue running.
 
 ## Capabilities and Constraints
 
-- Show active-branch history and authoritative completed messages.
+- Discover and switch between active Pi Remote sessions.
+- Show the selected session's active-branch history and authoritative completed messages.
 - Stream assistant text and concise tool activity as semantic events.
 - Submit prompts immediately while idle, or queue them as steering or follow-up messages while Pi works.
 - Abort the active agent run.
 - Report connection, working, queued, and error states clearly.
 - Bind HTTP only to the configured Tailscale address and require a persistent private access token.
 - Pair a phone through a short-lived, one-use QR code while retaining the access token as a manual fallback.
-- The first version supports one remotely exposed Pi process on the configured port.
+- Support up to 16 concurrently exposed Pi processes on a private configured port range.
 - The first version does not mirror terminal bytes, synchronize drafts, provide full Pi settings/session management, or transfer image payloads.
 
 ## Brand Commitments

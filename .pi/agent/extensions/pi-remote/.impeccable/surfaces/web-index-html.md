@@ -12,12 +12,12 @@ related_targets: ["web/styles.css","web/app.js"]
 
 ## Audience and job
 
-- Martin checks one live Pi coding session from a phone while away from the laptop keyboard.
-- Primary job: understand current progress, inspect concise tool activity, and respond quickly.
+- Martin checks several live Pi coding sessions from a phone while away from the laptop keyboard.
+- Primary job: select the relevant running session, understand its progress, inspect concise tool activity, and respond quickly.
 
 ## Task and content
 
-- Show active-branch history, streaming assistant text, compact expandable tool activity, connection/working/queue state, and a fixed composer.
+- Show active session navigation, active-branch history, streaming assistant text, compact expandable tool activity, connection/working/queue state, and a fixed composer.
 - Follow new output until the user scrolls away; then preserve reading position and offer a jump-to-latest control.
 
 ## Constraints
@@ -25,6 +25,7 @@ related_targets: ["web/styles.css","web/app.js"]
 - Static HTML, CSS, and JavaScript with no frontend build step.
 - Independently rendered semantic events only; never mirror ANSI terminal output or drafts.
 - Touch-first, safe-area aware, accessible, resilient to reconnects, and token-authenticated over Tailscale.
+- Keep session navigation persistent on wide screens and expose it as a non-blocking drawer on phones.
 
 ## Chosen direction
 

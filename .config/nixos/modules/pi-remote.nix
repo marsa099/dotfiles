@@ -5,14 +5,15 @@
 # The HTTP listener is bound to this machine's Tailscale address only. Tailscale
 # encrypts transport, the interface-specific firewall keeps the port off LAN and
 # public interfaces, and Pi Remote adds a persistent access token.
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 
 let
   tailscaleAddress = "100.121.105.35";
   piRemotePort = 6767;
+  piRemoteMaxSessions = 16;
 in
 {
-  networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ piRemotePort ];
+  networking.firewall.interfaces.tailscale0.allowedTCPPorts = lib.range piRemotePort (piRemotePort + piRemoteMaxSessions - 1);
 
   environment.systemPackages = [ pkgs.qrencode ];
 
