@@ -1,4 +1,4 @@
-# Private remote access for Paseo and other local services.
+# Private remote access for Pi Remote and other local services.
 #
 # Tailscale remains disconnected until `tailscale up` completes the one-time
 # browser login. The operator setting lets martin manage this node and Tailscale
