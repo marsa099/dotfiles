@@ -27,6 +27,7 @@ related_targets: ["web/styles.css","web/app.js"]
 - Touch-first, safe-area aware, accessible, resilient to reconnects, and token-authenticated over Tailscale.
 - Keep session navigation persistent on wide screens and expose it as a non-blocking drawer on phones.
 - Keep the low-frequency logout action labeled and anchored at the bottom of session navigation, away from live session status.
+- Confirm logout in a focused dialog that makes clear browser access is removed while Pi sessions keep running.
 
 ## Chosen direction
 

@@ -190,6 +190,7 @@ Borders are one-pixel neutral rules. Icons are authored 24px SVG strokes with ro
 - **Desktop:** A persistent 17rem rail with compact active-session rows, literal Ready/Working/Queued state, and a labeled logout action anchored at the bottom.
 - **Mobile:** A safe-area-aware drawer with scrim, Escape dismissal, inert background content, and the same bottom-anchored logout action.
 - **Switching:** Each row performs a full navigation to the selected session endpoint; the shared host cookie carries authentication across ports.
+- **Logout:** The bottom action opens a focused confirmation that states browser access is removed while Pi sessions keep running.
 
 ### Renderer Route
 - **Style:** A single horizontal line with Laptop, Pi session, and This phone nodes.
