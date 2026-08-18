@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-18T07:50:58Z",
+  "title": "Design System: Pi Remote",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Relay Blue",
+        "canonical": "#315eea",
+        "tonalRamp": ["#07143f", "#10266f", "#1d3ea4", "#315eea", "#6486f0", "#98adf6", "#cbd6fb", "#f0f3ff"]
+      },
+      "primary-soft": {
+        "role": "primary",
+        "displayName": "Relay Blue Wash",
+        "canonical": "#e9eeff",
+        "tonalRamp": ["#11182c", "#202b4d", "#34466f", "#536a9a", "#8195c4", "#acbbe0", "#d6dff3", "#f4f6ff"]
+      },
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Cool Canvas",
+        "canonical": "#f7f7f5",
+        "tonalRamp": ["#20201f", "#363634", "#51514e", "#70706c", "#969691", "#bcbcb7", "#deded9", "#f7f7f5"]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Clean Surface",
+        "canonical": "#ffffff",
+        "tonalRamp": ["#242422", "#3b3b38", "#575753", "#767671", "#9b9b95", "#c2c2bc", "#e4e4df", "#ffffff"]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Deep Ink",
+        "canonical": "#1b1b19",
+        "tonalRamp": ["#1b1b19", "#333330", "#4f4f4b", "#70706b", "#969690", "#bdbdb7", "#deded9", "#f6f6f3"]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Quiet Rule",
+        "canonical": "#deded9",
+        "tonalRamp": ["#252524", "#3e3e3b", "#5a5a56", "#7a7a75", "#9e9e98", "#bebeb8", "#deded9", "#f5f5f2"]
+      },
+      "success": {
+        "role": "secondary",
+        "displayName": "Ready Green",
+        "canonical": "#18794e",
+        "tonalRamp": ["#06251a", "#0a3d2a", "#105c3b", "#18794e", "#42a273", "#75c39b", "#afe1c6", "#e5f4ec"]
+      },
+      "danger": {
+        "role": "tertiary",
+        "displayName": "Failure Red",
+        "canonical": "#c23434",
+        "tonalRamp": ["#360b0b", "#5a1515", "#862222", "#c23434", "#dc6863", "#eb9995", "#f6c8c5", "#fde8e7"]
+      }
+    },
+    "typographyMeta": {
+      "headline": { "displayName": "Response Heading", "purpose": "Markdown section headings inside assistant responses." },
+      "title": { "displayName": "Surface Title", "purpose": "Product and compact surface titles." },
+      "body": { "displayName": "Conversation Body", "purpose": "Long-form assistant prose and user messages." },
+      "label": { "displayName": "Operational Label", "purpose": "Status, metadata, queue controls, and disclosure summaries." }
+    },
+    "shadows": [
+      {
+        "name": "composer-lift",
+        "value": "0 4px 18px rgba(20,20,18,0.07), 0 1px 4px rgba(20,20,18,0.04)",
+        "purpose": "Anchors the input surface above the transcript."
+      },
+      {
+        "name": "floating-control",
+        "value": "0 8px 28px rgba(23,24,22,0.10), 0 2px 8px rgba(23,24,22,0.06)",
+        "purpose": "Temporary notices and jump-to-latest controls only."
+      }
+    ],
+    "motion": [
+      {
+        "name": "state-transition",
+        "value": "150ms ease-out",
+        "purpose": "Hover, focus, and press changes on controls."
+      },
+      {
+        "name": "route-signal",
+        "value": "2.8s cubic-bezier(0.22, 1, 0.36, 1)",
+        "purpose": "One restrained transport signal across the renderer route."
+      },
+      {
+        "name": "working-breathe",
+        "value": "1.35s ease-in-out",
+        "purpose": "The working-state dot only; disabled under reduced motion."
+      }
+    ],
+    "breakpoints": [
+      { "name": "compact-phone", "value": "352px" },
+      { "name": "wide", "value": "768px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Full-width authentication and decisive actions.",
+      "html": "<button class=\"ds-primary\">Connect securely<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"m9 5 7 7-7 7\"/></svg></button>",
+      "css": ".ds-primary{display:flex;min-height:3.25rem;width:100%;align-items:center;justify-content:center;gap:.55rem;border:0;border-radius:1rem;padding:.75rem 1rem;background:var(--primary,#315eea);color:#fff;font:700 1rem ui-sans-serif,sans-serif;cursor:pointer;transition:background 150ms ease-out,transform 150ms ease-out}.ds-primary svg{width:1.15rem;height:1.15rem;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.ds-primary:hover{background:#244bc6}.ds-primary:active{transform:scale(.985)}.ds-primary:focus-visible{outline:3px solid color-mix(in srgb,#315eea 72%,transparent);outline-offset:2px}"
+    },
+    {
+      "name": "Ready Status Chip",
+      "kind": "chip",
+      "refersTo": "status-chip",
+      "description": "Short literal agent state with a semantic dot.",
+      "html": "<span class=\"ds-status\"><span aria-hidden=\"true\"></span>Ready</span>",
+      "css": ".ds-status{display:inline-flex;min-height:2rem;align-items:center;gap:.42rem;border-radius:999px;padding:.35rem .68rem;background:#e5f4ec;color:#18794e;font:650 .75rem/1.4 ui-sans-serif,sans-serif}.ds-status>span{width:.47rem;height:.47rem;border-radius:50%;background:currentColor}"
+    },
+    {
+      "name": "User Message",
+      "kind": "card",
+      "description": "Right-aligned authorship marker without a card-heavy transcript.",
+      "html": "<div class=\"ds-user-message\">Keep the phone renderer independent.</div>",
+      "css": ".ds-user-message{width:fit-content;max-width:88%;margin-left:auto;border-radius:1.25rem 1.25rem .4rem 1.25rem;padding:.72rem .95rem;background:#efefec;color:#1b1b19;font:400 .97rem/1.5 ui-sans-serif,sans-serif;overflow-wrap:anywhere}"
+    },
+    {
+      "name": "Tool Disclosure",
+      "kind": "custom",
+      "description": "Compact progressive disclosure for tool calls and results.",
+      "html": "<details class=\"ds-tool\"><summary><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M14.7 6.3a4 4 0 0 0-5 5L4.5 16.5a1.4 1.4 0 0 0 2 2l5.2-5.2a4 4 0 0 0 5-5l-2.4 2.4-1.7-1.7Z\"/></svg><span>bash result</span><i aria-label=\"Completed\"></i></summary><pre>6 tests passed</pre></details>",
+      "css": ".ds-tool{border-top:1px solid #deded9;border-bottom:1px solid #deded9;color:#666661}.ds-tool summary{display:flex;min-height:2.75rem;align-items:center;gap:.55rem;cursor:pointer;font:650 .82rem ui-sans-serif,sans-serif;list-style:none}.ds-tool summary::-webkit-details-marker{display:none}.ds-tool svg{width:1.1rem;height:1.1rem;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.ds-tool i{width:.5rem;height:.5rem;margin-left:auto;border-radius:50%;background:#18794e}.ds-tool pre{margin:0 0 .75rem 1.65rem;color:#666661;font:400 .76rem/1.55 SFMono-Regular,Consolas,monospace;white-space:pre-wrap}"
+    },
+    {
+      "name": "Message Composer",
+      "kind": "input",
+      "refersTo": "composer",
+      "description": "Safe-area anchored input with auto-growing text and a compact send action.",
+      "html": "<form class=\"ds-composer\"><textarea rows=\"1\" placeholder=\"Message Pi\"></textarea><button aria-label=\"Send message\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 19V5M6.5 10.5 12 5l5.5 5.5\"/></svg></button></form>",
+      "css": ".ds-composer{display:flex;min-height:3.25rem;align-items:flex-end;border:1px solid #c8c8c1;border-radius:1rem;padding:.4rem .4rem .4rem .85rem;background:#fff;box-shadow:0 4px 18px rgba(20,20,18,.07),0 1px 4px rgba(20,20,18,.04)}.ds-composer:focus-within{border-color:#315eea;box-shadow:0 4px 20px rgba(20,20,18,.08),0 0 0 3px color-mix(in srgb,#315eea 14%,transparent)}.ds-composer textarea{min-height:2.35rem;width:100%;resize:none;border:0;outline:0;padding:.48rem .25rem .45rem 0;background:transparent;color:#1b1b19;font:400 .98rem/1.4 ui-sans-serif,sans-serif;caret-color:#315eea}.ds-composer button{display:grid;width:2.45rem;height:2.45rem;place-items:center;border:0;border-radius:.75rem;background:#315eea;color:#fff}.ds-composer svg{width:1.2rem;height:1.2rem;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}"
+    },
+    {
+      "name": "Queue Choice",
+      "kind": "nav",
+      "description": "Busy-state delivery choice between steering and following up.",
+      "html": "<div class=\"ds-segment\"><button>Steer next</button><button aria-pressed=\"true\">Follow up</button></div>",
+      "css": ".ds-segment{display:flex;width:max-content;border:1px solid #deded9;border-radius:999px;padding:.16rem;background:#efefec}.ds-segment button{min-height:1.85rem;border:0;border-radius:999px;padding:.3rem .65rem;background:transparent;color:#666661;font:650 .72rem ui-sans-serif,sans-serif}.ds-segment button[aria-pressed=true]{background:#fff;color:#1b1b19;box-shadow:0 2px 6px rgba(20,20,18,.08)}.ds-segment button:focus-visible{outline:3px solid color-mix(in srgb,#315eea 72%,transparent);outline-offset:1px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Clear Relay",
+    "overview": "Pi Remote uses a familiar, calm mobile conversation model while making its unique mechanism visible in one restrained gesture: a route line connecting the laptop, one Pi session, and this phone. The interface is operational rather than expressive. Conversation remains dominant; network state, tools, and queue controls appear exactly where they affect the next action.\n\nThe system follows the user's chosen ChatGPT and Claude craft bar without copying either product's branding. Neutral fields, one operational blue, flat transcript content, compact disclosures, and a fixed composer keep long coding sessions readable. It explicitly avoids fake-terminal styling, neon console imagery, and decorative dashboard chrome.",
+    "keyCharacteristics": [
+      "Conversation-first hierarchy with a 46rem maximum reading column.",
+      "One blue accent reserved for connection, focus, streaming, and send actions.",
+      "Tool activity collapses into quiet full-width disclosure rows.",
+      "Light and dark palettes follow the device color scheme.",
+      "Touch controls respect mobile safe areas and remain at least 44px tall."
+    ],
+    "rules": [
+      { "name": "The One Signal Rule", "body": "Relay Blue marks live interaction or transport state; it does not decorate neutral content.", "section": "colors" },
+      { "name": "The Neutral Night Rule", "body": "Dark mode remains charcoal-neutral. Do not drift toward a blue-black terminal ground.", "section": "colors" },
+      { "name": "The Prose First Rule", "body": "Monospace belongs to code, paths, commands, and data. Never use it to make the product look technical.", "section": "typography" },
+      { "name": "The Flat Transcript Rule", "body": "Messages and tool rows do not receive ambient card shadows.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep assistant prose flat, readable, and limited to the shared content width.",
+      "Do expose agent and queue state before the user sends a message.",
+      "Do use compact expandable tool rows for progressive disclosure.",
+      "Do preserve device color scheme, reduced motion, safe areas, and visible keyboard focus.",
+      "Do use authored SVG icons with the established stroke grammar."
+    ],
+    "donts": [
+      "Don't render terminal bytes, ANSI styling, or a simulated console.",
+      "Don't turn messages and tools into a stack of same-sized cards.",
+      "Don't use Relay Blue as decoration or add competing accent colors.",
+      "Don't hide a working session's delivery choice or stop control.",
+      "Don't use monospace outside code and machine data."
+    ]
+  }
+}

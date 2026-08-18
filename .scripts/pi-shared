@@ -1,29 +1,37 @@
 #!/usr/bin/env node
 "use strict";
 
-const crypto = require("node:crypto");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { execFileSync } = require("node:child_process");
-const { pathToFileURL } = require("node:url");
+const { spawnSync } = require("node:child_process");
 
-const VERSION = "0.1.0";
-const DETACH_BYTE = 0x1d; // Ctrl-]
-const DEFAULT_HOST = "100.121.105.35:6767";
-const DEFAULT_SCROLLBACK_LINES = 500;
+const VERSION = "0.2.0";
+const SESSION_PREFIX = "pi-remote-";
 
-function stateDirectory(env = process.env, home = os.homedir()) {
-  return env.PI_SHARED_STATE_DIR || path.join(env.XDG_DATA_HOME || path.join(home, ".local", "share"), "pi-shared");
+function extensionServerPath(env = process.env, home = os.homedir()) {
+  return env.PI_REMOTE_SERVER_MODULE || path.join(home, ".pi", "agent", "extensions", "pi-remote", "server.cjs");
 }
 
-function configPath(env = process.env, home = os.homedir()) {
-  return path.join(stateDirectory(env, home), "config.json");
+function loadRemoteConfig(env = process.env, home = os.homedir()) {
+  const modulePath = extensionServerPath(env, home);
+  if (!fs.existsSync(modulePath)) throw new Error(`Pi Remote extension is missing: ${modulePath}`);
+  const { readOrCreateConfig } = require(modulePath);
+  return readOrCreateConfig(env, home);
 }
 
-function defaultTerminalName(cwd) {
-  const base = path.basename(path.resolve(cwd)) || "home";
-  return `pi:${base}`;
+function defaultSessionName(cwd) {
+  return path.basename(path.resolve(cwd)) || "home";
+}
+
+function tmuxSessionName(name) {
+  const safe = String(name)
+    .normalize("NFKD")
+    .replace(/[^a-zA-Z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 64);
+  if (!safe) throw new Error("Session name must contain a letter or number");
+  return `${SESSION_PREFIX}${safe}`;
 }
 
 function parseArguments(argv, cwd = process.cwd()) {
@@ -31,389 +39,175 @@ function parseArguments(argv, cwd = process.cwd()) {
   const wrapperArgs = separator >= 0 ? argv.slice(0, separator) : [...argv];
   const piArgs = separator >= 0 ? argv.slice(separator + 1) : [];
 
-  if (wrapperArgs.includes("-h") || wrapperArgs.includes("--help")) {
-    return { command: "help", piArgs: [] };
-  }
-  if (wrapperArgs.includes("-v") || wrapperArgs.includes("--version")) {
-    return { command: "version", piArgs: [] };
-  }
+  if (wrapperArgs.includes("-h") || wrapperArgs.includes("--help")) return { command: "help", piArgs: [] };
+  if (wrapperArgs.includes("-v") || wrapperArgs.includes("--version")) return { command: "version", piArgs: [] };
 
-  const knownCommands = new Set(["attach", "configure", "help", "kill", "list", "new", "open", "version"]);
+  const commands = new Set(["attach", "help", "kill", "list", "new", "open", "token", "url", "version"]);
   const first = wrapperArgs[0];
-  const command = first && knownCommands.has(first) ? first : "open";
+  const command = first && commands.has(first) ? first : "open";
   const positionals = command === "open" ? wrapperArgs : wrapperArgs.slice(1);
 
-  if (["help", "list", "version"].includes(command) && (positionals.length > 0 || piArgs.length > 0)) {
+  if (["help", "list", "token", "url", "version"].includes(command) && (positionals.length > 0 || piArgs.length > 0)) {
     throw new Error(`${command} does not accept arguments`);
   }
   if (["attach", "kill"].includes(command)) {
-    if (positionals.length !== 1 || piArgs.length > 0) {
-      throw new Error(`Usage: pi-shared ${command} <terminal-id-or-name>`);
-    }
+    if (positionals.length !== 1 || piArgs.length > 0) throw new Error(`Usage: pi-shared ${command} <name>`);
     return { command, reference: positionals[0], piArgs: [] };
   }
-  if (command === "configure") {
-    if (positionals.length > 1 || piArgs.length > 0) {
-      throw new Error("Usage: pi-shared configure [host:port]");
-    }
-    return { command, host: positionals[0] || DEFAULT_HOST, piArgs: [] };
-  }
   if (["new", "open"].includes(command)) {
-    if (positionals.length > 1) {
-      throw new Error(`Usage: pi-shared ${command === "open" ? "[name]" : "new [name]"} [-- <pi-arguments>]`);
-    }
-    return {
-      command,
-      name: positionals[0] || defaultTerminalName(cwd),
-      piArgs,
-    };
+    if (positionals.length > 1) throw new Error(`Usage: pi-shared ${command === "open" ? "[name]" : "new [name]"} [-- <pi-arguments>]`);
+    return { command, name: positionals[0] || defaultSessionName(cwd), piArgs };
   }
   return { command, piArgs };
 }
 
-function resolveTerminalReference(reference, terminals) {
+function runTmux(args, options = {}) {
+  const result = spawnSync("tmux", args, {
+    encoding: "utf8",
+    stdio: options.inherit ? "inherit" : ["ignore", "pipe", "pipe"],
+  });
+  if (result.error) throw result.error;
+  if (result.status !== 0 && !options.allowFailure) {
+    throw new Error((result.stderr || result.stdout || `tmux exited with status ${result.status}`).trim());
+  }
+  return result;
+}
+
+function listSessions() {
+  const result = runTmux(
+    ["list-sessions", "-F", "#{session_name}\t#{session_path}\t#{@pi_remote_name}"],
+    { allowFailure: true },
+  );
+  if (result.status !== 0) return [];
+  return result.stdout
+    .trim()
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => {
+      const [tmuxName, cwd, displayName] = line.split("\t");
+      return { tmuxName, cwd, name: displayName || tmuxName.replace(SESSION_PREFIX, "") };
+    })
+    .filter((session) => session.tmuxName.startsWith(SESSION_PREFIX));
+}
+
+function resolveSession(reference, sessions) {
   const query = reference.toLowerCase();
-  const exactId = terminals.find((terminal) => terminal.id === reference);
-  if (exactId) return exactId;
-
-  const idMatches = terminals.filter((terminal) => terminal.id.toLowerCase().startsWith(query));
-  if (idMatches.length === 1) return idMatches[0];
-  if (idMatches.length > 1) throw new Error(`Terminal ID prefix is ambiguous: ${reference}`);
-
-  const exactNames = terminals.filter((terminal) => terminal.name.toLowerCase() === query);
-  if (exactNames.length === 1) return exactNames[0];
-  if (exactNames.length > 1) throw new Error(`Terminal name is ambiguous: ${reference}`);
-
-  const partialNames = terminals.filter((terminal) => terminal.name.toLowerCase().includes(query));
-  if (partialNames.length === 1) return partialNames[0];
-  if (partialNames.length > 1) throw new Error(`Terminal name is ambiguous: ${reference}`);
+  const exact = sessions.filter(
+    (session) => session.name.toLowerCase() === query || session.tmuxName.toLowerCase() === query,
+  );
+  if (exact.length === 1) return exact[0];
+  if (exact.length > 1) throw new Error(`Session name is ambiguous: ${reference}`);
+  const partial = sessions.filter(
+    (session) => session.name.toLowerCase().includes(query) || session.tmuxName.toLowerCase().includes(query),
+  );
+  if (partial.length === 1) return partial[0];
+  if (partial.length > 1) throw new Error(`Session name is ambiguous: ${reference}`);
   return null;
 }
 
-function websocketUrl(host) {
-  const value = host.trim();
-  if (!value) throw new Error("Paseo host is empty");
-  if (value.startsWith("ws://") || value.startsWith("wss://")) {
-    const parsed = new URL(value);
-    parsed.pathname = "/ws";
-    parsed.search = "";
-    parsed.hash = "";
-    return parsed.toString();
-  }
-  if (value.startsWith("tcp://")) {
-    const parsed = new URL(value);
-    const useTls = parsed.searchParams.get("ssl") === "true";
-    return `${useTls ? "wss" : "ws"}://${parsed.host}/ws`;
-  }
-  if (!/^\[[0-9a-f:]+\]:\d+$|^[a-zA-Z0-9.-]+:\d+$/.test(value)) {
-    throw new Error(`Invalid Paseo host: ${host}`);
-  }
-  return `ws://${value}/ws`;
-}
-
-function readConfig(env = process.env, home = os.homedir()) {
-  const file = configPath(env, home);
-  let persisted = {};
-  if (fs.existsSync(file)) {
-    const mode = fs.statSync(file).mode & 0o777;
-    if ((mode & 0o077) !== 0) {
-      throw new Error(`${file} must not be accessible by group or others (run: chmod 600 ${file})`);
-    }
-    persisted = JSON.parse(fs.readFileSync(file, "utf8"));
-  }
-  const host = env.PASEO_HOST || persisted.host || DEFAULT_HOST;
-  const password = env.PASEO_PASSWORD || persisted.password;
-  const clientId = persisted.clientId || `pi-shared-${crypto.randomUUID()}`;
-  if (!password) {
-    throw new Error(`Missing Paseo password. Run: pi-shared configure ${host}`);
-  }
-  return { host, password, clientId, file };
-}
-
-function writeConfig(input, env = process.env, home = os.homedir()) {
-  const directory = stateDirectory(env, home);
-  const file = configPath(env, home);
-  fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
-  fs.chmodSync(directory, 0o700);
-  const temporary = `${file}.${process.pid}.tmp`;
-  fs.writeFileSync(temporary, `${JSON.stringify(input, null, 2)}\n`, { mode: 0o600 });
-  fs.renameSync(temporary, file);
-  fs.chmodSync(file, 0o600);
-  return file;
-}
-
-function configure(host) {
-  const previous = (() => {
-    try {
-      return readConfig();
-    } catch {
-      return null;
-    }
-  })();
-  const password = process.env.PASEO_PASSWORD || execFileSync(
-    "systemd-ask-password",
-    ["--emoji=no", "Paseo daemon password:"],
-    { encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] },
-  ).trim();
-  if (!password) throw new Error("Paseo password cannot be empty");
-  const file = writeConfig({
-    host,
-    password,
-    clientId: previous?.clientId || `pi-shared-${crypto.randomUUID()}`,
-  });
-  process.stdout.write(`Saved private configuration to ${file}\n`);
-}
-
-async function loadPaseoClient(config) {
-  const cliRoot = process.env.PASEO_CLI_ROOT || path.join(os.homedir(), ".npm-global", "lib", "node_modules", "@getpaseo", "cli");
-  const clientFile = path.join(cliRoot, "node_modules", "@getpaseo", "client", "dist", "daemon-client.js");
-  const wsPackage = path.join(cliRoot, "node_modules", "ws");
-  if (!fs.existsSync(clientFile)) {
-    throw new Error(`Paseo client library not found at ${clientFile}`);
-  }
-  const { DaemonClient } = await import(pathToFileURL(clientFile).href);
-  const wsModule = require(wsPackage);
-  const WebSocket = wsModule.WebSocket || wsModule;
-  const client = new DaemonClient({
-    url: websocketUrl(config.host),
-    clientId: runtimeClientId(config.clientId),
-    clientType: "cli",
-    appVersion: `pi-shared/${VERSION}`,
-    password: config.password,
-    connectTimeoutMs: 15_000,
-    webSocketFactory: (url, options = {}) => new WebSocket(url, options.protocols, { headers: options.headers }),
-    reconnect: { enabled: false },
-  });
-  await client.connect();
-  return client;
-}
-
-function runtimeClientId(baseClientId, pid = process.pid, nonce = crypto.randomBytes(4).toString("hex")) {
-  return `${baseClientId}-${pid}-${nonce}`;
-}
-
-function terminalSize(stdout = process.stdout) {
-  return {
-    rows: Math.max(1, stdout.rows || 24),
-    cols: Math.max(1, stdout.columns || 80),
-  };
-}
-
-async function listAllTerminals(client) {
-  const payload = await client.listTerminals();
-  return payload.terminals;
-}
-
-function printTerminals(terminals) {
-  if (terminals.length === 0) {
-    process.stdout.write("No shared terminals.\n");
+function printSessions(sessions) {
+  if (sessions.length === 0) {
+    process.stdout.write("No Pi Remote sessions.\n");
     return;
   }
-  process.stdout.write("ID       NAME                         CWD\n");
-  for (const terminal of terminals) {
-    const id = terminal.id.slice(0, 8).padEnd(8);
-    const name = terminal.name.slice(0, 28).padEnd(28);
-    process.stdout.write(`${id} ${name} ${terminal.cwd || "-"}\n`);
+  process.stdout.write("NAME                         CWD\n");
+  for (const session of sessions) {
+    process.stdout.write(`${session.name.slice(0, 28).padEnd(28)} ${session.cwd || "-"}\n`);
   }
 }
 
-async function createPiTerminal(client, input) {
-  const opened = await client.openProject(input.cwd);
-  if (!opened.workspace) {
-    throw new Error(opened.error || `Could not open Paseo workspace for ${input.cwd}`);
-  }
-  const piBinary = process.env.PI_SHARED_PI || path.join(os.homedir(), ".npm-global", "bin", "pi");
+function createSession(input, env = process.env, home = os.homedir()) {
+  const piBinary = env.PI_SHARED_PI || path.join(home, ".npm-global", "bin", "pi");
   if (!fs.existsSync(piBinary)) throw new Error(`Pi binary not found: ${piBinary}`);
-  const created = await client.createTerminal(input.cwd, input.name, undefined, {
-    command: piBinary,
-    args: input.piArgs,
-    workspaceId: opened.workspace.id,
-    size: terminalSize(),
-  });
-  if (!created.terminal) throw new Error(created.error || "Paseo failed to create the terminal");
-  return created.terminal;
-}
+  const tmuxName = tmuxSessionName(input.name);
+  const hasExplicitName = input.piArgs.some((argument) => argument === "--name" || argument === "-n");
+  const piArgs = ["--remote", ...(hasExplicitName ? [] : ["--name", input.name]), ...input.piArgs];
 
-async function resolveExistingForCwd(client, name, cwd) {
-  const payload = await client.listTerminals(cwd);
-  return resolveTerminalReference(name, payload.terminals);
-}
-
-async function attachTerminal(client, terminal) {
-  if (!process.stdin.isTTY || !process.stdout.isTTY) {
-    throw new Error("pi-shared attach requires an interactive terminal");
+  runTmux(["new-session", "-d", "-s", tmuxName, "-c", input.cwd, "--", piBinary, ...piArgs]);
+  try {
+    runTmux(["set-option", "-t", tmuxName, "@pi_remote_name", input.name]);
+  } catch (error) {
+    runTmux(["kill-session", "-t", tmuxName], { allowFailure: true });
+    throw error;
   }
+  return { tmuxName, cwd: input.cwd, name: input.name };
+}
 
-  let finished = false;
-  let subscribed = false;
-  const wasRaw = process.stdin.isRaw;
-  const size = terminalSize();
-
-  process.stderr.write(`[pi-shared] ${terminal.name} (${terminal.id.slice(0, 8)}) — detach with Ctrl-]\n`);
-
-  return await new Promise((resolve, reject) => {
-    const cleanups = [];
-    const cleanup = async (result) => {
-      if (finished) return;
-      finished = true;
-      for (const remove of cleanups.splice(0)) {
-        try { remove(); } catch { /* best effort */ }
-      }
-      if (subscribed) {
-        try { client.unsubscribeTerminal(terminal.id); } catch { /* best effort */ }
-      }
-      try { process.stdin.setRawMode(Boolean(wasRaw)); } catch { /* best effort */ }
-      process.stdin.pause();
-      try { await client.close(); } catch { /* best effort */ }
-      process.stderr.write("\n[pi-shared] detached; Pi is still running in Paseo\n");
-      if (result instanceof Error) reject(result);
-      else resolve(result);
-    };
-
-    const onData = (chunk) => {
-      const buffer = Buffer.from(chunk);
-      const detachAt = buffer.indexOf(DETACH_BYTE);
-      if (detachAt >= 0) {
-        if (detachAt > 0) {
-          client.sendTerminalInput(terminal.id, { type: "input", data: buffer.subarray(0, detachAt).toString("utf8") });
-        }
-        void cleanup(0);
-        return;
-      }
-      client.sendTerminalInput(terminal.id, { type: "input", data: buffer.toString("utf8") });
-    };
-    const onResize = () => {
-      const next = terminalSize();
-      client.sendTerminalInput(terminal.id, { type: "resize", ...next, intent: "claim" });
-    };
-    const onSignal = () => void cleanup(0);
-
-    const removeStream = client.onTerminalStreamEvent((event) => {
-      if (event.terminalId !== terminal.id) return;
-      if (event.type === "output" || event.type === "restore") {
-        process.stdout.write(Buffer.from(event.data));
-      }
-    });
-    cleanups.push(removeStream);
-    cleanups.push(client.on("terminal_stream_exit", (message) => {
-      if (message.payload.terminalId === terminal.id) void cleanup(0);
-    }));
-    cleanups.push(client.subscribeConnectionStatus((status) => {
-      if (status.status === "disconnected") {
-        void cleanup(new Error(status.reason || "Paseo disconnected"));
-      }
-    }));
-    process.on("SIGWINCH", onResize);
-    process.on("SIGTERM", onSignal);
-    process.on("SIGHUP", onSignal);
-    cleanups.push(() => process.off("SIGWINCH", onResize));
-    cleanups.push(() => process.off("SIGTERM", onSignal));
-    cleanups.push(() => process.off("SIGHUP", onSignal));
-
-    void client.subscribeTerminal(terminal.id, {
-      restore: {
-        mode: "visible-snapshot",
-        scrollbackLines: DEFAULT_SCROLLBACK_LINES,
-        size,
-      },
-    }).then((payload) => {
-      if (payload.error) throw new Error(payload.error);
-      subscribed = true;
-      process.stdin.setRawMode(true);
-      process.stdin.resume();
-      process.stdin.on("data", onData);
-      cleanups.push(() => process.stdin.off("data", onData));
-    }).catch((error) => void cleanup(error instanceof Error ? error : new Error(String(error))));
-  });
+function attachSession(session, env = process.env) {
+  if (!process.stdin.isTTY || !process.stdout.isTTY) throw new Error("pi-shared attach requires an interactive terminal");
+  if (env.TMUX) {
+    runTmux(["switch-client", "-t", session.tmuxName], { inherit: true });
+  } else {
+    runTmux(["attach-session", "-t", session.tmuxName], { inherit: true });
+  }
 }
 
 function printHelp() {
-  process.stdout.write(`pi-shared ${VERSION} — one Pi TUI shared by desktop and Paseo mobile\n\n`);
+  process.stdout.write(`pi-shared ${VERSION} — native laptop Pi plus an independent mobile web renderer\n\n`);
   process.stdout.write("Usage:\n");
   process.stdout.write("  pi-shared [name] [-- <pi-arguments>]   Attach, or create if missing\n");
   process.stdout.write("  pi-shared new [name] [-- <pi-arguments>]\n");
-  process.stdout.write("  pi-shared attach <terminal-id-or-name>\n");
+  process.stdout.write("  pi-shared attach <name>\n");
   process.stdout.write("  pi-shared list\n");
-  process.stdout.write("  pi-shared kill <terminal-id-or-name>\n");
-  process.stdout.write("  pi-shared configure [host:port]\n\n");
-  process.stdout.write("Detach locally with Ctrl-]. The Pi process keeps running in Paseo.\n");
-  process.stdout.write("Resume an existing session once with:\n");
-  process.stdout.write("  pi-shared new <name> -- --session /path/to/session.jsonl\n");
+  process.stdout.write("  pi-shared kill <name>\n");
+  process.stdout.write("  pi-shared url\n");
+  process.stdout.write("  pi-shared token\n\n");
+  process.stdout.write("Detach the laptop with Ctrl-B then D. Pi keeps running in tmux.\n");
+  process.stdout.write("The phone connects to the URL and renders semantic events independently.\n");
 }
 
-async function run(argv = process.argv.slice(2)) {
+function run(argv = process.argv.slice(2), env = process.env, home = os.homedir()) {
   const parsed = parseArguments(argv);
   if (parsed.command === "help") return printHelp();
   if (parsed.command === "version") return process.stdout.write(`${VERSION}\n`);
-  if (parsed.command === "configure") return configure(parsed.host);
-
-  const config = readConfig();
-  // Persist a generated client ID without changing an existing password.
-  const persisted = fs.existsSync(config.file)
-    ? JSON.parse(fs.readFileSync(config.file, "utf8"))
-    : {};
-  if (!persisted.clientId) {
-    writeConfig({ ...persisted, host: config.host, password: config.password, clientId: config.clientId });
+  if (parsed.command === "token") return process.stdout.write(`${loadRemoteConfig(env, home).token}\n`);
+  if (parsed.command === "url") {
+    const config = loadRemoteConfig(env, home);
+    const host = config.host.includes(":") && !config.host.startsWith("[") ? `[${config.host}]` : config.host;
+    return process.stdout.write(`http://${host}:${config.port}\n`);
   }
 
-  const client = await loadPaseoClient(config);
-  try {
-    if (parsed.command === "list") {
-      printTerminals(await listAllTerminals(client));
-      await client.close();
-      return;
-    }
+  const sessions = listSessions();
+  if (parsed.command === "list") return printSessions(sessions);
+  if (parsed.command === "attach" || parsed.command === "kill") {
+    const session = resolveSession(parsed.reference, sessions);
+    if (!session) throw new Error(`Pi Remote session not found: ${parsed.reference}`);
     if (parsed.command === "kill") {
-      const terminal = resolveTerminalReference(parsed.reference, await listAllTerminals(client));
-      if (!terminal) throw new Error(`Terminal not found: ${parsed.reference}`);
-      const result = await client.killTerminal(terminal.id);
-      await client.close();
-      if (!result.success) throw new Error(`Could not kill terminal ${terminal.id}`);
-      process.stdout.write(`Killed ${terminal.name} (${terminal.id.slice(0, 8)})\n`);
+      runTmux(["kill-session", "-t", session.tmuxName]);
+      process.stdout.write(`Killed ${session.name}\n`);
       return;
     }
-    if (parsed.command === "attach") {
-      const terminal = resolveTerminalReference(parsed.reference, await listAllTerminals(client));
-      if (!terminal) throw new Error(`Terminal not found: ${parsed.reference}`);
-      return await attachTerminal(client, terminal);
-    }
-
-    const cwd = process.cwd();
-    let terminal = parsed.command === "open" ? await resolveExistingForCwd(client, parsed.name, cwd) : null;
-    if (terminal && parsed.piArgs.length > 0) {
-      throw new Error(`Terminal ${parsed.name} already exists; Pi arguments only apply when creating a terminal`);
-    }
-    if (!terminal) {
-      if (parsed.command === "new") {
-        const duplicate = await resolveExistingForCwd(client, parsed.name, cwd);
-        if (duplicate) throw new Error(`Terminal already exists: ${parsed.name} (${duplicate.id.slice(0, 8)})`);
-      }
-      terminal = await createPiTerminal(client, { cwd, name: parsed.name, piArgs: parsed.piArgs });
-    }
-    return await attachTerminal(client, terminal);
-  } catch (error) {
-    await client.close().catch(() => {});
-    throw error;
+    return attachSession(session, env);
   }
+
+  const tmuxName = tmuxSessionName(parsed.name);
+  let session = sessions.find((candidate) => candidate.tmuxName === tmuxName) || null;
+  if (parsed.command === "new" && session) throw new Error(`Pi Remote session already exists: ${parsed.name}`);
+  if (session && parsed.piArgs.length > 0) {
+    throw new Error(`Pi Remote session ${parsed.name} already exists; Pi arguments only apply when creating it`);
+  }
+  if (!session && sessions.length > 0) {
+    throw new Error(`Pi Remote currently supports one shared session. Attach ${sessions[0].name} or kill it first.`);
+  }
+  if (!session) session = createSession({ cwd: process.cwd(), name: parsed.name, piArgs: parsed.piArgs }, env, home);
+  return attachSession(session, env);
 }
 
 if (require.main === module) {
-  run().catch((error) => {
+  try {
+    run();
+  } catch (error) {
     process.stderr.write(`pi-shared: ${error instanceof Error ? error.message : String(error)}\n`);
     process.exitCode = 1;
-  });
+  }
 }
 
 module.exports = {
-  DEFAULT_HOST,
-  configPath,
-  defaultTerminalName,
+  SESSION_PREFIX,
+  defaultSessionName,
+  extensionServerPath,
+  loadRemoteConfig,
   parseArguments,
-  readConfig,
-  resolveTerminalReference,
-  runtimeClientId,
-  stateDirectory,
-  terminalSize,
-  websocketUrl,
-  writeConfig,
+  resolveSession,
+  tmuxSessionName,
 };

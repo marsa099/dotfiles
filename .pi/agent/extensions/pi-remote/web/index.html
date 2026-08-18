@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f7f7f5" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#151514" media="(prefers-color-scheme: dark)">
+    <meta name="color-scheme" content="light dark">
+    <title>Pi Remote</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body><!--
+      THESIS: One Pi session, two native renderers; this surface refuses terminal mirroring and novelty chat metaphors.
+      OWN-WORLD: Calm neutral fields, deep ink, one operational blue, restrained dividers, and familiar mobile controls.
+      STORY: Authenticate, see the shared session state, read live work, inspect tools, then respond without changing laptop geometry.
+      FIRST VIEWPORT: Compact route-state header, readable transcript, newest activity above a fixed thumb-reachable composer.
+      FORM: Category standard, standing exit from the direction hand; seed key 397bc841.
+      FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+    -->
+    <section class="auth-view" id="auth-view" aria-labelledby="auth-title">
+      <div class="auth-mark" aria-hidden="true">
+        <svg viewBox="0 0 48 48" role="img">
+          <path d="M11 15.5h16.5a8.5 8.5 0 0 1 0 17H20"></path>
+          <path d="M20 9v30"></path>
+          <circle cx="35" cy="15.5" r="3"></circle>
+          <circle cx="13" cy="32.5" r="3"></circle>
+        </svg>
+      </div>
+      <div class="auth-copy">
+        <h1 id="auth-title">Open your Pi session</h1>
+        <p>Use the private token from <code>pi-shared token</code>. Your phone receives structured events—not terminal output.</p>
+      </div>
+      <form class="auth-form" id="auth-form">
+        <label for="token">Access token</label>
+        <div class="token-field">
+          <input id="token" name="token" type="password" autocomplete="current-password" autocapitalize="none" spellcheck="false" required>
+          <button class="icon-button" id="toggle-token" type="button" aria-label="Show access token" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M2.8 12s3.3-5.2 9.2-5.2S21.2 12 21.2 12s-3.3 5.2-9.2 5.2S2.8 12 2.8 12Z"></path>
+              <circle cx="12" cy="12" r="2.7"></circle>
+            </svg>
+          </button>
+        </div>
+        <p class="form-error" id="auth-error" role="alert"></p>
+        <button class="primary-button" type="submit">
+          <span>Connect securely</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"></path></svg>
+        </button>
+      </form>
+      <p class="auth-footnote">Available only on your Tailscale network</p>
+    </section>
+
+    <div class="app-shell" id="app-shell" hidden>
+      <header class="session-header">
+        <div class="header-row">
+          <div class="brand-lockup">
+            <div class="brand-mark" aria-hidden="true">
+              <svg viewBox="0 0 32 32">
+                <path d="M7 10.5h10.5a5.5 5.5 0 0 1 0 11H13"></path>
+                <path d="M13 6v20"></path>
+                <circle cx="23" cy="10.5" r="2"></circle>
+              </svg>
+            </div>
+            <div>
+              <h1>Pi Remote</h1>
+              <p id="session-label">Connecting to session…</p>
+            </div>
+          </div>
+          <div class="header-actions">
+            <span class="status-chip" id="status-chip" data-state="connecting">
+              <span class="status-dot" aria-hidden="true"></span>
+              <span id="status-text">Connecting</span>
+            </span>
+            <button class="icon-button quiet" id="logout-button" type="button" aria-label="Disconnect and forget this browser">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M10 5H5v14h5"></path>
+                <path d="M14 8l4 4-4 4"></path>
+                <path d="M18 12H9"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="renderer-route" aria-label="One Pi session with independent laptop and phone renderers">
+          <span class="route-node"><span class="node-dot"></span>Laptop</span>
+          <span class="route-line"><span></span></span>
+          <span class="route-core">Pi session</span>
+          <span class="route-line"><span></span></span>
+          <span class="route-node active"><span class="node-dot"></span>This phone</span>
+        </div>
+      </header>
+
+      <main class="transcript" id="transcript" tabindex="-1">
+        <div class="empty-state" id="empty-state" hidden>
+          <div class="empty-icon" aria-hidden="true">
+            <svg viewBox="0 0 32 32">
+              <path d="M6 7h20v14H14l-6 5v-5H6Z"></path>
+              <path d="M11 12h10M11 16h7"></path>
+            </svg>
+          </div>
+          <h2>This session is ready</h2>
+          <p>Send a prompt here or continue from the laptop. Both views stay independent.</p>
+        </div>
+        <ol class="message-list" id="message-list" aria-live="polite" aria-relevant="additions text"></ol>
+        <section class="live-tools" id="live-tools" aria-label="Active tools" hidden></section>
+        <div class="stream-anchor" id="stream-anchor" aria-hidden="true"></div>
+      </main>
+
+      <button class="jump-button" id="jump-button" type="button" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+        <span>New activity</span>
+      </button>
+
+      <aside class="notice" id="notice" role="status" aria-live="polite" hidden></aside>
+
+      <footer class="composer-shell">
+        <div class="queue-controls" id="queue-controls" hidden>
+          <span>Pi is working</span>
+          <div class="segmented-control" role="radiogroup" aria-label="Message delivery">
+            <label>
+              <input type="radio" name="delivery" value="steer">
+              <span>Steer next</span>
+            </label>
+            <label>
+              <input type="radio" name="delivery" value="followUp" checked>
+              <span>Follow up</span>
+            </label>
+          </div>
+        </div>
+        <form class="composer" id="composer-form">
+          <label class="sr-only" for="composer-input">Message Pi</label>
+          <textarea id="composer-input" rows="1" placeholder="Message Pi" enterkeyhint="send"></textarea>
+          <div class="composer-actions">
+            <button class="abort-button" id="abort-button" type="button" hidden>
+              <span class="stop-icon" aria-hidden="true"></span>
+              <span>Stop</span>
+            </button>
+            <button class="send-button" id="send-button" type="submit" aria-label="Send message" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6.5 10.5 12 5l5.5 5.5"></path></svg>
+            </button>
+          </div>
+        </form>
+        <p class="composer-hint" id="composer-hint">Enter to send · Shift+Enter for a new line</p>
+      </footer>
+    </div>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>
