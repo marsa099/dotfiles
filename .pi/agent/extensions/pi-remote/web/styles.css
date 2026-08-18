@@ -328,10 +328,188 @@ pre {
 }
 
 .app-shell {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.app-main {
   display: grid;
+  min-width: 0;
   height: 100dvh;
   grid-template-rows: auto minmax(0, 1fr) auto;
   overflow: hidden;
+}
+
+.session-sidebar {
+  position: fixed;
+  z-index: 24;
+  inset: 0 auto 0 0;
+  display: grid;
+  width: min(18rem, calc(100vw - 3.5rem));
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  border-right: 1px solid var(--line);
+  padding: max(0.9rem, env(safe-area-inset-top)) 0 max(0.9rem, env(safe-area-inset-bottom));
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  transform: translateX(-102%);
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.session-sidebar[data-open="true"] {
+  transform: translateX(0);
+}
+
+.session-scrim {
+  position: fixed;
+  z-index: 23;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: rgba(12, 12, 11, 0.5);
+  cursor: pointer;
+}
+
+.sidebar-header {
+  display: flex;
+  min-height: 3.5rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 0 0.8rem 0.85rem 1rem;
+}
+
+.sidebar-title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.sidebar-title h2 {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 720;
+  letter-spacing: -0.02em;
+}
+
+.sidebar-title p {
+  margin: 0.12rem 0 0;
+  color: var(--text-soft);
+  font-size: 0.7rem;
+}
+
+.session-nav {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.45rem 0.65rem;
+}
+
+.session-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+}
+
+.session-link {
+  display: grid;
+  min-height: 3.6rem;
+  grid-template-columns: 0.55rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.72rem;
+  border-radius: 0.75rem;
+  padding: 0.55rem 0.7rem;
+  color: var(--text-soft);
+  text-decoration: none;
+  transition: background 140ms ease-out, color 140ms ease-out;
+}
+
+.session-link:hover {
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.session-link[aria-current="page"] {
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.session-link .session-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--success);
+}
+
+.session-link[data-state="working"] .session-dot,
+.session-link[data-state="queued"] .session-dot {
+  background: var(--accent);
+}
+
+.session-link-copy {
+  min-width: 0;
+}
+
+.session-link strong,
+.session-link small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-link strong {
+  color: inherit;
+  font-size: 0.84rem;
+  font-weight: 680;
+}
+
+.session-link small {
+  margin-top: 0.18rem;
+  color: var(--text-faint);
+  font-size: 0.68rem;
+}
+
+.session-list-status {
+  margin: 0;
+  padding: 1rem 0.7rem;
+  color: var(--text-faint);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.sidebar-foot {
+  display: flex;
+  min-height: 3rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  border-top: 1px solid var(--line);
+  margin: 0 0.65rem;
+  padding: 0.85rem 0.35rem 0;
+  color: var(--text-faint);
+  font-size: 0.66rem;
+}
+
+.sidebar-route {
+  display: flex;
+  align-items: center;
+  gap: 0.22rem;
+}
+
+.sidebar-route i {
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 50%;
+  background: var(--line-strong);
+}
+
+.sidebar-route i:nth-child(2) {
+  background: var(--accent);
+}
+
+.sidebar-toggle {
+  margin-left: -0.45rem;
 }
 
 .session-header {
@@ -1028,6 +1206,32 @@ details[open] > summary .chevron {
 
   .jump-button {
     right: max(1.5rem, calc((100vw - var(--content-width)) / 2));
+  }
+}
+
+@media (min-width: 64rem) {
+  .app-shell {
+    display: grid;
+    grid-template-columns: 17rem minmax(0, 1fr);
+  }
+
+  .session-sidebar {
+    position: relative;
+    z-index: 7;
+    width: auto;
+    height: 100dvh;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .sidebar-close,
+  .sidebar-toggle,
+  .session-scrim {
+    display: none !important;
+  }
+
+  .jump-button {
+    right: max(1.5rem, calc((100vw - 17rem - var(--content-width)) / 2));
   }
 }
 

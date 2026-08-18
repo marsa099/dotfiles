@@ -7,6 +7,13 @@ const elements = {
   token: document.querySelector("#token"),
   toggleToken: document.querySelector("#toggle-token"),
   appShell: document.querySelector("#app-shell"),
+  appMain: document.querySelector(".app-main"),
+  sidebar: document.querySelector("#session-sidebar"),
+  sidebarToggle: document.querySelector("#sidebar-toggle"),
+  sidebarClose: document.querySelector("#sidebar-close"),
+  sessionScrim: document.querySelector("#session-scrim"),
+  sessionList: document.querySelector("#session-list"),
+  sessionCount: document.querySelector("#session-count"),
   logout: document.querySelector("#logout-button"),
   sessionLabel: document.querySelector("#session-label"),
   statusChip: document.querySelector("#status-chip"),
@@ -38,6 +45,7 @@ const app = {
   toolRenderFrame: null,
   tools: new Map(),
   noticeTimer: null,
+  sessionsTimer: null,
 };
 
 function createSvg(paths, className = "") {
@@ -63,6 +71,95 @@ function toolIcon() {
   return createSvg([
     { d: "M14.7 6.3a4 4 0 0 0-5 5L4.5 16.5a1.4 1.4 0 0 0 2 2l5.2-5.2a4 4 0 0 0 5-5l-2.4 2.4-1.7-1.7Z" },
   ], "tool-icon");
+}
+
+const desktopSidebar = matchMedia("(min-width: 64rem)");
+
+function setSidebarOpen(open) {
+  const desktop = desktopSidebar.matches;
+  const expanded = desktop || open;
+  elements.sidebar.dataset.open = String(expanded);
+  elements.sidebar.inert = !expanded;
+  elements.appMain.inert = !desktop && open;
+  elements.sidebarToggle.setAttribute("aria-expanded", String(expanded));
+  elements.sessionScrim.hidden = desktop || !open;
+  if (open && !desktop) {
+    requestAnimationFrame(() => elements.sidebar.querySelector("[aria-current='page']")?.focus() || elements.sidebarClose.focus());
+  }
+}
+
+function syncSidebarMode() {
+  setSidebarOpen(false);
+}
+
+function compactPath(value) {
+  const parts = String(value || "").split("/").filter(Boolean);
+  return parts.at(-1) || "Session";
+}
+
+function sessionDisplayState(session) {
+  if (session.state?.hasPendingMessages) return { key: "queued", label: "Queued" };
+  if (session.state?.isIdle === false) return { key: "working", label: "Working" };
+  return { key: "ready", label: "Ready" };
+}
+
+function renderSessions(sessions) {
+  elements.sessionList.replaceChildren();
+  const valid = [];
+  for (const session of sessions || []) {
+    try {
+      const target = new URL(session.address);
+      if (!/^https?:$/.test(target.protocol) || target.hostname !== location.hostname) continue;
+      target.pathname = "/";
+      target.search = "";
+      target.hash = "";
+      valid.push({ session, target });
+    } catch {
+      // Ignore malformed local registry entries.
+    }
+  }
+
+  elements.sessionCount.textContent = `${valid.length} active ${valid.length === 1 ? "session" : "sessions"}`;
+  if (valid.length === 0) {
+    const status = document.createElement("p");
+    status.className = "session-list-status";
+    status.textContent = "No active sessions found.";
+    elements.sessionList.append(status);
+    return;
+  }
+
+  for (const { session, target } of valid) {
+    const state = sessionDisplayState(session);
+    const link = document.createElement("a");
+    link.className = "session-link";
+    link.href = target.href;
+    link.dataset.state = state.key;
+    const current = session.id === app.session?.id || target.port === location.port;
+    if (current) link.setAttribute("aria-current", "page");
+    const dot = document.createElement("span");
+    dot.className = "session-dot";
+    dot.setAttribute("aria-hidden", "true");
+    const copy = document.createElement("span");
+    copy.className = "session-link-copy";
+    const name = document.createElement("strong");
+    name.textContent = session.name || compactPath(session.cwd) || session.id;
+    const detail = document.createElement("small");
+    detail.textContent = `${state.label} · ${compactPath(session.cwd)}`;
+    copy.append(name, detail);
+    link.append(dot, copy);
+    link.addEventListener("click", () => setSidebarOpen(false));
+    elements.sessionList.append(link);
+  }
+}
+
+async function loadSessions() {
+  try {
+    const payload = await api("/api/sessions");
+    renderSessions(payload.sessions);
+  } catch (error) {
+    if (error.status === 401) return;
+    elements.sessionCount.textContent = "Session list unavailable";
+  }
 }
 
 function textContentFrom(value) {
@@ -534,6 +631,7 @@ function handleEvent(payload) {
     case "session":
       app.session = payload.session || app.session;
       updateSessionHeader();
+      void loadSessions();
       break;
     case "state":
       app.state = { ...app.state, ...(payload.state || {}) };
@@ -604,6 +702,9 @@ function showAuth() {
   app.source?.close();
   app.source = null;
   app.connected = false;
+  clearInterval(app.sessionsTimer);
+  app.sessionsTimer = null;
+  setSidebarOpen(false);
   elements.appShell.hidden = true;
   elements.authView.hidden = false;
   elements.token.focus();
@@ -640,6 +741,9 @@ async function startAuthenticated(snapshot) {
   app.connected = true;
   applySnapshot(snapshot);
   connectEvents();
+  await loadSessions();
+  clearInterval(app.sessionsTimer);
+  app.sessionsTimer = setInterval(() => void loadSessions(), 10_000);
 }
 
 function takePairingCode() {
@@ -693,6 +797,24 @@ elements.toggleToken.addEventListener("click", () => {
   elements.toggleToken.setAttribute("aria-pressed", String(!showing));
   elements.toggleToken.setAttribute("aria-label", showing ? "Show access token" : "Hide access token");
 });
+
+elements.sidebarToggle.addEventListener("click", () => setSidebarOpen(true));
+elements.sidebarClose.addEventListener("click", () => {
+  setSidebarOpen(false);
+  elements.sidebarToggle.focus();
+});
+elements.sessionScrim.addEventListener("click", () => setSidebarOpen(false));
+desktopSidebar.addEventListener("change", syncSidebarMode);
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && elements.sidebar.dataset.open === "true" && !desktopSidebar.matches) {
+    setSidebarOpen(false);
+    elements.sidebarToggle.focus();
+  }
+});
+window.addEventListener("focus", () => {
+  if (!elements.appShell.hidden) void loadSessions();
+});
+syncSidebarMode();
 
 elements.logout.addEventListener("click", async () => {
   try {
@@ -765,6 +887,9 @@ elements.jump.addEventListener("click", () => {
   followLatest(true);
 });
 
-window.addEventListener("beforeunload", () => app.source?.close());
+window.addEventListener("beforeunload", () => {
+  app.source?.close();
+  clearInterval(app.sessionsTimer);
+});
 
 void boot();

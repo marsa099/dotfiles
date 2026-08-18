@@ -125,6 +125,11 @@ test("loads as a real Pi extension and serves the active session", { timeout: 25
     assert.equal(payload.session.cwd, root);
     assert.equal(payload.entries.some((entry) => entry.message), false);
 
+    const sessions = await fetch(`${address}/api/sessions`, { headers: { Cookie: cookie } });
+    assert.equal(sessions.status, 200);
+    const discovered = (await sessions.json()).sessions;
+    assert.equal(discovered.some((session) => session.id === payload.session.id && session.address === address), true);
+
     const abort = await fetch(`${address}/api/action`, {
       method: "POST",
       headers: { Cookie: cookie, "Content-Type": "application/json", Origin: address },

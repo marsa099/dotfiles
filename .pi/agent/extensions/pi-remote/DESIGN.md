@@ -81,7 +81,7 @@ components:
 
 **Creative North Star: "The Clear Relay"**
 
-Pi Remote uses a familiar, calm mobile conversation model while making its unique mechanism visible in one restrained gesture: a route line connecting the laptop, one Pi session, and this phone. The interface is operational rather than expressive. Conversation remains dominant; network state, tools, and queue controls appear exactly where they affect the next action.
+Pi Remote uses a familiar, calm mobile conversation model while making its unique mechanism visible in one restrained gesture: a route line connecting the laptop, the selected Pi session, and this phone. The interface is operational rather than expressive. Session navigation supports the conversation without competing with it; network state, tools, and queue controls appear exactly where they affect the next action.
 
 The system follows the user's chosen ChatGPT and Claude craft bar without copying either product's branding. Neutral fields, one operational blue, flat transcript content, compact disclosures, and a fixed composer keep long coding sessions readable. It explicitly avoids fake-terminal styling, neon console imagery, and decorative dashboard chrome.
 
@@ -138,9 +138,9 @@ The palette is restrained: cool-neutral surfaces carry almost the entire screen,
 
 ## Layout
 
-The app is a three-row viewport shell: session header, independently scrolling transcript, and safe-area-aware composer. Header, transcript, active tools, and composer share a 46rem maximum width. The transcript uses a flat vertical flow; user messages align right in bounded bubbles while assistant content spans the reading column.
+The selected conversation is a three-row viewport shell: session header, independently scrolling transcript, and safe-area-aware composer. Header, transcript, active tools, and composer share a 46rem maximum width. The transcript uses a flat vertical flow; user messages align right in bounded bubbles while assistant content spans the reading column.
 
-At phone widths the status, queue choice, stop action, and send action remain reachable without horizontal scrolling. Below 22rem, status text becomes visually hidden and the dot carries the state with an accessible label. At 48rem and above, spacing increases but the reading measure does not. Smart follow keeps the newest content visible until the user scrolls away, then a floating jump action restores the live position.
+At wide desktop widths, a 17rem navigation rail sits beside the conversation without changing its reading measure. On phones and tablets, that rail becomes a left drawer opened from the header; the conversation becomes inert while the drawer is open, Escape and the scrim close it, and DOM order keeps navigation before content. At phone widths the status, queue choice, stop action, and send action remain reachable without horizontal scrolling. Below 22rem, status text becomes visually hidden and the dot carries the state with an accessible label. Smart follow keeps the newest content visible until the user scrolls away, then a floating jump action restores the live position.
 
 ## Elevation & Depth
 
@@ -185,6 +185,11 @@ Borders are one-pixel neutral rules. Icons are authored 24px SVG strokes with ro
 - **Style:** Raised neutral input with an auto-growing textarea and actions on the right.
 - **Busy state:** A segmented choice above the field selects Steer next or Follow up; Stop remains visible inside the composer.
 - **Send state:** Disabled until connected with non-empty input; Relay Blue when actionable.
+
+### Session Navigation
+- **Desktop:** A persistent 17rem rail with compact active-session rows, literal Ready/Working/Queued state, and no card stack.
+- **Mobile:** A safe-area-aware drawer with scrim, Escape dismissal, and inert background content.
+- **Switching:** Each row performs a full navigation to the selected session endpoint; the shared host cookie carries authentication across ports.
 
 ### Renderer Route
 - **Style:** A single horizontal line with Laptop, Pi session, and This phone nodes.

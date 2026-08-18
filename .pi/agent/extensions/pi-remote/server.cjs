@@ -11,6 +11,7 @@ const DEFAULT_PORT = 6767;
 const MAX_BODY_BYTES = 64 * 1024;
 const COOKIE_NAME = "pi_remote_session";
 const PAIRING_CODE_TTL_MS = 2 * 60 * 1000;
+const REGISTRY_STALE_MS = 45 * 1000;
 const TOKEN_PATTERN = /^[a-f0-9]{64}$/;
 
 function stateDirectory(env = process.env, home = os.homedir()) {
@@ -19,6 +20,79 @@ function stateDirectory(env = process.env, home = os.homedir()) {
 
 function configPath(env = process.env, home = os.homedir()) {
   return path.join(stateDirectory(env, home), "config.json");
+}
+
+function registryDirectory(env = process.env, home = os.homedir()) {
+  return path.join(stateDirectory(env, home), "sessions");
+}
+
+function registrationPath(sessionId, env = process.env, home = os.homedir()) {
+  const filename = crypto.createHash("sha256").update(String(sessionId)).digest("hex");
+  return path.join(registryDirectory(env, home), `${filename}.json`);
+}
+
+function writeSessionRegistration(input, env = process.env, home = os.homedir(), now = Date.now()) {
+  if (!input || typeof input.id !== "string" || !input.id) throw new Error("Session registration requires an id");
+  const directory = registryDirectory(env, home);
+  fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
+  fs.chmodSync(directory, 0o700);
+  const file = registrationPath(input.id, env, home);
+  const record = {
+    id: input.id,
+    name: typeof input.name === "string" ? input.name : null,
+    cwd: typeof input.cwd === "string" ? input.cwd : null,
+    address: String(input.address),
+    pid: Number(input.pid),
+    state: input.state && typeof input.state === "object" ? input.state : { isIdle: true },
+    startedAt: Number(input.startedAt) || now,
+    updatedAt: now,
+  };
+  const temporary = `${file}.${process.pid}.tmp`;
+  fs.writeFileSync(temporary, `${JSON.stringify(record)}\n`, { mode: 0o600 });
+  fs.renameSync(temporary, file);
+  fs.chmodSync(file, 0o600);
+  return record;
+}
+
+function removeSessionRegistration(sessionId, env = process.env, home = os.homedir()) {
+  if (!sessionId) return;
+  fs.rmSync(registrationPath(sessionId, env, home), { force: true });
+}
+
+function processIsAlive(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function readSessionRegistrations(env = process.env, home = os.homedir(), now = Date.now(), isAlive = processIsAlive) {
+  const directory = registryDirectory(env, home);
+  if (!fs.existsSync(directory)) return [];
+  const sessions = [];
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith(".json")) continue;
+    const file = path.join(directory, entry.name);
+    try {
+      const record = JSON.parse(fs.readFileSync(file, "utf8"));
+      const valid = typeof record.id === "string"
+        && typeof record.address === "string"
+        && Number.isFinite(record.updatedAt)
+        && now - record.updatedAt <= REGISTRY_STALE_MS
+        && isAlive(record.pid);
+      if (!valid) {
+        fs.rmSync(file, { force: true });
+        continue;
+      }
+      sessions.push(record);
+    } catch {
+      fs.rmSync(file, { force: true });
+    }
+  }
+  return sessions.sort((left, right) => String(left.name || left.cwd || left.id).localeCompare(String(right.name || right.cwd || right.id)));
 }
 
 function constantTimeEqual(left, right) {
@@ -162,7 +236,9 @@ class PiRemoteServer {
     this.token = options.token;
     this.webRoot = path.resolve(options.webRoot);
     this.getSnapshot = options.getSnapshot;
+    this.getSessions = options.getSessions || (() => []);
     this.onAction = options.onAction;
+    this.onHeartbeat = options.onHeartbeat;
     this.clients = new Set();
     this.pairingCodes = new Map();
     this.nextEventId = 1;
@@ -237,6 +313,7 @@ class PiRemoteServer {
     const address = this.server.address();
     if (address && typeof address === "object") this.port = address.port;
     this.heartbeat = setInterval(() => {
+      try { this.onHeartbeat?.(); } catch { /* Registry refresh must never stop the Pi process. */ }
       for (const client of this.clients) {
         if (!client.blocked) client.response.write(": heartbeat\n\n");
       }
@@ -331,6 +408,10 @@ class PiRemoteServer {
         return jsonResponse(response, 200, this.getSnapshot());
       }
 
+      if (method === "GET" && url.pathname === "/api/sessions") {
+        return jsonResponse(response, 200, { sessions: this.getSessions() });
+      }
+
       if (method === "POST" && url.pathname === "/api/action") {
         if (!this.hasSameOrigin(request)) return jsonResponse(response, 403, { error: "Origin rejected" });
         const body = await readJsonBody(request);
@@ -390,10 +471,16 @@ module.exports = {
   DEFAULT_HOST,
   DEFAULT_PORT,
   PAIRING_CODE_TTL_MS,
+  REGISTRY_STALE_MS,
   PiRemoteServer,
   configPath,
   constantTimeEqual,
   readOrCreateConfig,
+  readSessionRegistrations,
+  registrationPath,
+  registryDirectory,
+  removeSessionRegistration,
   sessionCredential,
   stateDirectory,
+  writeSessionRegistration,
 };
