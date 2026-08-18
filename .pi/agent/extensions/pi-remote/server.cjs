@@ -10,6 +10,7 @@ const DEFAULT_HOST = "100.121.105.35";
 const DEFAULT_PORT = 6767;
 const MAX_BODY_BYTES = 64 * 1024;
 const COOKIE_NAME = "pi_remote_session";
+const PAIRING_CODE_TTL_MS = 2 * 60 * 1000;
 const TOKEN_PATTERN = /^[a-f0-9]{64}$/;
 
 function stateDirectory(env = process.env, home = os.homedir()) {
@@ -163,6 +164,7 @@ class PiRemoteServer {
     this.getSnapshot = options.getSnapshot;
     this.onAction = options.onAction;
     this.clients = new Set();
+    this.pairingCodes = new Map();
     this.nextEventId = 1;
     this.heartbeat = undefined;
     this.server = http.createServer((request, response) => {
@@ -186,6 +188,36 @@ class PiRemoteServer {
     } catch {
       return false;
     }
+  }
+
+  hasTokenAuthorization(request) {
+    const header = String(request.headers.authorization || "");
+    return header.startsWith("Bearer ") && constantTimeEqual(header.slice(7), this.token);
+  }
+
+  createPairingCode() {
+    const now = Date.now();
+    for (const [code, expiresAt] of this.pairingCodes) {
+      if (expiresAt <= now) this.pairingCodes.delete(code);
+    }
+    while (this.pairingCodes.size >= 8) {
+      this.pairingCodes.delete(this.pairingCodes.keys().next().value);
+    }
+    const code = crypto.randomBytes(18).toString("base64url");
+    const expiresAt = now + PAIRING_CODE_TTL_MS;
+    this.pairingCodes.set(code, expiresAt);
+    return { code, expiresAt };
+  }
+
+  consumePairingCode(code) {
+    const expiresAt = this.pairingCodes.get(code);
+    this.pairingCodes.delete(code);
+    return Number.isFinite(expiresAt) && expiresAt > Date.now();
+  }
+
+  sessionCookie(maxAge = 2592000) {
+    const value = maxAge === 0 ? "" : sessionCredential(this.token);
+    return `${COOKIE_NAME}=${value}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${maxAge}`;
   }
 
   async start() {
@@ -249,6 +281,7 @@ class PiRemoteServer {
       client.response.end();
     }
     this.clients.clear();
+    this.pairingCodes.clear();
     if (!this.server.listening) return;
     await new Promise((resolve) => this.server.close(resolve));
   }
@@ -260,22 +293,34 @@ class PiRemoteServer {
 
       for (const [name, value] of Object.entries(securityHeaders())) response.setHeader(name, value);
 
+      if (method === "POST" && url.pathname === "/api/pair") {
+        if (!this.hasTokenAuthorization(request)) {
+          return jsonResponse(response, 401, { error: "Invalid access token" });
+        }
+        return jsonResponse(response, 201, this.createPairingCode());
+      }
+
+      if (method === "POST" && url.pathname === "/api/pair/login") {
+        if (!this.hasSameOrigin(request)) return jsonResponse(response, 403, { error: "Origin rejected" });
+        const body = await readJsonBody(request);
+        if (typeof body.code !== "string" || !this.consumePairingCode(body.code)) {
+          return jsonResponse(response, 401, { error: "Pairing code is invalid or expired" });
+        }
+        return jsonResponse(response, 204, undefined, { "Set-Cookie": this.sessionCookie() });
+      }
+
       if (method === "POST" && url.pathname === "/api/login") {
         if (!this.hasSameOrigin(request)) return jsonResponse(response, 403, { error: "Origin rejected" });
         const body = await readJsonBody(request);
         if (!constantTimeEqual(body.token || "", this.token)) {
           return jsonResponse(response, 401, { error: "Invalid access token" });
         }
-        return jsonResponse(response, 204, undefined, {
-          "Set-Cookie": `${COOKIE_NAME}=${sessionCredential(this.token)}; HttpOnly; SameSite=Strict; Path=/; Max-Age=2592000`,
-        });
+        return jsonResponse(response, 204, undefined, { "Set-Cookie": this.sessionCookie() });
       }
 
       if (method === "POST" && url.pathname === "/api/logout") {
         if (!this.hasSameOrigin(request)) return jsonResponse(response, 403, { error: "Origin rejected" });
-        return jsonResponse(response, 204, undefined, {
-          "Set-Cookie": `${COOKIE_NAME}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0`,
-        });
+        return jsonResponse(response, 204, undefined, { "Set-Cookie": this.sessionCookie(0) });
       }
 
       if (url.pathname.startsWith("/api/") || url.pathname === "/events") {
@@ -344,6 +389,7 @@ module.exports = {
   COOKIE_NAME,
   DEFAULT_HOST,
   DEFAULT_PORT,
+  PAIRING_CODE_TTL_MS,
   PiRemoteServer,
   configPath,
   constantTimeEqual,

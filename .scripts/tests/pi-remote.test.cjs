@@ -60,6 +60,35 @@ test("serves authenticated snapshots, actions, static assets, and semantic event
     const denied = await fetch(`${address}/api/snapshot`);
     assert.equal(denied.status, 401);
 
+    const deniedPair = await fetch(`${address}/api/pair`, { method: "POST" });
+    assert.equal(deniedPair.status, 401);
+
+    const pair = await fetch(`${address}/api/pair`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${"a".repeat(64)}` },
+    });
+    assert.equal(pair.status, 201);
+    const pairing = await pair.json();
+    assert.match(pairing.code, /^[A-Za-z0-9_-]{24}$/);
+    assert.ok(pairing.expiresAt > Date.now());
+
+    const pairLogin = await fetch(`${address}/api/pair/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: address },
+      body: JSON.stringify({ code: pairing.code }),
+    });
+    assert.equal(pairLogin.status, 204);
+    const pairCookie = pairLogin.headers.get("set-cookie").split(";", 1)[0];
+    const pairedSnapshot = await fetch(`${address}/api/snapshot`, { headers: { Cookie: pairCookie } });
+    assert.equal(pairedSnapshot.status, 200);
+
+    const reusedPair = await fetch(`${address}/api/pair/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: address },
+      body: JSON.stringify({ code: pairing.code }),
+    });
+    assert.equal(reusedPair.status, 401);
+
     const badLogin = await fetch(`${address}/api/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Origin: address },
