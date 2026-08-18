@@ -15,6 +15,9 @@ const elements = {
   sessionList: document.querySelector("#session-list"),
   sessionCount: document.querySelector("#session-count"),
   logout: document.querySelector("#logout-button"),
+  logoutDialog: document.querySelector("#logout-dialog"),
+  logoutCancel: document.querySelector("#logout-cancel"),
+  logoutConfirm: document.querySelector("#logout-confirm"),
   sessionLabel: document.querySelector("#session-label"),
   statusChip: document.querySelector("#status-chip"),
   statusText: document.querySelector("#status-text"),
@@ -705,6 +708,7 @@ function showAuth() {
   clearInterval(app.sessionsTimer);
   app.sessionsTimer = null;
   setSidebarOpen(false);
+  if (elements.logoutDialog.open) elements.logoutDialog.close();
   elements.appShell.hidden = true;
   elements.authView.hidden = false;
   elements.token.focus();
@@ -816,7 +820,25 @@ window.addEventListener("focus", () => {
 });
 syncSidebarMode();
 
-elements.logout.addEventListener("click", async () => {
+elements.logout.addEventListener("click", () => {
+  setSidebarOpen(false);
+  elements.logoutDialog.showModal();
+});
+
+elements.logoutCancel.addEventListener("click", () => {
+  elements.logoutDialog.close();
+});
+
+elements.logoutDialog.addEventListener("close", () => {
+  elements.logoutCancel.disabled = false;
+  elements.logoutConfirm.disabled = false;
+  elements.logoutConfirm.textContent = "Log out";
+});
+
+elements.logoutConfirm.addEventListener("click", async () => {
+  elements.logoutCancel.disabled = true;
+  elements.logoutConfirm.disabled = true;
+  elements.logoutConfirm.textContent = "Logging out…";
   try {
     await api("/api/logout", { method: "POST", body: "{}" });
   } finally {

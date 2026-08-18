@@ -180,6 +180,17 @@
       </div>
     </div>
 
+    <dialog class="confirm-dialog" id="logout-dialog" aria-labelledby="logout-dialog-title" aria-describedby="logout-dialog-description">
+      <div class="confirm-dialog-body">
+        <h2 id="logout-dialog-title">Log out of Pi Remote?</h2>
+        <p id="logout-dialog-description">This removes access from this browser. Your Pi sessions keep running.</p>
+        <div class="confirm-dialog-actions">
+          <button class="confirm-button cancel" id="logout-cancel" type="button" autofocus>Cancel</button>
+          <button class="confirm-button danger" id="logout-confirm" type="button">Log out</button>
+        </div>
+      </div>
+    </dialog>
+
     <script src="/app.js" defer></script>
   </body>
 </html>
