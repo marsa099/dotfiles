@@ -187,8 +187,8 @@ Borders are one-pixel neutral rules. Icons are authored 24px SVG strokes with ro
 - **Send state:** Disabled until connected with non-empty input; Relay Blue when actionable.
 
 ### Session Navigation
-- **Desktop:** A persistent 17rem rail with compact active-session rows, literal Ready/Working/Queued state, and no card stack.
-- **Mobile:** A safe-area-aware drawer with scrim, Escape dismissal, and inert background content.
+- **Desktop:** A persistent 17rem rail with compact active-session rows, literal Ready/Working/Queued state, and a labeled logout action anchored at the bottom.
+- **Mobile:** A safe-area-aware drawer with scrim, Escape dismissal, inert background content, and the same bottom-anchored logout action.
 - **Switching:** Each row performs a full navigation to the selected session endpoint; the shared host cookie carries authentication across ports.
 
 ### Renderer Route

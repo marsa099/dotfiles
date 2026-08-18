@@ -26,6 +26,7 @@ related_targets: ["web/styles.css","web/app.js"]
 - Independently rendered semantic events only; never mirror ANSI terminal output or drafts.
 - Touch-first, safe-area aware, accessible, resilient to reconnects, and token-authenticated over Tailscale.
 - Keep session navigation persistent on wide screens and expose it as a non-blocking drawer on phones.
+- Keep the low-frequency logout action labeled and anchored at the bottom of session navigation, away from live session status.
 
 ## Chosen direction
 
