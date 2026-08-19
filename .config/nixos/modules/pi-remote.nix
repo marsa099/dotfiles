@@ -16,8 +16,8 @@ let
   piRemoteHubPort = piRemotePort + piRemoteMaxSessions + 1;
 in
 {
-  # Paseo owns 6767. Pi sessions use 6768–6783; the persistent hub owns 6784.
-  networking.firewall.interfaces.tailscale0.allowedTCPPorts = lib.range piRemotePort piRemoteHubPort;
+  # Only the hub is public. Per-session HTTP servers bind to loopback and are proxied by the hub.
+  networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ piRemoteHubPort ];
 
   environment.systemPackages = [ pkgs.qrencode ];
 
