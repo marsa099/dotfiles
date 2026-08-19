@@ -13,10 +13,11 @@ let
   tailscaleAddress = "100.121.105.35";
   piRemotePort = 6767;
   piRemoteMaxSessions = 16;
+  piRemoteHubPort = piRemotePort + piRemoteMaxSessions + 1;
 in
 {
-  # The hub owns the base port; up to 16 live Pi processes use the following ports.
-  networking.firewall.interfaces.tailscale0.allowedTCPPorts = lib.range piRemotePort (piRemotePort + piRemoteMaxSessions);
+  # Paseo owns 6767. Pi sessions use 6768–6783; the persistent hub owns 6784.
+  networking.firewall.interfaces.tailscale0.allowedTCPPorts = lib.range piRemotePort piRemoteHubPort;
 
   environment.systemPackages = [ pkgs.qrencode ];
 
@@ -29,6 +30,7 @@ in
       HOME = "/home/martin";
       PI_REMOTE_HOST = tailscaleAddress;
       PI_REMOTE_PORT = toString piRemotePort;
+      PI_REMOTE_HUB_PORT = toString piRemoteHubPort;
       PI_SHARED = "/home/martin/.scripts/pi-shared";
     };
     path = [ pkgs.nodejs pkgs.tmux ];
@@ -45,5 +47,6 @@ in
   environment.sessionVariables = {
     PI_REMOTE_HOST = tailscaleAddress;
     PI_REMOTE_PORT = toString piRemotePort;
+    PI_REMOTE_HUB_PORT = toString piRemoteHubPort;
   };
 }
