@@ -33,7 +33,16 @@ in
       PI_REMOTE_HUB_PORT = toString piRemoteHubPort;
       PI_SHARED = "/home/martin/.scripts/pi-shared";
     };
-    path = [ pkgs.nodejs pkgs.tmux ];
+    # System services do not inherit martin's login-shell PATH. Include the
+    # system and user profiles so Pi sessions created by the mobile hub can
+    # resolve sh and user-installed commands.
+    path = [
+      pkgs.nodejs
+      pkgs.tmux
+      "/run/current-system/sw"
+      "/etc/profiles/per-user/martin"
+      "/home/martin/.nix-profile"
+    ];
     serviceConfig = {
       Type = "simple";
       User = "martin";
