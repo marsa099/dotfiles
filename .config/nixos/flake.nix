@@ -43,10 +43,9 @@
     dsqrd.url = "git+https://github.com/daphen/dsqrd.git?ref=main";
     slqs.url = "github:daphen/slqs";
     #   - mlqs  (Mail):    Go daemon + vendored QML UI, same daemon/client split
-    # mlqs tracks daphen directly too (2026-08-12). The IMAP/SMTP vendor was
-    # merged upstream (PR #3) and the smart-threading experiment was dropped in
-    # favor of daphen's RFC-5256 threading; the fork branch is archived locally.
-    mlqs.url = "github:daphen/mlqs";
+    # Track our fork: it carries the Exchange meeting-card and internal calendar
+    # UX used by the installed launcher, while continuing to merge daphen upstream.
+    mlqs.url = "github:marsa099/mlqs";
   };
 
   outputs =
