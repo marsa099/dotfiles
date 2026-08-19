@@ -15,9 +15,32 @@ let
   piRemoteMaxSessions = 16;
 in
 {
-  networking.firewall.interfaces.tailscale0.allowedTCPPorts = lib.range piRemotePort (piRemotePort + piRemoteMaxSessions - 1);
+  # The hub owns the base port; up to 16 live Pi processes use the following ports.
+  networking.firewall.interfaces.tailscale0.allowedTCPPorts = lib.range piRemotePort (piRemotePort + piRemoteMaxSessions);
 
   environment.systemPackages = [ pkgs.qrencode ];
+
+  systemd.services.pi-remote-hub = {
+    description = "Persistent Pi Remote mobile session hub";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "network-online.target" "tailscaled.service" ];
+    wants = [ "network-online.target" ];
+    environment = {
+      HOME = "/home/martin";
+      PI_REMOTE_HOST = tailscaleAddress;
+      PI_REMOTE_PORT = toString piRemotePort;
+      PI_SHARED = "/home/martin/.scripts/pi-shared";
+    };
+    path = [ pkgs.nodejs pkgs.tmux ];
+    serviceConfig = {
+      Type = "simple";
+      User = "martin";
+      Group = "users";
+      ExecStart = "${pkgs.nodejs}/bin/node /home/martin/repos/pi-remote/hub.cjs";
+      Restart = "on-failure";
+      RestartSec = 2;
+    };
+  };
 
   environment.sessionVariables = {
     PI_REMOTE_HOST = tailscaleAddress;
