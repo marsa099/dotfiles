@@ -150,15 +150,15 @@
         "nixpkgs": "nixpkgs_5"
       },
       "locked": {
-        "lastModified": 1786616505,
-        "narHash": "sha256-TNZpIhJzvk3TEM+XqmSXXg091n4LjbcnUntrQXCpuv4=",
-        "owner": "daphen",
+        "lastModified": 1787164797,
+        "narHash": "sha256-NFPCqIq/IVW1V1R4TnpeHg/ffBSIm3+Oi78ewC0Mlok=",
+        "owner": "marsa099",
         "repo": "mlqs",
-        "rev": "9061cce7557c5f78c803ee9c99635a69345c2bd1",
+        "rev": "47954049ad62d2ce658dc3ce6826afef40ce4d9c",
         "type": "github"
       },
       "original": {
-        "owner": "daphen",
+        "owner": "marsa099",
         "repo": "mlqs",
         "type": "github"
       }
