@@ -118,12 +118,24 @@ running_rev() {
     grep -o "DSQRD_REV='[0-9a-f]*'" "$root/bin/dsqrd" 2>/dev/null | cut -d"'" -f2 || true
 }
 
-# --- fork <- daphen upstream sync (currently unused) -------------------------
+# --- fork <- daphen upstream sync --------------------------------------------
 # When an app is built from a marsa099 fork, upstream features land on daphen's
 # main and must be merged before the lock is bumped. Real merges need a
 # checkout, so this drives the local one (origin=marsa099, upstream=daphen).
-# No app takes this path right now (mlqs went back to daphen 2026-08-12).
+# mlqs is a fork again: the flake pins marsa099/mlqs and the daemon polls BOTH
+# repos (flake.nix ldflags updateRepo/upstreamRepo), so daphen commits the fork
+# hasn't merged raise the in-app badge — and with this leg off, U could never
+# clear it ("mlqs is up to date" while the badge stayed).
 IS_FORK=""; FORK_REPO=""; UPREMOTE=""; FORKREMOTE=""; CONFLICT_HINT=""
+case "$APP" in
+    mlqs)
+        IS_FORK=1
+        FORK_REPO="$HOME/repos/mlqs"
+        FORKREMOTE="origin"    # marsa099/mlqs — what the flake builds from
+        UPREMOTE="upstream"    # daphen/mlqs
+        CONFLICT_HINT="the fork's additions all survive alongside daphen's changes: the IMAP/SMTP vendor, the Exchange calendar/meeting features, and the SLK_UPDATE_CMD export in the mlqs-client wrapper in flake.nix"
+        ;;
+esac
 
 # Count of daphen-main commits not yet in the fork's main (0 = caught up).
 # Fetches quietly first; any failure (offline, no checkout, not a fork) reports 0
