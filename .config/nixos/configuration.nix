@@ -245,6 +245,7 @@
       brightnessctl # brightness control via keyboard brightness keys
       swayosd # on-screen display for brightness/volume changes (26.05 stable is 0.3.1, same as unstable; 0.3.1 still has the DRM-connector SIGABRT — supervised by swayosd.service user unit instead)
       unstable.quickshell # QML desktop-shell toolkit — powers ~/repos/qs-picker (Helium profile picker + bar + notifications; replaced dunst)
+      trayscale # Tailscale StatusNotifier tray client; rendered by qs-picker's system tray
       libnotify # provides notify-send for sending desktop notifications (received by qs-picker NotifService)
       pass # password manager (pass)
       terraform
