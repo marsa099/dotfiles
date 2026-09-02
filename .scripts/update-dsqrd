@@ -48,6 +48,18 @@ detect_app() {
         pid="$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')"
         hops=$((hops + 1))
     done
+    # The process-tree walk finds nothing when the client spawned us DETACHED,
+    # which is exactly what the in-app U keybind does: Quickshell.execDetached
+    # reparents the shell to systemd --user, so no `-p .../<app>/ui` ancestor
+    # survives and the walk fell straight through to dsqrd (U inside mlqs
+    # updated dsqrd). The client's environment does survive the detach: each
+    # *-client wrapper PREPENDS its own vendored QML dir, so the first
+    # share/<app>/ui entry in QML2_IMPORT_PATH names the invoking app (entries
+    # inherited from a parent shell come after it — take the first match only).
+    local from_env
+    from_env="$(printf '%s' "${QML2_IMPORT_PATH:-}" | tr ':' '\n' \
+        | sed -n 's;.*/share/\(dsqrd\|slqs\|mlqs\|tmqs\|msqs\)/ui.*;\1;p' | head -1)"
+    if [ -n "$from_env" ]; then echo "$from_env"; return; fi
     echo dsqrd
 }
 
