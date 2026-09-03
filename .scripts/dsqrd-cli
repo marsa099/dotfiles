@@ -1,0 +1,271 @@
+#!/usr/bin/env python3
+"""dsqrd-cli — read messages from the running dsqrd daemon, optionally AI-summarized.
+
+Talks to the daemon's Unix socket ($XDG_RUNTIME_DIR/dsqrd.sock) with the same
+newline-delimited-JSON protocol as the QML UI. Uses only the side-effect-free
+"history" command (never "recent"/"focus", which would clobber the UI's
+active-channel / notification-suppression state).
+
+    dsqrd-cli channels [query]              list channels (optionally filtered)
+    dsqrd-cli messages <channel> [-n N]     print the last N messages (default 50)
+    dsqrd-cli messages <channel> --since-mine   everything after my last message
+    dsqrd-cli summary <channel>             AI summary of what I missed since my
+                                            last message (= messages --since-mine
+                                            piped through `pi -p`)
+    dsqrd-cli open <channel>                navigate the running UI to a channel
+    dsqrd-cli send <channel> <text>         send a message; @Name tokens are
+                                            resolved to real mentions when the
+                                            name matches a known user
+
+Channel is matched case-insensitively against channel names (exact first, then
+substring). Requires the dsqrd daemon to be running; stdlib only.
+"""
+import argparse
+import json
+import os
+import signal
+import socket
+import subprocess
+import sys
+
+signal.signal(signal.SIGPIPE, signal.SIG_DFL)   # die quietly when piped into head etc.
+
+SOCK = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "dsqrd.sock")
+PAGE = 50          # daemon's history page size
+MAX_PAGES = 10     # --since-mine give-up cap (500 messages)
+
+
+class Daemon:
+    def __init__(self):
+        try:
+            self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            self.sock.connect(SOCK)
+        except OSError as e:
+            sys.exit(f"dsqrd-cli: cannot connect to {SOCK} ({e.strerror or e}) — is the daemon running?")
+        self.sock.settimeout(20)
+        self.buf = b""
+        self.workspaces = {}   # id -> name
+        self.channels = []
+        self.users = {}        # display name -> user id (for @mention resolution)
+        self._read_bootstrap()
+
+    def _events(self):
+        while True:
+            while b"\n" in self.buf:
+                line, self.buf = self.buf.split(b"\n", 1)
+                if line.strip():
+                    try:
+                        yield json.loads(line)
+                    except ValueError:
+                        pass
+            try:
+                data = self.sock.recv(65536)
+            except socket.timeout:
+                sys.exit("dsqrd-cli: timed out waiting for the daemon")
+            if not data:
+                sys.exit("dsqrd-cli: daemon closed the connection")
+            self.buf += data
+
+    def _read_bootstrap(self):
+        for ev in self._events():
+            t = ev.get("type")
+            if t == "workspaces":
+                self.workspaces = {w["id"]: w["name"] for w in ev["workspaces"]}
+            elif t == "channels":
+                self.channels = ev["channels"]
+            elif t == "users":
+                for lst in ev.get("users", {}).values():
+                    for u in lst:
+                        if u.get("name") and u.get("id"):
+                            self.users[u["name"]] = u["id"]
+            if self.workspaces and self.channels:
+                return
+
+    def resolve(self, query):
+        q = query.lower()
+        exact = [c for c in self.channels if c.get("name", "").lower() == q]
+        matches = exact or [c for c in self.channels if q in c.get("name", "").lower()]
+        if len(matches) == 1:
+            return matches[0]
+        if not matches:
+            sys.exit(f"dsqrd-cli: no channel matches {query!r} (try `dsqrd-cli channels`)")
+        print(f"dsqrd-cli: {query!r} is ambiguous:", file=sys.stderr)
+        for c in matches:
+            print(f"  {self._label(c)}", file=sys.stderr)
+        sys.exit(2)
+
+    def _label(self, c):
+        ws = self.workspaces.get(c.get("workspace", ""), c.get("workspace", ""))
+        return f"{c.get('name', '?')}  ({ws}, {c.get('kind', '?')})"
+
+    def send(self, channel_id, text):
+        self.sock.sendall((json.dumps({"type": "send", "channel": channel_id,
+                                       "text": text}) + "\n").encode())
+
+    def resolve_mentions(self, text):
+        """Replace @Name tokens with Discord's <@id> wire form, same idea as the
+        UI composer. Longest names first so '@Ann A' wins over '@Ann'."""
+        for name in sorted(self.users, key=len, reverse=True):
+            token = "@" + name
+            if token in text:
+                text = text.replace(token, f"<@{self.users[name]}>")
+        return text
+
+    def history(self, channel_id, before=None):
+        """One page of messages, chronological. `before` = oldest ts of the
+        previous page. Matches replies by channel; ignores unrelated events."""
+        req = {"type": "history", "channel": channel_id}
+        if before:
+            req["before"] = before
+        self.sock.sendall((json.dumps(req) + "\n").encode())
+        for ev in self._events():
+            if ev.get("type") == "history" and ev.get("channel") == channel_id:
+                return ev.get("msgs", [])
+
+
+def fetch(d, channel_id, limit=None, since_mine=False):
+    """Newest messages, chronological. With since_mine, page back until a
+    message of mine appears and return only what came after it."""
+    msgs = []
+    before = None
+    pages = MAX_PAGES if since_mine else max(1, -(-(limit or PAGE) // PAGE))
+    for _ in range(pages):
+        page = d.history(channel_id, before)
+        if not page:
+            break
+        msgs = page + msgs
+        if since_mine and any(m.get("mine") for m in page):
+            break
+        if limit and len(msgs) >= limit:
+            break
+        before = page[0]["ts"]
+    if since_mine:
+        last_mine = max((i for i, m in enumerate(msgs) if m.get("mine")), default=-1)
+        if last_mine == -1 and len(msgs) >= MAX_PAGES * PAGE:
+            print(f"dsqrd-cli: no message of mine in the last {len(msgs)} messages; "
+                  "showing all of them", file=sys.stderr)
+        msgs = msgs[last_mine + 1:]
+    elif limit:
+        msgs = msgs[-limit:]
+    return msgs
+
+
+def render(msgs):
+    out, day = [], None
+    for m in msgs:
+        if m.get("day") != day:
+            day = m.get("day")
+            if day:
+                out.append(f"--- {day[:4]}-{day[4:6]}-{day[6:]} ---")
+        text = m.get("text", "").strip()
+        if not text and m.get("imagesJson") not in ("", "[]", None):
+            text = "[attachment]"
+        prefix = f"{m.get('time', '')} {m.get('author', '?')}: "
+        pad = " " * len(prefix)
+        lines = text.splitlines() or [""]
+        out.append(prefix + lines[0])
+        out.extend(pad + l for l in lines[1:])
+    return "\n".join(out)
+
+
+def summarize(text, model):
+    # Everything between the markers is the log. The guardrails ("however short",
+    # "never ask me to paste") stop a weak model from punting on a one-line log
+    # and replying "I don't see a chat log, paste it".
+    prompt = (
+        "Catch me up on a Discord channel. Everything between the markers below is "
+        "a chat log of the recent conversation in the channel. Give me the "
+        "shortest possible catch-up: main topics, who said what that matters, and "
+        "anything directed at me or that I should act on — a few terse lines, no "
+        "filler, no preamble. Answer in the same "
+        "language as the chat. The log may be very short — even a single line — "
+        "just summarize whatever is there; never ask me to paste anything, the log "
+        "is already below.\n\n"
+        "===== CHAT LOG =====\n" + text + "\n===== END OF CHAT LOG ====="
+    )
+    cmd = ["pi", "-p", "--no-session", "--no-tools", "--no-extensions",
+           "--no-skills", "--no-prompt-templates", "--no-context-files",
+           "--thinking", "off"]
+    if model:
+        cmd.extend(["--model", model])
+    env = os.environ.copy()
+    env["PI_SKIP_VERSION_CHECK"] = "1"
+    try:
+        r = subprocess.run(cmd, input=prompt, capture_output=True, text=True,
+                           timeout=300, env=env)
+    except FileNotFoundError:
+        sys.exit("dsqrd-cli: `pi` CLI not found — needed for summaries")
+    if r.returncode != 0:
+        sys.exit(f"dsqrd-cli: pi failed: {r.stderr.strip()}")
+    return r.stdout.strip()
+
+
+def main():
+    ap = argparse.ArgumentParser(prog="dsqrd-cli", description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    p = sub.add_parser("channels", help="list channels")
+    p.add_argument("query", nargs="?", default="")
+    p = sub.add_parser("messages", help="print messages from a channel")
+    p.add_argument("channel")
+    p.add_argument("-n", type=int, default=PAGE, help="how many messages (default 50)")
+    p.add_argument("--since-mine", action="store_true",
+                   help="only messages after the last one I sent")
+    p.add_argument("--summary", action="store_true", help="AI-summarize instead of printing")
+    p.add_argument("--model", default="",
+                   help="pi model for --summary (default: pi's configured model)")
+    p = sub.add_parser("summary", help="AI summary of what I missed since my last message")
+    p.add_argument("channel")
+    p.add_argument("--model", default="",
+                   help="pi model (default: pi's configured model)")
+    p = sub.add_parser("open", help="navigate the running UI to a channel")
+    p.add_argument("channel")
+    p = sub.add_parser("send", help="send a message to a channel")
+    p.add_argument("channel")
+    p.add_argument("text", nargs="+", help="message text (@Name becomes a real mention)")
+    args = ap.parse_args()
+
+    d = Daemon()
+    if args.cmd == "channels":
+        q = args.query.lower()
+        for c in d.channels:
+            if q in c.get("name", "").lower():
+                print(d._label(c))
+        return
+
+    ch = d.resolve(args.channel)
+    if args.cmd == "open":
+        # Same broadcast a clicked notification produces; the UI switches to it.
+        d.sock.sendall(json.dumps({"type": "open", "channel": ch["id"],
+                                   "workspace": ch.get("workspace") or "",
+                                   "thread": ""}).encode() + b"\n")
+        print(f"opened {ch['name']}")
+        return
+
+    if args.cmd == "send":
+        text = d.resolve_mentions(" ".join(args.text))
+        d.send(ch["id"], text)
+        # fire-and-forget on the wire — confirm by watching history for our echo
+        import time
+        for _ in range(15):
+            time.sleep(0.5)
+            last = (d.history(ch["id"]) or [])[-1:]
+            if last and last[0].get("mine"):
+                print(f"sent to {ch['name']}: {last[0].get('text', '')}")
+                return
+        sys.exit(f"dsqrd-cli: sent, but no echo from {ch['name']} within 7s — check the UI")
+    since_mine = args.cmd == "summary" or args.since_mine
+    msgs = fetch(d, ch["id"], limit=None if since_mine else args.n, since_mine=since_mine)
+    if not msgs:
+        print("nothing new" if since_mine else "no messages")
+        return
+    text = render(msgs)
+    if args.cmd == "summary" or getattr(args, "summary", False):
+        print(f"[{len(msgs)} messages since your last one in {ch['name']}]\n", file=sys.stderr)
+        print(summarize(text, args.model))
+    else:
+        print(text)
+
+
+if __name__ == "__main__":
+    main()
