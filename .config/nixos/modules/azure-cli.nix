@@ -49,7 +49,10 @@
 { pkgs, ... }:
 
 let
-  az-unwrapped = pkgs.azure-cli.withExtensions [ pkgs.azure-cli.extensions.azure-devops ];
+  az-unwrapped = pkgs.azure-cli.withExtensions [
+    pkgs.azure-cli.extensions.azure-devops
+    pkgs.azure-cli.extensions.application-insights
+  ];
   az-wrapped = pkgs.symlinkJoin {
     name = "azure-cli-wrapped";
     paths = [ az-unwrapped ];
