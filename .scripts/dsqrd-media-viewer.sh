@@ -52,27 +52,41 @@ read -r screen_w screen_h out_scale <<<"$(
             // "1920 1080 1"
         ' 2>/dev/null
 )"
-# Size knob: max fraction of the output a media window may take. Images
-# smaller than this still open at their own size (view_in_imv shrinks to fit).
+# Size knob 1: max fraction of the output a media window may take.
 win_w=$(( screen_w * 90 / 100 ))
 win_h=$(( screen_h * 90 / 100 ))
+
+# Size knob 2: how far an image SMALLER than the cap may be blown up to fill
+# the window, in percent of its native size. 100 = never upscale (images
+# opened at native size and so looked small even with a big cap); 250 = up to
+# 2.5x. imv 5's default scaling mode is `full`, i.e. it scales the image both
+# up and down to fit the window, so the window size we ask for here is what
+# actually decides apparent size. Raise for bigger, lower if upscaled
+# screenshots look too soft.
+max_upscale_pct=250
 
 # Open file(s) in imv as a floating window via niri (window-rule app-id="imv").
 # setsid + disown so the script returns immediately and endcord stays
 # interactive in the background while you view. Multiple files → arrow keys
 # page between them.
 view_in_imv() {
-    # Size the window to the first image (identify = physical px; niri windows
-    # are logical — divide by scale), capped at the 75/85% ceiling. Fixed-size
-    # windows left small images swimming in a void with scaling_mode=shrink.
+    # Size the window to the first image's aspect ratio, scaled to fill the
+    # win_w/win_h cap as far as max_upscale_pct allows (identify reports
+    # physical px, niri windows are logical — divide by scale). A fixed-size
+    # window would leave a small image swimming in a void; native size left
+    # every screenshot opening at a fraction of the screen.
     local w=$win_w h=$win_h dims
     dims=$(identify -format '%w %h' "$1[0]" 2>/dev/null | head -n1)
     if [ -n "$dims" ]; then
         read -r iw ih <<< "$dims"
-        read -r w h < <(awk -v iw="$iw" -v ih="$ih" -v s="${out_scale:-1}" -v mw="$win_w" -v mh="$win_h" '
+        read -r w h < <(awk -v iw="$iw" -v ih="$ih" -v s="${out_scale:-1}" \
+                            -v mw="$win_w" -v mh="$win_h" -v up="$max_upscale_pct" '
             BEGIN { w = iw / s; h = ih / s
-                if (w > mw) { h = h * mw / w; w = mw }
-                if (h > mh) { w = w * mh / h; h = mh }
+                # Largest factor that still fits inside the cap, then clamp
+                # the blow-up (f < 1 means shrink, which is never clamped).
+                f = mw / w; if (mh / h < f) f = mh / h
+                if (f > up / 100) f = up / 100
+                w = w * f; h = h * f
                 printf "%d %d\n", (w < 200 ? 200 : w), (h < 150 ? 150 : h) }')
     fi
     setsid -f imv -b "$bg" -W "$w" -H "$h" "$@" >/dev/null 2>&1
