@@ -96,6 +96,13 @@
   # See: https://discourse.nixos.org/t/swedish-keyboard-layout-not-working-after-upgrade-to-25-11/72882/3
   environment.sessionVariables.GTK_IM_MODULE = "simple";
 
+  # dsqrd/slqs media viewing (`v`). The launchers honour an existing
+  # SLK_MEDIA_VIEWER over their bundled media-viewer.sh, which since dsqrd
+  # 8cae084 does no window sizing at all (images opened tiny). Ours sizes the
+  # floating imv/mpv window to <=90% of the focused output and shrinks to fit
+  # the image, and matches imv's background to the active theme.
+  environment.sessionVariables.SLK_MEDIA_VIEWER = "/home/martin/.scripts/dsqrd-media-viewer.sh";
+
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";
   # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";

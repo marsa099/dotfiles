@@ -371,10 +371,11 @@ window-rule {
 }
 
 // imv (images) and mpv (gif-as-mp4 + audio/video) are both launched by
-// dsqrd's media-viewer.sh when viewing chat media. Float them so they
-// overlay the chat window instead of opening a new tile; the script
-// already sizes them to a fraction of the focused output, and niri
-// centers floating windows on focus.
+// dsqrd/slqs when viewing chat media -- via ~/.scripts/dsqrd-media-viewer.sh
+// (SLK_MEDIA_VIEWER in configuration.nix), NOT the stub media-viewer.sh the
+// packages ship. Float them so they overlay the chat window instead of
+// opening a new tile; that script sizes them to <=90% of the focused output,
+// and niri centers floating windows on focus.
 window-rule {
     match app-id=r#"^imv$"#
     match app-id=r#"^mpv$"#
