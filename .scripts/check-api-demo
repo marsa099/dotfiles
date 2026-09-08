@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Checks HTTP status for the api-demo environments — all requests in parallel.
+# Usage: check-api-demo [url ...]   (defaults to the three sis.se api-demo envs)
+set -uo pipefail
+
+URLS=(
+  "https://api-demo.sis.se/"
+  "https://api-demo-tst.sis.se/"
+  "https://api-demo-dev.sis.se/"
+)
+[ $# -gt 0 ] && URLS=("$@")
+
+TIMEOUT=${TIMEOUT:-15}
+RED=$'\033[31m'; GREEN=$'\033[32m'; RESET=$'\033[0m'
+[ -t 1 ] || { RED=''; GREEN=''; RESET=''; }
+
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+
+check() {
+  local url=$1 idx=$2 out rc code time err
+  out=$(curl -sS -o /dev/null -L --max-time "$TIMEOUT" \
+             -w '%{http_code} %{time_total}' "$url" 2>&1)
+  rc=$?
+  if [ "$rc" -ne 0 ]; then
+    err=$(printf '%s' "$out" | head -n1)
+    printf '1\t%-30s %sFAIL%s  %s\n' "$url" "$RED" "$RESET" "$err" >"$tmp/$idx"
+    return
+  fi
+  code=${out%% *}
+  time=${out##* }
+  if [ "$code" -ge 200 ] && [ "$code" -lt 400 ]; then
+    printf '0\t%-30s %s%s%s  %ss\n' "$url" "$GREEN" "$code" "$RESET" "$time" >"$tmp/$idx"
+  else
+    printf '1\t%-30s %s%s%s  %ss\n' "$url" "$RED" "$code" "$RESET" "$time" >"$tmp/$idx"
+  fi
+}
+
+for i in "${!URLS[@]}"; do
+  check "${URLS[$i]}" "$i" &
+done
+wait
+
+rc=0
+for i in "${!URLS[@]}"; do
+  line=$(cat "$tmp/$i")
+  [ "${line%%$'\t'*}" = "0" ] || rc=1
+  printf '%s\n' "${line#*$'\t'}"
+done
+
+exit $rc
