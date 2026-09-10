@@ -26,7 +26,6 @@
     ./modules/rust.nix
     ./modules/hemma.nix
     ./modules/browser-update-check.nix
-    ./modules/msqs.nix
     ./modules/tailscale.nix
   ];
 
