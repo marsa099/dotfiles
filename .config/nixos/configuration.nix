@@ -28,7 +28,6 @@
     ./modules/browser-update-check.nix
     ./modules/msqs.nix
     ./modules/tailscale.nix
-    ./modules/pi-remote.nix
   ];
 
   # Use the systemd-boot EFI boot loader.
