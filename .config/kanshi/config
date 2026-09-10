@@ -7,64 +7,9 @@ profile home_1 {
     output "LG Electronics LG TV SSCR2 0x01010101" mode 3840x2160@60Hz position 1920,0 scale 1.0
 }
 
-# Work window setup - Laptop + Dual Dell monitors
-profile work_window {
-    output "California Institute of Technology 0x1404 Unknown" mode 1920x1200@60Hz position 0,0 scale 1.0
-    output "Dell Inc. DELL U2515H 9X2VY58L06NL" mode 2560x1440@60Hz position 1920,0 scale 1.0
-    output "Dell Inc. DELL U2515H 9X2VY58L06VL" mode 2560x1440@60Hz position 4480,0 scale 1.0
-}
-
-# Jonas desk setup - Laptop + Dual Dell monitors
-# This is the desk next to Johans desk and the desk behind Micke B's desk
-profile work_jonas_desk {
-    output "California Institute of Technology 0x1404 Unknown" mode 1920x1200@60Hz position 0,0 scale 1.0
-    output "Dell Inc. DELL U2515H 9X2VY5840BFL" mode 2560x1440@60Hz position 1920,0 scale 1.0
-    output "Dell Inc. DELL U2515H 9X2VY58L024L" mode 2560x1440@60Hz position 4480,0 scale 1.0
-}
-
-# Work left desk setup - Laptop + Dual Dell monitors
-profile work_left {
-    output "Dell Inc. DELL U2515H 9X2VY58L01XL" mode 2560x1440@60Hz position 0,0 scale 1.0
-    output "Dell Inc. DELL U2515H 9X2VY58L01ZL" mode 2560x1440@60Hz position 2560,0 scale 1.0
-    output "California Institute of Technology 0x1404 Unknown" mode 1920x1200@60Hz position 5120,0 scale 1.0
-}
-
-# Öland setup 2 - Laptop (left) + Samsung ultrawide
-profile oland_2 {
-    output "California Institute of Technology 0x1404 Unknown" mode 1920x1200@60Hz position 0,0 scale 1.0
-    output "Samsung Electric Company S34C65xV HNTY800129" mode 3440x1440@60Hz position 1920,0 scale 1.0
-}
-
-# Öland setup 4 - Samsung ultrawide + Laptop
-profile oland_4 {
-    output "Samsung Electric Company S34C65xV HNTY800129" mode 3440x1440@60Hz position 0,0 scale 1.0
-    output "California Institute of Technology 0x1404 Unknown" mode 1920x1200@60Hz position 3440,0 scale 1.0
-}
-
-# Micke B desk setup - Dual Dell monitors + Laptop (right)
-profile work_micke_b {
-    output "Dell Inc. DELL P2421D 24JVR63" mode 2560x1440@60Hz position 0,0 scale 1.0
-    output "Dell Inc. DELL U2515H 9X2VY58L06PL" mode 2560x1440@60Hz position 2560,0 scale 1.0
-    output "California Institute of Technology 0x1404 Unknown" mode 1920x1200@60Hz position 5120,0 scale 1.0
-}
-
-# Office wall window setup - Laptop + Dual Dell monitors
-profile office_wall_window {
+# Work setup 10_4 - Laptop + Dell U2414H + Dell P2421DC (externals swapped)
+profile work_10_4 {
     output "California Institute of Technology 0x1404 Unknown" mode 1920x1200@60Hz position 0,0 scale 1.25
-    output "Dell Inc. DELL U2515H 9X2VY58L028L" mode 2560x1440@60Hz position 1536,0 scale 1.0
-    output "Dell Inc. DELL U2515H 9X2VY58L023L" mode 2560x1440@60Hz position 4096,0 scale 1.0
+    output "Dell Inc. DELL U2414H X4J718160U6L" mode 1920x1080@60Hz position 1536,0 scale 1.0
+    output "Dell Inc. DELL P2421DC 8NBQR63" mode 2560x1440@60Hz position 3456,0 scale 1.0
 }
-
-# Johans desk setup - Laptop + Dual Dell monitors (U2515H left, P2418D right)
-profile work-johans-desk {
-    output "California Institute of Technology 0x1404 Unknown" mode 1920x1200@60Hz position 0,0 scale 1.25
-    output "Dell Inc. DELL U2515H 9X2VY58L01WL" mode 2560x1440@60Hz position 1536,0 scale 1.0
-    output "Dell Inc. DELL P2418D MY3ND8CQ0J4T" mode 2560x1440@60Hz position 4096,0 scale 1.0
-}
-
-# Add more profiles below as you connect to different monitor setups
-# Example:
-# profile work_dual {
-#     output "Make" "Model" "Serial" mode WIDTHxHEIGHT@REFRESHHz position X,Y
-#     output "Make" "Model" "Serial" mode WIDTHxHEIGHT@REFRESHHz position X,Y
-# }
