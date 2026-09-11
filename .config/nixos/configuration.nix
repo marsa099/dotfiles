@@ -27,6 +27,7 @@
     ./modules/hemma.nix
     ./modules/browser-update-check.nix
     ./modules/tailscale.nix
+    ./modules/sis.nix
   ];
 
   # Use the systemd-boot EFI boot loader.
@@ -76,12 +77,6 @@
 
   # Configure network connections interactively with nmcli or nmtui.
   networking.networkmanager.enable = true;
-
-  # Local dev hostnames. SD-API binds to sd-api.dev.sis.se in its launch
-  # settings so it can match the local cert SAN — route it to loopback.
-  networking.hosts = {
-    "127.0.0.1" = [ "sd-api.dev.sis.se" ];
-  };
 
   # Set your time zone.
   time.timeZone = "Europe/Amsterdam";
