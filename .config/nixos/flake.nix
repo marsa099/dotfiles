@@ -10,6 +10,7 @@
       url = "github:oxcl/nix-flake-helium-browser";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
+
     claude-code-notify.url = "github:marsa099/claude-code-notify";
     # Claude Code from a dedicated flake that repackages each upstream release
     # within hours, independent of nixpkgs-unstable. Update with just this input:
@@ -26,7 +27,7 @@
       url = "github:sparklost/endcord/b4f890b9b6f9e2a3b3494c41e78ad77f72859d4b";
       flake = false;
     };
-    bt-keyboard-bridge.url = "path:/home/martin/repos/bt-keyboard-bridge";
+
     # daphen's native QML/Quickshell chat clients. Each flake exposes a daemon
     # (`slqs`/`dsqrd`) + a self-contained launch wrapper (`slqs-client`/
     # `dsqrd-client`) that bundles quickshell/mpv/imv and starts the daemon.
@@ -46,6 +47,7 @@
     # Track our fork: it carries the Exchange meeting-card and internal calendar
     # UX used by the installed launcher, while continuing to merge daphen upstream.
     mlqs.url = "github:marsa099/mlqs";
+    fastspotify.url = "github:crmne/fastpotify";
   };
 
   outputs =
@@ -58,15 +60,18 @@
       claude-code,
       teams-for-linux-fork,
       endcord-src,
-      bt-keyboard-bridge,
       dsqrd,
       slqs,
       mlqs,
+      fastspotify,
       ...
     }:
     let
       system = "x86_64-linux";
-      unstable = import nixpkgs-unstable { inherit system; config.allowUnfree = true; };
+      unstable = import nixpkgs-unstable {
+        inherit system;
+        config.allowUnfree = true;
+      };
       # Packages sourced from external flake inputs (not nixpkgs). Declared here
       # because flake inputs can only live in flake.nix; consumed in the same
       # systemPackages list as everything else via specialArgs.
@@ -81,15 +86,22 @@
         slqs.packages.${system}.slqs-client
         mlqs.packages.${system}.mlqs
         mlqs.packages.${system}.mlqs-client
+        fastspotify.packages.${system}.default
       ];
     in
     {
       nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
         inherit system;
-        specialArgs = { inherit unstable teams-for-linux-fork endcord-src flakePackages; };
+        specialArgs = {
+          inherit
+            unstable
+            teams-for-linux-fork
+            endcord-src
+            flakePackages
+            ;
+        };
         modules = [
           ./configuration.nix
-          bt-keyboard-bridge.nixosModules.default
         ];
       };
     };
