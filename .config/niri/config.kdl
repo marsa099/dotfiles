@@ -128,7 +128,7 @@ output "DP-3" {
 // https://yalter.github.io/niri/Configuration:-Layout
 layout {
     // Set gaps around windows in logical pixels
-    gaps 8
+    gaps 2
 
     // Transparent background so the static wallpaper shows through
     background-color "transparent"
@@ -188,7 +188,8 @@ layout {
         // - CSS-like notation: "rgb(255, 127, 0)", rgba(), hsl() and a few others.
 
         // Color of the ring on the active monitor.
-        active-color "#FF570D"
+        // (themes-generator dark foreground.secondary — subtle neutral, not the accent orange)
+        active-color "#C3C8C6"
 
         // Color of the ring on inactive monitors.
         //
@@ -217,8 +218,9 @@ layout {
         // The settings are the same as for the focus ring.
         // If you enable the border, you probably want to disable the focus ring.
 
-        width 3
-        active-color "#FF570D"
+        width 2
+        // themes-generator dark foreground.secondary — subtle neutral, not the accent orange
+        active-color "#C3C8C6"
         inactive-color "#3A3A3A"
 
         // Color of the border around windows that request your attention.
@@ -409,7 +411,7 @@ layer-rule {
 
 // Enable rounded corners for all windows (matching Hyprland's rounding = 10)
 window-rule {
-    geometry-corner-radius 10
+    geometry-corner-radius 4
     clip-to-geometry true
 }
 
@@ -418,16 +420,6 @@ window-rule {
     match app-id="kitty"
     opacity 0.95
     draw-border-with-background false
-}
-
-// claudeck-spawned ghostty windows open un-focused so niri doesn't auto-scroll
-// to them. claudeck then either explicitly focuses (new session) or moves the
-// window to the target workspace silently (activate). Without this, activate
-// flickers — niri scrolls to the new column for ~50–200 ms before claudeck
-// can move it away.
-window-rule {
-    match app-id="^claudeck-"
-    open-focused false
 }
 
 // Highlight windows being screen shared with a red border
