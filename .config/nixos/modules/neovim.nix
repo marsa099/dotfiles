@@ -17,6 +17,6 @@
     ripgrep # needed by telescope.nvim live_grep
     unzip # needed by mason to extract packages
     fzf # fuzzy finder used by nvim-bqf quickfix filtering
-    # roslyn-ls provided by modules/roslyn-ls.nix (wrapped for correct DOTNET_ROOT)
+    # roslyn-ls provided by modules/sis/roslyn-ls.nix (wrapped for correct DOTNET_ROOT)
   ];
 }
