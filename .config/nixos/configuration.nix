@@ -15,7 +15,6 @@
   imports = [
     ./hardware-configuration.nix
     ./modules/neovim.nix
-    ./modules/roslyn-ls.nix
     ./modules/nodejs.nix
     ./modules/teams-fork.nix
     ./modules/endcord.nix
@@ -23,7 +22,7 @@
     ./modules/hemma.nix
     ./modules/browser-update-check.nix
     ./modules/tailscale.nix
-    ./modules/sis # az cli, bicep, dotnet, ADS, VPN routes
+    ./modules/sis # az cli, bicep, dotnet, roslyn-ls, ADS, VPN routes
   ];
 
   # Use the systemd-boot EFI boot loader.
