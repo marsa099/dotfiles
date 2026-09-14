@@ -7,6 +7,13 @@
 # (2.86.0), so this uses plain pkgs now. If you ever need a newer az than the
 # stable branch carries, re-pin just this back to unstable.
 #
+# `az extension add` NEVER works here: it shells out to `python -m pip install
+# --target /nix/store/...-azure-cli-extensions/<ext>`, and the nix python has no
+# pip module (and the store path is read-only). It fails with the opaque
+# "An error occurred. Pip failed with status code 1." Extensions must instead be
+# added declaratively to the withExtensions list below (see
+# pkgs.azure-cli.extensions.<name>).
+#
 # NixOS azure-cli can't install the Python keyring package, so
 # `az devops login` fails. This wrapper reads the PAT from GNOME Keyring
 # (via secret-tool) for devops/repos/pipelines/rest commands.
@@ -52,6 +59,7 @@ let
   az-unwrapped = pkgs.azure-cli.withExtensions [
     pkgs.azure-cli.extensions.azure-devops
     pkgs.azure-cli.extensions.application-insights
+    pkgs.azure-cli.extensions.bastion
   ];
   az-wrapped = pkgs.symlinkJoin {
     name = "azure-cli-wrapped";
