@@ -1,6 +1,16 @@
+# SIS work environment — everything needed for the day job, grouped here so it
+# is obvious what is work-related and what is personal. Only this file is
+# imported from configuration.nix; the submodules below come along with it.
 { pkgs, ... }:
 
 {
+  imports = [
+    ./azure-cli.nix
+    ./bicep.nix
+    ./azure-data-studio.nix
+    ./dotnet.nix
+  ];
+
   # Local dev hostnames. SD-API binds to sd-api.dev.sis.se in its launch
   # settings so it can match the local cert SAN — route it to loopback.
   networking.hosts = {

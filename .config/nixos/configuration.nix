@@ -14,20 +14,16 @@
 {
   imports = [
     ./hardware-configuration.nix
-    ./modules/dotnet.nix
     ./modules/neovim.nix
     ./modules/roslyn-ls.nix
     ./modules/nodejs.nix
-    ./modules/azure-cli.nix
-    ./modules/bicep.nix
-    ./modules/azure-data-studio.nix
     ./modules/teams-fork.nix
     ./modules/endcord.nix
     ./modules/rust.nix
     ./modules/hemma.nix
     ./modules/browser-update-check.nix
     ./modules/tailscale.nix
-    ./modules/sis.nix
+    ./modules/sis # az cli, bicep, dotnet, ADS, VPN routes
   ];
 
   # Use the systemd-boot EFI boot loader.
