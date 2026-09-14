@@ -3,7 +3,7 @@
 # the upstream stock build (pkgs.teams-for-linux-stock).
 #
 # Toggle with `teams-fork on|off`. Both binaries are installed by
-# the NixOS overlay in modules/teams-fork.nix, so switching is
+# the NixOS overlay in modules/sis/teams-fork.nix, so switching is
 # immediate — no rebuild required.
 
 set -euo pipefail

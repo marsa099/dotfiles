@@ -34,11 +34,11 @@ That's Chromium's OSCrypt failing the dlopen silently, then falling back to
 
 ### Fixes
 
-- `modules/dotnet.nix` (commit `5fc68c6`, 2026-04-01) — wraps `dotnet-sdk_10`
+- `modules/sis/dotnet.nix` (commit `5fc68c6`, 2026-04-01) — wraps `dotnet-sdk_10`
   with `makeBinaryWrapper --prefix LD_LIBRARY_PATH ${pkgs.libsecret}/lib`.
   Simple outer-wrap works because `pkgs.dotnet-sdk_10` doesn't itself set
   `LD_LIBRARY_PATH` — our prefix is the only one in play.
-- `modules/azure-data-studio.nix` — **outer wrapping does NOT work for ADS.**
+- `modules/sis/azure-data-studio.nix` — **outer wrapping does NOT work for ADS.**
   The nixpkgs derivation's inner `preFixup` calls
   `makeWrapper ... --set LD_LIBRARY_PATH ${rpath}`, which clobbers any
   outer-wrapper prefix. Required fix: `overrideAttrs` the package and
@@ -145,7 +145,7 @@ Three faces of the same problem: **how do you run a recent Microsoft Bicep on Ni
 
 ### Fix
 
-`modules/bicep.nix` (commit `<pending>`, 2026-04-28) — keeps the upstream binary **byte-identical** and runs it inside a `buildFHSEnv` chroot that provides `icu`, `zlib`, `openssl`, `stdenv.cc.cc.lib` under `/usr/lib`. The binary's own `dlopen` then resolves naturally inside the FHS env.
+`modules/sis/bicep.nix` (commit `<pending>`, 2026-04-28) — keeps the upstream binary **byte-identical** and runs it inside a `buildFHSEnv` chroot that provides `icu`, `zlib`, `openssl`, `stdenv.cc.cc.lib` under `/usr/lib`. The binary's own `dlopen` then resolves naturally inside the FHS env.
 
 Cost: chroot setup adds tens of ms per invocation. Negligible for `az bicep build`.
 
