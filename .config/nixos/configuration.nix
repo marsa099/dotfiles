@@ -262,6 +262,7 @@
       nautilus # GNOME Files — GUI file manager (Mod+E in niri)
       yazi # Apparently needed for dsqrd on u (as in upload)
       obsidian
+      bind # nslookup dig host nsupdate delv commands
     ]
     # Packages from external flake inputs (helium, claude-code, ...), wired
     # in flake.nix and passed through via specialArgs. See flake.nix `flakePackages`.
