@@ -16,13 +16,12 @@
     ./hardware-configuration.nix
     ./modules/neovim.nix
     ./modules/nodejs.nix
-    ./modules/teams-fork.nix
     ./modules/endcord.nix
     ./modules/rust.nix
     ./modules/hemma.nix
     ./modules/browser-update-check.nix
     ./modules/tailscale.nix
-    ./modules/sis # az cli, bicep, dotnet, roslyn-ls, ADS, VPN routes
+    ./modules/sis # az cli, bicep, dotnet, roslyn-ls, ADS, teams, VPN routes
   ];
 
   # Use the systemd-boot EFI boot loader.
@@ -232,8 +231,8 @@
       python3
       glib # provides gsettings - a CLI tool that reads/writes GNOME/GTK settings (e.g. dark/light mode preference that apps like Ghostty and Firefox listen to)
       # neovim + LSPs/formatters/tools provided by modules/neovim.nix
-      # roslyn-ls provided by modules/roslyn-ls.nix
-      # dotnet-sdk_10 provided by modules/dotnet.nix
+      # roslyn-ls provided by modules/sis/roslyn-ls.nix
+      # dotnet-sdk_10 provided by modules/sis/dotnet.nix
       television # fuzzy finder TUI
       bat # cat clone with syntax highlighting, used by television for previews
       wev # tool to see keycodes for key input etc

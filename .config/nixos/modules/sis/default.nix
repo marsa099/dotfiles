@@ -10,6 +10,7 @@
     ./azure-data-studio.nix
     ./dotnet.nix
     ./roslyn-ls.nix
+    ./teams-fork.nix
   ];
 
   # Local dev hostnames. SD-API binds to sd-api.dev.sis.se in its launch
