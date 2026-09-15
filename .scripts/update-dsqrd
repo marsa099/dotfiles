@@ -252,7 +252,7 @@ if [ -z "$SKIP_REBUILD" ]; then
     # /run/current-system/sw/bin, which fails with "must be owned by uid 0".
     SUDO=/run/wrappers/bin/sudo
     [ -x "$SUDO" ] || SUDO=sudo
-    "$SUDO" nixos-rebuild switch --flake "$NIXOS"
+    "$SUDO" nixos-rebuild switch --flake "path:$NIXOS#nixos"
 fi
 
 echo "==> restarting $APP daemon + UI"

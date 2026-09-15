@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+# nix-add <pkg> — interactively add a package to environment.systemPackages
+# Verifies the attr in nixpkgs, confirms with the user, asks for an optional
+# trailing comment, then offers rebuild + dotfiles commit.
+set -euo pipefail
+
+CONFIG="$HOME/.config/nixos/configuration.nix"
+
+pkg="${1:?usage: nix-add <package> (e.g. htop, or unstable.htop)}"
+attr="${pkg#unstable.}"
+
+git_cmd=$(command -v config || echo "$HOME/.scripts/config")
+
+stashed=0
+restore_stash() {
+  if (( stashed )); then
+    if "$git_cmd" stash pop --quiet 2>/dev/null; then
+      echo "Restored your pre-existing configuration.nix changes."
+    else
+      echo "Could not cleanly restore your stashed configuration.nix changes." >&2
+      echo "They are still in the stash — see 'config stash list' and resolve manually." >&2
+    fi
+  fi
+}
+trap restore_stash EXIT
+
+if ! "$git_cmd" diff --quiet -- "$CONFIG"; then
+  echo "Note: configuration.nix has pre-existing uncommitted changes:"
+  "$git_cmd" diff --stat -- "$CONFIG"
+  echo "Stashing them for the duration of this run (restored at the end)."
+  "$git_cmd" stash push --quiet -m "nix-add: pre-existing configuration.nix changes" -- "$CONFIG"
+  stashed=1
+fi
+
+esc=$(printf '%s' "$pkg" | sed 's/[].[^$*\\]/\\&/g')
+if grep -qE "^    ${esc}( |$)" "$CONFIG"; then
+  echo "'$pkg' is already in systemPackages." >&2
+  exit 1
+fi
+
+echo "Looking up '$attr' in nixpkgs..."
+if ! name=$(nix eval --raw "nixpkgs#${attr}.name" 2>/dev/null); then
+  echo "No attribute '$attr' in nixpkgs. Try: nix search nixpkgs $attr" >&2
+  exit 1
+fi
+desc=$(nix eval --raw "nixpkgs#${attr}.meta.description" 2>/dev/null || echo "(no description)")
+
+echo
+echo "  Package:     $name"
+echo "  Description: $desc"
+echo
+read -rp "Is this the package you want to add? [Y/n] " yn
+[[ "${yn,,}" =~ ^(y|yes|)$ ]] || { echo "Aborted."; exit 0; }
+
+read -rp "Comment (optional, appended as '# ...'): " comment
+line="    $pkg"
+[[ -n "$comment" ]] && line="$line # $comment"
+
+tmp=$(mktemp)
+awk -v newline="$line" '
+  /environment\.systemPackages = with pkgs; \[/ { inblock = 1 }
+  inblock && /^  \]/ { print newline; inblock = 0 }
+  { print }
+' "$CONFIG" > "$tmp"
+
+if ! grep -qF "$line" "$tmp"; then
+  rm -f "$tmp"
+  echo "Failed to find insertion point in $CONFIG — file layout changed?" >&2
+  exit 1
+fi
+mv "$tmp" "$CONFIG"
+echo "Added to systemPackages:"
+echo "$line"
+
+read -rp "Rebuild now (sudo nixos-rebuild switch)? [Y/n] " yn
+if [[ "${yn,,}" =~ ^(y|yes|)$ ]]; then
+  sudo nixos-rebuild switch --flake "path:$HOME/.config/nixos#nixos"
+fi
+
+read -rp "Commit to dotfiles? [Y/n] " yn
+if [[ "${yn,,}" =~ ^(y|yes|)$ ]]; then
+  read -rep "Commit message: " -i "Nixos: Adds $pkg pkg" msg
+  "$git_cmd" commit -m "$msg" -- "$CONFIG"
+fi
