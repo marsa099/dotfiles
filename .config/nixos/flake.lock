@@ -19,24 +19,6 @@
         "type": "github"
       }
     },
-    "claude-code-notify": {
-      "inputs": {
-        "nixpkgs": "nixpkgs_2"
-      },
-      "locked": {
-        "lastModified": 1782620771,
-        "narHash": "sha256-s4t4BWrR02yu1U47FaL9shpUnTUyqtMipgSSjwZVc0s=",
-        "owner": "marsa099",
-        "repo": "claude-code-notify",
-        "rev": "ba0104936e4464f1bf865ceb4a5bf1ed9f0b58d0",
-        "type": "github"
-      },
-      "original": {
-        "owner": "marsa099",
-        "repo": "claude-code-notify",
-        "type": "github"
-      }
-    },
     "dsqrd": {
       "inputs": {
         "nixpkgs": "nixpkgs_3"
@@ -145,22 +127,6 @@
         "type": "github"
       }
     },
-    "nixpkgs_2": {
-      "locked": {
-        "lastModified": 1782467914,
-        "narHash": "sha256-pGvFkM8N0xEkIIXDe5YYfbEAvHrk4IxBrjB/x8OomhE=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "e73de5be04e0eff4190a1432b946d469c794e7b4",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "nixos-unstable",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
     "nixpkgs_3": {
       "locked": {
         "lastModified": 1782467914,
@@ -244,7 +210,6 @@
     "root": {
       "inputs": {
         "claude-code": "claude-code",
-        "claude-code-notify": "claude-code-notify",
         "dsqrd": "dsqrd",
         "fastspotify": "fastspotify",
         "helium-browser": "helium-browser",
