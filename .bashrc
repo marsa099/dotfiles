@@ -131,7 +131,8 @@ if command -v dircolors &>/dev/null; then
     unset _code _conf _doc _web _office _log e
 fi
 export EZA_COLORS="di=1;38;5;178:ur=38;5;244:uw=38;5;244:ux=38;5;244:ue=38;5;244:gr=38;5;244:gw=38;5;244:gx=38;5;244:tr=38;5;244:tw=38;5;244:tx=38;5;244:xa=38;5;244"
-alias rebuild='sudo nixos-rebuild switch --flake /home/martin/.config/nixos'
+# path: reads local files, including gitignored hosts.local.nix; Git still ignores them.
+alias rebuild='sudo nixos-rebuild switch --flake path:/home/martin/.config/nixos#nixos'
 
 # Function to create directory and cd into it
 mkcd () {
