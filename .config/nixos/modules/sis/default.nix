@@ -1,7 +1,7 @@
 # SIS work environment — everything needed for the day job, grouped here so it
 # is obvious what is work-related and what is personal. Only this file is
 # imported from configuration.nix; the submodules below come along with it.
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 
 {
   imports = [
@@ -11,6 +11,7 @@
     ./dotnet.nix
     ./roslyn-ls.nix
     ./teams-fork.nix
+    ./split-dns.nix
   ];
 
   # Private mappings stay outside Git. See README.md: use a path: flake so
@@ -20,7 +21,9 @@
   # Keep the VPN address outside Git too. This file enters the Nix store:
   # only connection settings belong here, never passwords or tokens.
   environment.etc."openfortivpn/config" = {
-    source = ./vpn.local.conf;
+    source = pkgs.writeText "sis-openfortivpn.conf" (
+      (import ./vpn-config.nix { inherit lib; }) (builtins.readFile ./vpn.local.conf)
+    );
     mode = "0600";
   };
 

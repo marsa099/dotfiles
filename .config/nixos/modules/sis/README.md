@@ -11,8 +11,10 @@ cp -n hosts.example.nix hosts.local.nix
 
 ## Local VPN configuration
 
-`default.nix` also installs the gitignored `vpn.local.conf` as
-`/etc/openfortivpn/config`, readable only by root (mode `0600`). Keep the VPN
+`default.nix` renders the gitignored `vpn.local.conf` into
+`/etc/openfortivpn/config`, readable only by root (mode `0600`). It preserves
+connection settings but removes any `set-dns` / `pppd-use-peerdns` directives
+and appends both as `0`. This prevents the VPN from bypassing local split DNS. Keep the VPN
 server address and non-secret connection settings in this local file. On a new
 machine, copy `vpn.example.conf` to `vpn.local.conf` and replace its placeholder
 host before rebuilding. Never force-add `vpn.local.conf` to Git.
@@ -28,7 +30,8 @@ passwords, tokens, or private keys in it; keep authentication outside Nix inputs
 ## Build with the local files
 
 Git flakes omit ignored files. Use the explicit **`path:`** flake form, which
-includes both local files, rather than the Git-inferred directory form:
+includes all three local files (`hosts.local.nix`, `vpn.local.conf`, and
+`dns.local.nix`), rather than the Git-inferred directory form:
 
 ```bash
 sudo nixos-rebuild switch --flake "path:$HOME/.config/nixos#nixos"
@@ -41,23 +44,49 @@ Gitignored does not mean secret: evaluated host mappings enter the local Nix
 store and `/etc/hosts`, which are readable by other local users. Do not put
 credentials in this file.
 
-## Tailscale split DNS
+## SIS and Tailscale split DNS
 
-`../tailscale.nix` runs a loopback-only dnsmasq resolver. Only `ts.net` and its
-subdomains go to Tailscale MagicDNS (`100.100.100.100`). Other domains use the
-existing NetworkManager/PPP DNS servers supplied by openresolv, in their
-configured order. Tailscale's global DNS installation is disabled with
-`--accept-dns=false`; use full `*.ts.net` names rather than relying on its search
-suffix. No DNS firewall port is opened.
+`../tailscale.nix` runs loopback-only dnsmasq. The system resolver must stay on
+localhost: an internal DNS server prepended by the VPN can answer NXDOMAIN for
+a tailnet name, which is a final answer, not a reason to try localhost next.
+
+Copy `dns.example.nix` to **gitignored** `dns.local.nix` and configure `servers`
+(corporate IPv4 DNS addresses) and `domains` (corporate suffixes). Keep internal
+addresses outside Git; they still enter the local Nix store, so never include
+credentials. Missing or invalid local DNS settings fail the build.
+
+- `ts.net` and its subdomains go only to Tailscale MagicDNS (`100.100.100.100`).
+- Suffixes from `dns.local.nix` go only to the configured corporate DNS servers.
+- Unmatched names keep the normal NetworkManager/openresolv upstreams.
+- Tailscale keeps `--accept-dns=false`; no route, exit-node, or firewall change is needed.
+
+The generated VPN configuration disables both direct and PPP DNS installation.
+Do not override these settings on the VPN command line. Activation runs
+`resolvconf -u` to remove DNS lines that an already-connected VPN prepended,
+without disconnecting PPP. The domain rules are configured to remain effective across reconnects.
+When disconnected, private names can fail as expected; they are not leaked to a
+public fallback. Existing `networking.hosts` mappings remain in effect.
 
 After activation, check:
 
 ```bash
+head /etc/resolv.conf                         # localhost, not corporate DNS first
 getent ahostsv4 pi.tailb7373.ts.net
 getent ahostsv4 example.com
 node ~/repos/pi-remote/bin/pi-remote-worker status
 ```
 
-Also check the local hostnames in `hosts.local.nix` and a work-only hostname
-while the work VPN is connected. Compare `resolvconf -l` and
-`/etc/dnsmasq-resolv.conf` if upstream DNS changes.
+Also check a work-only hostname and compare `resolvconf -l` with
+`/etc/dnsmasq-resolv.conf`. DNS repair does not resolve unrelated TCP/TLS/HTTP
+timeouts to a known private IP. Reconnect validation requires operator approval
+because it can interrupt active work.
+
+The pure VPN renderer has regression checks in `vpn-config-tests.nix` (retained
+connection settings, conflicting/duplicate DNS options and empty input). Run:
+
+```bash
+nix eval --impure --json --expr 'let
+  f = builtins.getFlake ("path:" + builtins.getEnv "HOME" + "/.config/nixos");
+in import (builtins.getEnv "HOME" + "/.config/nixos/modules/sis/vpn-config-tests.nix")
+  { lib = f.inputs.nixpkgs.lib; }'
+```
