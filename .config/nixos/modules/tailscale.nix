@@ -9,6 +9,26 @@
   services.tailscale = {
     enable = true;
     openFirewall = true;
-    extraSetFlags = [ "--operator=martin" ];
+    # DNS is routed locally by domain, not installed as a global nameserver.
+    extraSetFlags = [
+      "--operator=martin"
+      "--accept-dns=false"
+    ];
+  };
+
+  # Keep NetworkManager/PPP upstreams via openresolv, but send only ts.net
+  # queries to MagicDNS. Never expose a DNS listener to the LAN or tailnet.
+  services.dnsmasq = {
+    enable = true;
+    resolveLocalQueries = true;
+    settings = {
+      listen-address = [
+        "127.0.0.1"
+        "::1"
+      ];
+      bind-interfaces = true;
+      strict-order = true;
+      server = [ "/ts.net/100.100.100.100" ];
+    };
   };
 }

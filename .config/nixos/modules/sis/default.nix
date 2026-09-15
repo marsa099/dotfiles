@@ -13,16 +13,12 @@
     ./teams-fork.nix
   ];
 
-  # Local dev hostnames. SD-API binds to sd-api.dev.sis.se in its launch
-  # settings so it can match the local cert SAN — route it to loopback.
-  networking.hosts = {
-    "127.0.0.1" = [ "sd-api.dev.sis.se" ];
-  };
+  # Private mappings stay outside Git. See README.md: use a path: flake so
+  # hosts.local.nix is included. Fail rather than silently drop local routes.
+  networking.hosts = import ./hosts.local.nix;
 
   environment.systemPackages = with pkgs; [
     openfortivpn
-    remmina # Graphical RDP connection manager.
-    freerdp # FreeRDP 3; Nixpkgs names its X11 client xfreerdp.
   ];
 
   # In /etc/openfortivpn/config, use:
@@ -43,6 +39,7 @@
         exit 1
       fi
       ${pkgs.iproute2}/bin/ip route add REDACTED_WORK_SUBNET_1 dev "$1"
+      ${pkgs.iproute2}/bin/ip route add REDACTED_WORK_SUBNET_2 dev "$1"
       exec ${pkgs.iproute2}/bin/ip route add REDACTED_WORK_SUBNET_3 dev "$1"
     '';
   };
