@@ -37,7 +37,7 @@ case "${1:-status}" in
         cd "$NIXOS"
         nix flake lock --update-input teams-for-linux-fork
         echo "→ rebuilding system..."
-        sudo nixos-rebuild switch --flake "$NIXOS#nixos"
+        sudo nixos-rebuild switch --flake "path:$NIXOS#nixos"
         ;;
     status)
         if [ -f "$FLAG" ]; then
