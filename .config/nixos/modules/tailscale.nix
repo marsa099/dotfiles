@@ -16,8 +16,9 @@
     ];
   };
 
-  # Keep NetworkManager/PPP upstreams via openresolv, but send only ts.net
-  # queries to MagicDNS. Never expose a DNS listener to the LAN or tailnet.
+  # Keep normal NetworkManager upstreams via openresolv. SIS adds corporate
+  # suffix rules without installing VPN DNS globally; ts.net uses MagicDNS.
+  # Never expose a DNS listener to the LAN or tailnet.
   services.dnsmasq = {
     enable = true;
     resolveLocalQueries = true;
