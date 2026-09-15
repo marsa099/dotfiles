@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Default browser + $BROWSER handler: route each opened URL to the Helium profile
 # whose rule matches (qs-picker data/profile-rules.txt, via `bookmarks route`),
-# falling back to the Private profile for anything unmatched. With no URL, opens
+# asking via qs-picker for anything unmatched. With no URL, opens
 # Private. Replaces helium-private as the system link handler so links from Teams,
 # Slack, the CLI, etc. land in the "right" profile instead of always Private.
 BOOKMARKS="$HOME/repos/qs-picker/scripts/bookmarks"
@@ -60,8 +60,23 @@ launch() {
             ;;
     esac
     if [ -n "$url" ]; then
-        out=$("$BOOKMARKS" route "$url" 2>/dev/null)
-        [ -n "$out" ] && read -r dir port <<<"$out"
+        if ! out=$("$BOOKMARKS" route "$url"); then
+            printf '%s\n' 'helium-router: URL classification failed; not opening a profile.' >&2
+            return 1
+        fi
+        if [ "$out" = "unmatched" ]; then
+            # Detach the IPC call too: OAuth callers must start their callback
+            # server without waiting for profile selection or the browser.
+            setsid qs -p "$HOME/repos/qs-picker/shell.qml" ipc call \
+                url-profile-picker openUrl "$url" </dev/null &
+            return
+        fi
+        case "$out" in
+            'Private 9226'|'SIS 9222'|'SISAdmin 9223'|'Koderiet 9224'|'Regent 9225')
+                read -r dir port <<<"$out" ;;
+            *) printf '%s\n' 'helium-router: invalid route; not opening a profile.' >&2
+               return 1 ;;
+        esac
     fi
     # Launch detached and return immediately. When invoked as $BROWSER (e.g. by
     # `az login`), the caller waits for this command to exit before serving its
