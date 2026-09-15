@@ -19,7 +19,11 @@
     "127.0.0.1" = [ "sd-api.dev.sis.se" ];
   };
 
-  environment.systemPackages = [ pkgs.openfortivpn ];
+  environment.systemPackages = with pkgs; [
+    openfortivpn
+    remmina # Graphical RDP connection manager.
+    freerdp # FreeRDP 3; Nixpkgs names its X11 client xfreerdp.
+  ];
 
   # In /etc/openfortivpn/config, use:
   #   set-routes = 0
