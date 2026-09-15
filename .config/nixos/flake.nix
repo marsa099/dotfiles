@@ -20,14 +20,6 @@
       url = "github:marsa099/teams-for-linux/main";
       flake = false;
     };
-    # Upstream endcord source, pinned to the same rev daphen builds against so
-    # his patches (modules/endcord-patches/) apply cleanly. Bump with care:
-    # newer revs may break the patches.
-    endcord-src = {
-      url = "github:sparklost/endcord/b4f890b9b6f9e2a3b3494c41e78ad77f72859d4b";
-      flake = false;
-    };
-
     # daphen's native QML/Quickshell chat clients. Each flake exposes a daemon
     # (`slqs`/`dsqrd`) + a self-contained launch wrapper (`slqs-client`/
     # `dsqrd-client`) that bundles quickshell/mpv/imv and starts the daemon.
@@ -59,7 +51,6 @@
       claude-code-notify,
       claude-code,
       teams-for-linux-fork,
-      endcord-src,
       dsqrd,
       slqs,
       mlqs,
@@ -96,7 +87,6 @@
           inherit
             unstable
             teams-for-linux-fork
-            endcord-src
             flakePackages
             ;
         };
