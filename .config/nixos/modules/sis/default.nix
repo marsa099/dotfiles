@@ -17,13 +17,18 @@
   # hosts.local.nix is included. Fail rather than silently drop local routes.
   networking.hosts = import ./hosts.local.nix;
 
+  # Keep the VPN address outside Git too. This file enters the Nix store:
+  # only connection settings belong here, never passwords or tokens.
+  environment.etc."openfortivpn/config" = {
+    source = ./vpn.local.conf;
+    mode = "0600";
+  };
+
   environment.systemPackages = with pkgs; [
     openfortivpn
   ];
 
-  # In /etc/openfortivpn/config, use:
-  #   set-routes = 0
-  #   pppd-ipparam = sis
+  # vpn.local.conf must set set-routes = 0 and pppd-ipparam = sis.
   # pppd calls ip-up with: interface tty speed local-ip remote-ip ipparam.
   # Only this explicitly tagged connection gets the SIS production and test
   # routes. The kernel removes them when the PPP interface disappears.
