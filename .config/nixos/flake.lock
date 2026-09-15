@@ -56,23 +56,6 @@
         "url": "https://github.com/daphen/dsqrd.git"
       }
     },
-    "endcord-src": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1778197415,
-        "narHash": "sha256-C16z2lEvnAqVce3odrDkl4ek2TNzhm5OXRmUb48fSnc=",
-        "owner": "sparklost",
-        "repo": "endcord",
-        "rev": "b4f890b9b6f9e2a3b3494c41e78ad77f72859d4b",
-        "type": "github"
-      },
-      "original": {
-        "owner": "sparklost",
-        "repo": "endcord",
-        "rev": "b4f890b9b6f9e2a3b3494c41e78ad77f72859d4b",
-        "type": "github"
-      }
-    },
     "fastspotify": {
       "inputs": {
         "nixpkgs": "nixpkgs_4",
@@ -263,7 +246,6 @@
         "claude-code": "claude-code",
         "claude-code-notify": "claude-code-notify",
         "dsqrd": "dsqrd",
-        "endcord-src": "endcord-src",
         "fastspotify": "fastspotify",
         "helium-browser": "helium-browser",
         "mlqs": "mlqs",

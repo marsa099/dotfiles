@@ -16,7 +16,6 @@
     ./hardware-configuration.nix
     ./modules/neovim.nix
     ./modules/nodejs.nix
-    ./modules/endcord.nix
     ./modules/rust.nix
     ./modules/hemma.nix
     ./modules/browser-update-check.nix
