@@ -106,7 +106,7 @@ inputs = {
     url = "github:nix-community/home-manager/release-25.11";
     inputs.nixpkgs.follows = "nixpkgs";
   };
-  # ... existing: claude-code, zen-browser, claude-code-notify
+  # ... existing: claude-code, zen-browser
 };
 
 outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, ... }@inputs:

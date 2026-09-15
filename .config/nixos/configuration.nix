@@ -17,7 +17,6 @@
     ./modules/neovim.nix
     ./modules/nodejs.nix
     ./modules/rust.nix
-    ./modules/hemma.nix
     ./modules/browser-update-check.nix
     ./modules/tailscale.nix
     ./modules/sis # az cli, bicep, dotnet, roslyn-ls, ADS, teams, VPN routes
@@ -243,7 +242,7 @@
       pass # password manager (pass)
       terraform
       spotify-player
-      wtype # sends keystrokes for the claude-code-notify respond flow (replaced dunst)
+      wtype # sends keystrokes for the Niri mailbox selector
       cloc # Count Lines Of Code
       sqlcmd # MS SQL CLI client
       kanshi # dynamic monitor configuration
@@ -302,8 +301,6 @@
   # services.openssh.enable = true;
 
   # Open ports in the firewall.
-  # 7777 = hemma home dashboard — now opened conditionally (only on the home
-  # WiFi) by ./modules/hemma.nix, so it is NOT listed here.
   # networking.firewall.allowedTCPPorts = [ ];
   # networking.firewall.allowedUDPPorts = [ ... ];
   # Or disable the firewall altogether.

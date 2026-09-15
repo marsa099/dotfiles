@@ -11,7 +11,6 @@
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
 
-    claude-code-notify.url = "github:marsa099/claude-code-notify";
     # Claude Code from a dedicated flake that repackages each upstream release
     # within hours, independent of nixpkgs-unstable. Update with just this input:
     #   nix flake update claude-code && sudo nixos-rebuild switch --flake .#nixos
@@ -48,7 +47,6 @@
       nixpkgs,
       nixpkgs-unstable,
       helium-browser,
-      claude-code-notify,
       claude-code,
       teams-for-linux-fork,
       dsqrd,
@@ -69,7 +67,6 @@
       flakePackages = [
         claude-code.packages.${system}.default
         helium-browser.packages.${system}.default
-        claude-code-notify.packages.${system}.default
         # QML chat clients: daemon + launch wrapper for each (see inputs above).
         dsqrd.packages.${system}.dsqrd
         dsqrd.packages.${system}.dsqrd-client
