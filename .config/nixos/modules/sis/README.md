@@ -1,4 +1,4 @@
-# SIS local host mappings
+# SIS local network settings
 
 `default.nix` imports `hosts.local.nix` as the `networking.hosts` attribute set.
 The local file is gitignored. Do not force-add it. `hosts.example.nix` contains
@@ -9,17 +9,32 @@ cd ~/.config/nixos/modules/sis
 cp -n hosts.example.nix hosts.local.nix
 ```
 
-## Build with the local mappings
+## Local VPN configuration
+
+`default.nix` also installs the gitignored `vpn.local.conf` as
+`/etc/openfortivpn/config`, readable only by root (mode `0600`). Keep the VPN
+server address and non-secret connection settings in this local file. On a new
+machine, copy `vpn.example.conf` to `vpn.local.conf` and replace its placeholder
+host before rebuilding. Never force-add `vpn.local.conf` to Git.
+
+The SIS route hook requires `set-routes = 0` and `pppd-ipparam = sis`. After the
+first rebuild, edit `vpn.local.conf` and rebuild rather than manually editing
+`/etc/openfortivpn/config`. The module does not start the VPN automatically.
+
+**Gitignored is not secret storage.** Despite the installed file's `0600` mode,
+the source configuration enters the world-readable Nix store. Never put
+passwords, tokens, or private keys in it; keep authentication outside Nix inputs.
+
+## Build with the local files
 
 Git flakes omit ignored files. Use the explicit **`path:`** flake form, which
-includes the local file, rather than the Git-inferred directory form:
+includes both local files, rather than the Git-inferred directory form:
 
 ```bash
 sudo nixos-rebuild switch --flake "path:$HOME/.config/nixos#nixos"
 ```
 
-A missing local file deliberately fails evaluation instead of silently removing
-host mappings. Old commands such as `--flake ~/.config/nixos` must be changed to
+Missing local files fail the build instead of silently dropping local settings. Old commands such as `--flake ~/.config/nixos` must be changed to
 the `path:` form. No `--impure` flag is required.
 
 Gitignored does not mean secret: evaluated host mappings enter the local Nix
