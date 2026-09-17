@@ -21,7 +21,7 @@
     },
     "dsqrd": {
       "inputs": {
-        "nixpkgs": "nixpkgs_3"
+        "nixpkgs": "nixpkgs_2"
       },
       "locked": {
         "lastModified": 1789023835,
@@ -40,7 +40,7 @@
     },
     "fastspotify": {
       "inputs": {
-        "nixpkgs": "nixpkgs_4",
+        "nixpkgs": "nixpkgs_3",
         "rust-overlay": "rust-overlay"
       },
       "locked": {
@@ -79,14 +79,14 @@
     },
     "mlqs": {
       "inputs": {
-        "nixpkgs": "nixpkgs_5"
+        "nixpkgs": "nixpkgs_4"
       },
       "locked": {
-        "lastModified": 1788439622,
-        "narHash": "sha256-WV95lLhuCcyp3TYsak1CuqySkqBIXhSgyK3mkbVuYpo=",
+        "lastModified": 1789561299,
+        "narHash": "sha256-C1pChTAqIXbHIBEZwnWoPB5N3/Hho8MGfa1gOEIipUQ=",
         "owner": "marsa099",
         "repo": "mlqs",
-        "rev": "c467a2ff1c2f3914fdfb26edb28461b7da5a8abc",
+        "rev": "3c11f8109776876e2dbe48f1b2406cf8bd18c1bf",
         "type": "github"
       },
       "original": {
@@ -127,7 +127,7 @@
         "type": "github"
       }
     },
-    "nixpkgs_3": {
+    "nixpkgs_2": {
       "locked": {
         "lastModified": 1782467914,
         "narHash": "sha256-pGvFkM8N0xEkIIXDe5YYfbEAvHrk4IxBrjB/x8OomhE=",
@@ -143,7 +143,7 @@
         "type": "github"
       }
     },
-    "nixpkgs_4": {
+    "nixpkgs_3": {
       "locked": {
         "lastModified": 1787736819,
         "narHash": "sha256-cV5xEJJK3BvhU8rEd4mC9UsmDi5qscv/kzGPhBRC5WA=",
@@ -159,7 +159,7 @@
         "type": "github"
       }
     },
-    "nixpkgs_5": {
+    "nixpkgs_4": {
       "locked": {
         "lastModified": 1783224372,
         "narHash": "sha256-8i/87eeoqiGE4yOTjwSA3Eh/ziJRQEmd/unYU+K27sk=",
@@ -175,7 +175,7 @@
         "type": "github"
       }
     },
-    "nixpkgs_6": {
+    "nixpkgs_5": {
       "locked": {
         "lastModified": 1783856661,
         "narHash": "sha256-ZGP04e+Q6WyQJGA9ZvI5CL6+heGQldbAG9U1T9NGvmU=",
@@ -191,7 +191,7 @@
         "type": "github"
       }
     },
-    "nixpkgs_7": {
+    "nixpkgs_6": {
       "locked": {
         "lastModified": 1782467914,
         "narHash": "sha256-pGvFkM8N0xEkIIXDe5YYfbEAvHrk4IxBrjB/x8OomhE=",
@@ -214,7 +214,7 @@
         "fastspotify": "fastspotify",
         "helium-browser": "helium-browser",
         "mlqs": "mlqs",
-        "nixpkgs": "nixpkgs_6",
+        "nixpkgs": "nixpkgs_5",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "slqs": "slqs",
         "teams-for-linux-fork": "teams-for-linux-fork"
@@ -243,7 +243,7 @@
     },
     "slqs": {
       "inputs": {
-        "nixpkgs": "nixpkgs_7"
+        "nixpkgs": "nixpkgs_6"
       },
       "locked": {
         "lastModified": 1786026063,
