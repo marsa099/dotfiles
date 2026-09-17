@@ -1,3 +1,7 @@
 {
-  "appIcon": "/home/martin/.config/teams-for-linux/teams-icon.png"
+  "_comment": "disable-features stops Chromium WebRTC AGC from writing the OS mic volume (kept mic ratcheting down to ~7%)",
+  "appIcon": "/home/martin/.config/teams-for-linux/teams-icon.png",
+  "electronCLIFlags": [
+    ["disable-features", "WebRtcAllowInputVolumeAdjustment"]
+  ]
 }
