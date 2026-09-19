@@ -189,7 +189,7 @@ layout {
 
         // Color of the ring on the active monitor.
         // (themes-generator dark foreground.secondary — subtle neutral, not the accent orange)
-        active-color "#C3C8C6"
+        active-color "#FF570D"
 
         // Color of the ring on inactive monitors.
         //
@@ -220,7 +220,7 @@ layout {
 
         width 2
         // themes-generator dark foreground.secondary — subtle neutral, not the accent orange
-        active-color "#C3C8C6"
+        active-color "#FF570D"
         inactive-color "#3A3A3A"
 
         // Color of the border around windows that request your attention.
