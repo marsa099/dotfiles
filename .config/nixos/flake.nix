@@ -11,8 +11,6 @@
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
 
-    herdr.url = "github:herdrdev/herdr/v0.9.1";
-
     # Claude Code from a dedicated flake that repackages each upstream release
     # within hours, independent of nixpkgs-unstable. Update with just this input:
     #   nix flake update claude-code && sudo nixos-rebuild switch --flake .#nixos
@@ -55,7 +53,6 @@
       slqs,
       mlqs,
       fastspotify,
-      herdr,
       ...
     }:
     let
@@ -78,7 +75,6 @@
         mlqs.packages.${system}.mlqs
         mlqs.packages.${system}.mlqs-client
         fastspotify.packages.${system}.default
-        herdr.packages.${system}.default
       ];
     in
     {
