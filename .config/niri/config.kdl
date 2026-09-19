@@ -304,7 +304,7 @@ include optional=true "~/.cache/niri/zen-mode.kdl"
 spawn-at-startup "swaybg" "-i" "/home/martin/wallpapers/forest.jpg" "-m" "fill"
 spawn-at-startup "qs" "-p" "/home/martin/repos/qs-picker/shell.qml"
 // Trayscale publishes a StatusNotifier icon and settings menu that qs-picker renders.
-spawn-at-startup "trayscale"
+spawn-at-startup "trayscale" "--hide-window"
 
 // Start kanshi for dynamic monitor configuration
 spawn-at-startup "kanshi"
