@@ -268,6 +268,8 @@
   # swaylock itself is gone, but lock.qml authenticates against this service.
   security.pam.services.swaylock = { };
 
+  security.pam.services.greetd.enableGnomeKeyring = true;
+
   # Passwordless sudo scoped to nixos-rebuild only, so automated/agent-driven
   # rebuilds don't get stuck on the TTY password prompt. Normal sudo still
   # requires a password for everything else.
@@ -292,10 +294,12 @@
   services.greetd = {
     enable = true;
     settings.default_session = {
-      command = "niri-session";
-      user = "martin";
+      command = "${pkgs.tuigreet}/bin/tuigreet --cmd niri-session";
+      user = "greeter";
     };
   };
+
+  services.gnome.gnome-keyring.enable = true;
 
   # Enable the OpenSSH daemon.
   # services.openssh.enable = true;
