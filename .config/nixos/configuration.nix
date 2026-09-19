@@ -306,6 +306,7 @@
   # Or disable the firewall altogether.
   # networking.firewall.enable = false;
 
+  services.printing.enable = true;
   # mDNS / Bonjour: broadcast nixos.local on the LAN so the phone can reach
   # the notes app by hostname instead of IP.
   services.avahi = {
