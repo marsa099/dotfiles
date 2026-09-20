@@ -1,3 +1,4 @@
 /hosts.local.nix
 /vpn.local.conf
 /dns.local.nix
+/routes.local.nix

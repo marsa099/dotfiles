@@ -3,6 +3,14 @@
 # imported from configuration.nix; the submodules below come along with it.
 { lib, pkgs, ... }:
 
+let
+  # Local subnets stay out of Git; missing settings must fail the build.
+  renderRoutes = import ./vpn-routes.nix { inherit lib; };
+  routeCommands = renderRoutes {
+    routes = import ./routes.local.nix;
+    ip = "${pkgs.iproute2}/bin/ip";
+  };
+in
 {
   imports = [
     ./azure-cli.nix
@@ -46,9 +54,7 @@
       if [ -z "''${1-}" ]; then
         exit 1
       fi
-      ${pkgs.iproute2}/bin/ip route add REDACTED_WORK_SUBNET_1 dev "$1"
-      ${pkgs.iproute2}/bin/ip route add REDACTED_WORK_SUBNET_2 dev "$1"
-      exec ${pkgs.iproute2}/bin/ip route add REDACTED_WORK_SUBNET_3 dev "$1"
+      ${routeCommands}
     '';
   };
 }

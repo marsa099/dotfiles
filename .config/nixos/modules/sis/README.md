@@ -27,11 +27,25 @@ first rebuild, edit `vpn.local.conf` and rebuild rather than manually editing
 the source configuration enters the world-readable Nix store. Never put
 passwords, tokens, or private keys in it; keep authentication outside Nix inputs.
 
+## Local VPN routes
+
+`routes.local.nix` is a gitignored, non-empty list of IPv4 CIDR strings. Each
+line can include a comment explaining the subnet. The PPP hook installs these
+routes in list order, only for connections tagged `sis`, and the kernel removes
+them when the PPP interface disappears. Moving the values here does not remove
+previously committed values from Git history.
+
+On a new machine, copy `routes.example.nix` to `routes.local.nix` and replace the
+documentation-only subnet with the real work subnets before rebuilding. Missing,
+empty, or malformed settings fail the build. Never force-add the local file.
+These settings still enter the world-readable local Nix store; do not put
+credentials in them.
+
 ## Build with the local files
 
 Git flakes omit ignored files. Use the explicit **`path:`** flake form, which
-includes all three local files (`hosts.local.nix`, `vpn.local.conf`, and
-`dns.local.nix`), rather than the Git-inferred directory form:
+includes all four local files (`hosts.local.nix`, `vpn.local.conf`,
+`dns.local.nix`, and `routes.local.nix`), rather than the Git-inferred directory form:
 
 ```bash
 sudo nixos-rebuild switch --flake "path:$HOME/.config/nixos#nixos"
@@ -80,6 +94,16 @@ Also check a work-only hostname and compare `resolvconf -l` with
 `/etc/dnsmasq-resolv.conf`. DNS repair does not resolve unrelated TCP/TLS/HTTP
 timeouts to a known private IP. Reconnect validation requires operator approval
 because it can interrupt active work.
+
+The route renderer has regression checks in `vpn-routes-tests.nix` (route order,
+final `exec`, CIDR validation, and rejection of empty or unsafe input). Run:
+
+```bash
+nix eval --impure --json --expr 'let
+  f = builtins.getFlake ("path:" + builtins.getEnv "HOME" + "/.config/nixos");
+in import (builtins.getEnv "HOME" + "/.config/nixos/modules/sis/vpn-routes-tests.nix")
+  { lib = f.inputs.nixpkgs.lib; }'
+```
 
 The pure VPN renderer has regression checks in `vpn-config-tests.nix` (retained
 connection settings, conflicting/duplicate DNS options and empty input). Run:
