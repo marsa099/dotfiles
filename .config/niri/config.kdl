@@ -470,7 +470,10 @@ binds {
     Mod+Shift+D { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus org.endcord 'ghostty --class=org.endcord -e endcord'"; }
     // Native QML/Quickshell Facebook Messenger client (msqs), via the local
     // mautrix-meta bridge. Mod+Y = the least-bad free key; rebind at will.
-    Mod+Y { spawn-sh "$HOME/.config/niri/scripts/niri-jump-or-exec title:messenger-client $HOME/.config/niri/scripts/launch-messenger-client"; }
+    // Mod+Y focuses an existing window (cycles if several), spawns otherwise.
+    // Mod+Shift+Y always spawns a fresh window.
+    Mod+Y { spawn-sh "$HOME/.config/niri/scripts/niri-jump-or-exec title:^messenger-client$ $HOME/.config/niri/scripts/launch-messenger-client"; }
+    Mod+Shift+Y { spawn-sh "$HOME/.config/niri/scripts/launch-messenger-client"; }
     // Mod+S: cycle open Helium windows; if none are open, summon the qs-picker
     // profile launcher instead. Mod+Shift+S always summons the picker.
     Mod+S { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus helium 'qs -p /home/martin/repos/qs-picker/shell.qml ipc call helium-picker toggle'"; }
