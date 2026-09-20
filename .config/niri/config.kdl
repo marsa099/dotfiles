@@ -468,12 +468,13 @@ binds {
     // the title don't match).
     Mod+D { spawn-sh "$HOME/.config/niri/scripts/niri-jump-or-exec title:^dsqrd$ $HOME/.config/niri/scripts/launch-discord-client"; }
     Mod+Shift+D { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus org.endcord 'ghostty --class=org.endcord -e endcord'"; }
-    // Native QML/Quickshell Facebook Messenger client (msqs), via the local
-    // mautrix-meta bridge. Mod+Y = the least-bad free key; rebind at will.
-    // Mod+Y focuses an existing window (cycles if several), spawns otherwise.
-    // Mod+Shift+Y always spawns a fresh window.
-    Mod+Y { spawn-sh "$HOME/.config/niri/scripts/niri-jump-or-exec title:^messenger-client$ $HOME/.config/niri/scripts/launch-messenger-client"; }
-    Mod+Shift+Y { spawn-sh "$HOME/.config/niri/scripts/launch-messenger-client"; }
+    // Herdr (terminal workspace manager for AI agents) in a kitty window with
+    // app-id "herdr". Mod+Y focuses an existing window (cycles if several),
+    // spawns otherwise. Mod+Shift+Y always spawns a fresh window.
+    // Messenger (msqs) is currently unbound; launcher still at
+    // ~/.config/niri/scripts/launch-messenger-client (title:^messenger-client$).
+    Mod+Y { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus herdr 'kitty --class=herdr -e herdr'"; }
+    Mod+Shift+Y { spawn-sh "kitty --class=herdr -e herdr"; }
     // Mod+S: cycle open Helium windows; if none are open, summon the qs-picker
     // profile launcher instead. Mod+Shift+S always summons the picker.
     Mod+S { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus helium 'qs -p /home/martin/repos/qs-picker/shell.qml ipc call helium-picker toggle'"; }
