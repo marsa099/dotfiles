@@ -9,6 +9,7 @@ import time
 import unittest
 
 ROUTER = Path(__file__).with_name("helium-router")
+TEST_TENANT = "00000000-0000-0000-0000-000000000001"
 
 
 class RouterTests(unittest.TestCase):
@@ -33,8 +34,12 @@ class RouterTests(unittest.TestCase):
         niri = bin_dir / "niri"
         niri.write_text('#!/bin/sh\nprintf \'[{"id":1,"app_id":"teams"}]\\n\'\n')
         niri.chmod(0o755)
+        self.tenant_file = self.home / ".config/helium-router/tenant-id"
+        self.tenant_file.parent.mkdir(parents=True)
+        self.tenant_file.write_text(TEST_TENANT + "\n")
         self.calls = self.home / "calls"
         self.env = dict(os.environ, HOME=str(self.home),
+                        XDG_CONFIG_HOME=str(self.home / ".config"),
                         PATH=str(bin_dir) + ":" + os.environ["PATH"],
                         CALLS=str(self.calls), ROUTE="unmatched")
 
@@ -93,7 +98,48 @@ class RouterTests(unittest.TestCase):
             self.assertFalse(self.calls.exists())
 
     def test_sis_teams_handoff_preserved(self):
-        url = "https://teams.microsoft.com/l/chat?tenantId=00000000-0000-0000-0000-000000000001"
+        url = f"https://teams.microsoft.com/l/chat?tenantId={TEST_TENANT}"
+        self.run_router(url)
+        self.assertEqual(self.wait_calls(1), [["teams-for-linux", url]])
+
+    def test_missing_tenant_uses_normal_routing(self):
+        self.tenant_file.unlink()
+        self.run_router(f"https://teams.microsoft.com/l/chat?tenantId={TEST_TENANT}")
+        self.assertEqual(self.wait_calls(1)[0][0], "qs")
+
+    def test_invalid_or_empty_tenant_uses_normal_routing(self):
+        for value in ("", "not-a-uuid", "$(touch \"$HOME/executed\")"):
+            self.tenant_file.write_text(value + "\n")
+            self.run_router(f"https://teams.microsoft.com/l/chat?tenantId={TEST_TENANT}")
+            self.assertEqual(self.wait_calls(1)[0][0], "qs")
+            self.assertFalse((self.home / "executed").exists())
+            self.calls.unlink()
+
+    def test_different_tenant_uses_normal_routing(self):
+        self.run_router("https://teams.microsoft.com/l/chat?tenantId=00000000-0000-0000-0000-000000000002")
+        self.assertEqual(self.wait_calls(1)[0][0], "qs")
+
+    def test_xdg_config_home_is_respected(self):
+        custom = self.home / "custom-config"
+        tenant_file = custom / "helium-router/tenant-id"
+        tenant_file.parent.mkdir(parents=True)
+        tenant_file.write_text(TEST_TENANT + "\n")
+        self.tenant_file.unlink()
+        self.env["XDG_CONFIG_HOME"] = str(custom)
+        url = f"https://teams.microsoft.com/l/chat?tenantId={TEST_TENANT}"
+        self.run_router(url)
+        self.assertEqual(self.wait_calls(1), [["teams-for-linux", url]])
+
+    def test_unset_xdg_uses_home_config(self):
+        self.env.pop("XDG_CONFIG_HOME", None)
+        url = f"https://teams.microsoft.com/l/chat?tenantId={TEST_TENANT}"
+        self.run_router(url)
+        self.assertEqual(self.wait_calls(1), [["teams-for-linux", url]])
+
+    def test_uppercase_tenant_without_trailing_newline(self):
+        tenant = "abcdefab-abcd-abcd-abcd-abcdefabcdef"
+        self.tenant_file.write_text(tenant.upper())
+        url = f"https://teams.microsoft.com/l/chat?tenantId={tenant}"
         self.run_router(url)
         self.assertEqual(self.wait_calls(1), [["teams-for-linux", url]])
 

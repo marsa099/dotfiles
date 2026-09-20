@@ -10,7 +10,17 @@ BOOKMARKS="$HOME/repos/qs-picker/scripts/bookmarks"
 # browser profile. A second `teams-for-linux <url>` instance hands the URL to
 # the running app, which loads it if it matches its meetupJoinRegEx
 # (/l/message, /l/chat, /l/channel, /l/meetup-join, /meet/, ...).
-SIS_TENANT="00000000-0000-0000-0000-000000000001"
+# Keep the organization ID in a Git-ignored, single-line local data file.
+# Never source it as shell code. Missing/invalid settings use normal URL routing.
+SIS_TENANT=""
+TENANT_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/helium-router/tenant-id"
+if [ -r "$TENANT_FILE" ]; then
+    IFS= read -r SIS_TENANT < "$TENANT_FILE" || true
+fi
+if [[ ! "$SIS_TENANT" =~ ^[[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12}$ ]]; then
+    SIS_TENANT=""
+fi
+SIS_TENANT="${SIS_TENANT,,}"
 
 focus_teams() {
     local id
@@ -52,13 +62,11 @@ focus_profile() {
 
 launch() {
     local url="$1" dir="Private" port=9226 out
-    case "${url,,}" in
-        *teams.microsoft.com*"$SIS_TENANT"*)
-            setsid teams-for-linux "$url" </dev/null >/dev/null 2>&1 &
-            focus_teams </dev/null >/dev/null 2>&1 &
-            return
-            ;;
-    esac
+    if [[ -n "$SIS_TENANT" && "${url,,}" == *teams.microsoft.com*"$SIS_TENANT"* ]]; then
+        setsid teams-for-linux "$url" </dev/null >/dev/null 2>&1 &
+        focus_teams </dev/null >/dev/null 2>&1 &
+        return
+    fi
     if [ -n "$url" ]; then
         if ! out=$("$BOOKMARKS" route "$url"); then
             printf '%s\n' 'helium-router: URL classification failed; not opening a profile.' >&2

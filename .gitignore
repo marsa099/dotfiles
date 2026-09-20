@@ -20,6 +20,8 @@ Cache/
 # Machine-specific
 .env
 .local/share/
+# Work tenant ID consumed by helium-router; never commit the local value.
+.config/helium-router/tenant-id
 
 # tmux plugins (managed by TPM)
 .config/tmux/plugins/
