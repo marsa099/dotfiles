@@ -27,9 +27,17 @@
 #
 #   The provider comes from nixpkgs (azure-artifacts-credprovider), NOT from
 #   `dotnet tool install --global`. NuGet only auto-discovers plugins named
-#   nuget-plugin-* on PATH, and the nixpkgs binary isn't named that, so
-#   NUGET_PLUGIN_PATHS points at it explicitly. Nix interpolates the store path,
-#   which makes it a real reference that the GC can't collect.
+#   nuget-plugin-* on PATH, and the nixpkgs files aren't named that, so
+#   NUGET_PLUGIN_PATHS points at the provider explicitly. Nix interpolates the
+#   store path, which makes it a real reference that the GC can't collect.
+#
+#   Point at the managed DLL in lib/, NOT the bash wrapper in bin/. Since SDK 10
+#   NuGet starts non-.dll plugin paths as `dotnet <path> -Plugin`, and .NET 10
+#   treats `dotnet <file>` as a file-based C# app: it tries to compile the bash
+#   script, prints CS errors to stdout, and NuGet fails with
+#   "JsonReaderException: Error parsing comment". .dll paths run via
+#   `dotnet exec`. The DLL targets net8.0 but its runtimeconfig has
+#   rollForward=Major, so it runs on the SDK's net10 runtime.
 #
 #   NEVER use `dotnet tool install --global` on NixOS. Those shims are native
 #   apphosts that the SDK patchelfs against whatever glibc was current that day;
@@ -37,8 +45,9 @@
 #   "No such file or directory" on a file that plainly exists (the missing file
 #   is the ELF interpreter, not the binary). That is exactly how the previously
 #   hand-installed credential provider broke, and dotnet-ef with it. The nixpkgs
-#   package avoids it: bin/CredentialProvider.Microsoft is a bash wrapper that
-#   runs the managed .dll through its own pinned dotnet runtime.
+#   package avoids it: the provider is a managed .dll run through dotnet (the
+#   bin/ bash wrapper does the same, but see above for why NuGet must get the
+#   .dll path rather than the wrapper).
 #   For per-repo tools like dotnet-ef, use a repo-local tool manifest
 #   (`dotnet new tool-manifest` + `dotnet tool install dotnet-ef`, invoked as
 #   `dotnet ef`) — also managed-dll-via-dotnet, so also GC-proof.
@@ -72,9 +81,10 @@ in
     NUGET_CREDENTIALPROVIDER_MSAL_FILECACHE_ENABLED = "true";
 
     # NuGet finds credential-provider plugins two ways: nuget-plugin-* on PATH,
-    # or this variable. The nixpkgs binary is CredentialProvider.Microsoft, so
-    # PATH discovery never fires and this is the wiring that makes the Azure
-    # DevOps Artifacts feeds authenticate at all.
+    # or this variable. Nothing in the nixpkgs package is named nuget-plugin-*,
+    # so PATH discovery never fires and this is the wiring that makes the Azure
+    # DevOps Artifacts feeds authenticate at all. See the header note on why
+    # this must be the DLL rather than bin/CredentialProvider.Microsoft.
     NUGET_PLUGIN_PATHS = "${pkgs.azure-artifacts-credprovider}/lib/azure-artifacts-credprovider/CredentialProvider.Microsoft.dll";
   };
 
