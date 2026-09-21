@@ -468,6 +468,12 @@ binds {
     // the title don't match).
     Mod+D { spawn-sh "$HOME/.config/niri/scripts/niri-jump-or-exec title:^dsqrd$ $HOME/.config/niri/scripts/launch-discord-client"; }
     Mod+Shift+D { spawn-sh "$HOME/.scripts/niri/niri-spawn-or-focus org.endcord 'ghostty --class=org.endcord -e endcord'"; }
+
+    // mlqs (mail client, same family as dsqrd): Quickshell window with the generic
+    // org.quickshell app-id, so match by title. Mod+M focuses/cycles or launches;
+    // Mod+Shift+M always runs the client wrapper (starts the daemon if needed).
+    Mod+M hotkey-overlay-title="Mail: mlqs" { spawn-sh "$HOME/.config/niri/scripts/niri-jump-or-exec title:^mlqs$ mlqs-client"; }
+    Mod+Shift+M hotkey-overlay-title="Mail: mlqs (launch)" { spawn-sh "mlqs-client"; }
     // Herdr (terminal workspace manager for AI agents) in a kitty window with
     // app-id "herdr". Mod+Y focuses an existing window (cycles if several),
     // spawns otherwise. Mod+Shift+Y always spawns a fresh window.
