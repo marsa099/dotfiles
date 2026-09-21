@@ -75,7 +75,7 @@ in
     # or this variable. The nixpkgs binary is CredentialProvider.Microsoft, so
     # PATH discovery never fires and this is the wiring that makes the Azure
     # DevOps Artifacts feeds authenticate at all.
-    NUGET_PLUGIN_PATHS = "${pkgs.azure-artifacts-credprovider}/bin/CredentialProvider.Microsoft";
+    NUGET_PLUGIN_PATHS = "${pkgs.azure-artifacts-credprovider}/lib/azure-artifacts-credprovider/CredentialProvider.Microsoft.dll";
   };
 
   environment.systemPackages = [
