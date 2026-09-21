@@ -14,14 +14,13 @@
 # etc.) can find the SDK.
 #
 # NuGet auth for Azure DevOps Artifacts feeds (e.g. SIS.Common@Local):
-#   uses the Microsoft Artifacts Credential Provider. The env vars below force
-#   keyring-only credential storage:
-#     - SESSIONTOKENCACHE_ENABLED=false  -> never write the feed token to disk
-#       (it was persisted plaintext in ~/.local/share/MicrosoftCredentialProvider/
-#        SessionTokenCache.dat; disabled so it's re-derived in memory each restore)
-#     - MSAL_ENABLED + MSAL_FILECACHE_ENABLED=true -> remember the AAD login in
-#       gnome-keyring (via libsecret, wired below), so restores stay
-#       non-interactive without any plaintext secret on disk.
+#   uses the Microsoft Artifacts Credential Provider. The env vars below enable
+#   both layers required for non-interactive reuse:
+#     - SESSIONTOKENCACHE_ENABLED=true -> cache the short-lived ADO feed token in
+#       ~/.local/share/MicrosoftCredentialProvider/SessionTokenCache.dat. Microsoft
+#       documents that disabling this cache prompts for authentication every time.
+#     - MSAL_ENABLED + MSAL_FILECACHE_ENABLED=true -> remember the longer-lived
+#       AAD login securely in gnome-keyring (via libsecret, wired below).
 #   This is isolated from the az CLI login: the provider uses its own AAD client
 #   id + keyring collection, while az keeps its cache under ~/.azure/.
 #
@@ -74,9 +73,9 @@ in
   environment.sessionVariables = {
     DOTNET_ROOT = "${dotnet-wrapped}/share/dotnet";
 
-    # Force the Artifacts Credential Provider to keyring-only storage:
-    # no plaintext feed-token file; remember the AAD login in gnome-keyring.
-    NUGET_CREDENTIALPROVIDER_SESSIONTOKENCACHE_ENABLED = "false";
+    # Cache the short-lived ADO feed token so separate dotnet processes reuse
+    # an interactive login. The longer-lived AAD login remains in gnome-keyring.
+    NUGET_CREDENTIALPROVIDER_SESSIONTOKENCACHE_ENABLED = "true";
     NUGET_CREDENTIALPROVIDER_MSAL_ENABLED = "true";
     NUGET_CREDENTIALPROVIDER_MSAL_FILECACHE_ENABLED = "true";
 

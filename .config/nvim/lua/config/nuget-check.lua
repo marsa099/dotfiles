@@ -873,7 +873,7 @@ vim.api.nvim_create_autocmd("VimEnter", {
           auth_notified = true
           vim.notify(
             "NuGet: feed auth failed (" .. label .. "). Log in with:\n"
-              .. "  NUGET_CREDENTIALPROVIDER_FORCE_CANSHOWDIALOG_TO=false dotnet restore --interactive",
+              .. "  dotnet restore --interactive",
             vim.log.levels.ERROR)
           return
         end
