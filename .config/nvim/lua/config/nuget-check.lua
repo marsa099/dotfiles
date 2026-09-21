@@ -703,13 +703,18 @@ local function open_nuget_popup(vulnerable, outdated)
   vim.keymap.set("n", "U", upgrade_all, opts)
 end
 
+-- `dotnet list package` prints one package per line as "   > Name  Requested  Resolved ...".
+-- The pattern is anchored to that shape so that stack traces or error text
+-- containing "---> Foo: Error parsing comment." can never be mistaken for a row.
+local package_row_pattern = "^%s*>%s+(%S+)%s+(%S+)%s+(%S+)%s+(%S+)"
+
 local function parse_vulnerable(data)
   local packages = {}
   local seen = {}
   if not data then return packages end
   for _, line in ipairs(data) do
-    if line:match(">") then
-      local name, resolved, severity, advisory = line:match("> (%S+)%s+(%S+)%s+(%S+)%s+(%S+)")
+    if line:match("^%s*>") then
+      local name, resolved, severity, advisory = line:match(package_row_pattern)
       if name then
         local key = name .. "|" .. resolved
         if not seen[key] then
@@ -744,8 +749,8 @@ local function parse_outdated(data)
   local seen = {}
   if not data then return packages end
   for _, line in ipairs(data) do
-    if line:match(">") then
-      local name, _, current, latest = line:match("> (%S+)%s+(%S+)%s+(%S+)%s+(%S+)")
+    if line:match("^%s*>") then
+      local name, _, current, latest = line:match(package_row_pattern)
       if name then
         local key = name .. "|" .. current .. "|" .. latest
         if not seen[key] then
@@ -818,6 +823,10 @@ vim.api.nvim_create_autocmd("VimEnter", {
     local outdated = {}
     local done_count = 0
 
+    -- Set when either dotnet job exits non-zero. A failed check has no result,
+    -- so "up to date and secure" must not be claimed for it.
+    local any_failed = false
+
     local function on_done()
       done_count = done_count + 1
       if done_count < 2 then return end
@@ -831,39 +840,84 @@ vim.api.nvim_create_autocmd("VimEnter", {
           end)
         else
           spinner_stop()
-          vim.notify("All NuGet packages are up to date and secure", vim.log.levels.INFO)
+          if not any_failed then
+            vim.notify("All NuGet packages are up to date and secure", vim.log.levels.INFO)
+          end
         end
       end)
     end
 
-    vim.fn.jobstart("dotnet list package --vulnerable --include-transitive", {
-      stdout_buffered = true,
-      on_stdout = function(_, data)
-        vulnerable = parse_vulnerable(data)
-      end,
-      on_exit = function(_, code)
-        if code ~= 0 then
-          vim.schedule(function()
-            vim.notify("Vulnerability check failed", vim.log.levels.WARN)
-          end)
-        end
-        on_done()
-      end,
-    })
+    -- Both checks fail the same way when the Azure DevOps feed rejects us, so
+    -- only warn about auth once even though two jobs run.
+    local auth_notified = false
 
-    vim.fn.jobstart("dotnet list package --outdated", {
-      stdout_buffered = true,
-      on_stdout = function(_, data)
-        outdated = parse_outdated(data)
-      end,
-      on_exit = function(_, code)
-        if code ~= 0 then
-          vim.schedule(function()
-            vim.notify("Outdated check failed", vim.log.levels.WARN)
-          end)
+    -- Signatures NuGet prints when the Artifacts credential provider has no
+    -- valid login (expired MSAL refresh token, wrong account, never logged in).
+    local function is_auth_failure(lines)
+      for _, line in ipairs(lines) do
+        if line:find("could not acquire credentials", 1, true)
+          or line:find("401 (Unauthorized)", 1, true)
+          or line:find("403 (Forbidden)", 1, true)
+          or line:find("NU1301", 1, true)
+          or line:find("NuGetInteractive", 1, true) then
+          return true
         end
-        on_done()
-      end,
-    })
+      end
+      return false
+    end
+
+    local function report_failure(label, code, lines)
+      vim.schedule(function()
+        if is_auth_failure(lines) then
+          if auth_notified then return end
+          auth_notified = true
+          vim.notify(
+            "NuGet: feed auth failed (" .. label .. "). Log in with:\n"
+              .. "  NUGET_CREDENTIALPROVIDER_FORCE_CANSHOWDIALOG_TO=false dotnet restore --interactive",
+            vim.log.levels.ERROR)
+          return
+        end
+        local detail
+        for _, line in ipairs(lines) do
+          if line:find("error", 1, true) then detail = line break end
+        end
+        vim.notify(
+          "NuGet: " .. label .. " check failed (exit " .. code .. ")"
+            .. (detail and ("\n  " .. vim.trim(detail)) or ""),
+          vim.log.levels.WARN)
+      end)
+    end
+
+    -- Runs one `dotnet list package` variant. Output is only parsed on a clean
+    -- exit: on failure dotnet mixes warnings, stack traces and errors into
+    -- stdout, and parsing that produced fake package rows before.
+    local function run_check(cmd, label, parse, assign)
+      local out = {}
+      local function collect(_, data)
+        for _, line in ipairs(data or {}) do
+          if line ~= "" then table.insert(out, line) end
+        end
+      end
+      vim.fn.jobstart(cmd, {
+        stdout_buffered = true,
+        stderr_buffered = true,
+        on_stdout = collect,
+        on_stderr = collect,
+        on_exit = function(_, code)
+          if code == 0 then
+            assign(parse(out))
+          else
+            any_failed = true
+            report_failure(label, code, out)
+          end
+          on_done()
+        end,
+      })
+    end
+
+    run_check("dotnet list package --vulnerable --include-transitive", "vulnerability",
+      parse_vulnerable, function(pkgs) vulnerable = pkgs end)
+    run_check("dotnet list package --outdated", "outdated",
+      parse_outdated, function(pkgs) outdated = pkgs end)
   end,
 })
