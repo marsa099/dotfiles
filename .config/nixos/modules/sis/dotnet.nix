@@ -52,7 +52,10 @@
 #   `dotnet ef`) — also managed-dll-via-dotnet, so also GC-proof.
 #
 #   One-time setup (after a rebuild + re-login so the session vars apply):
-#     dotnet restore --interactive   # device-code login; token lands in keyring
+#     dotnet list package --outdated --interactive
+#   Not `dotnet restore --interactive`: with a warm package cache restore never
+#   contacts the feed, so the credential provider is never invoked and nothing
+#   gets cached. `list package --outdated` always queries the feed.
 
 { pkgs, ... }:
 

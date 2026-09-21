@@ -871,9 +871,13 @@ vim.api.nvim_create_autocmd("VimEnter", {
         if is_auth_failure(lines) then
           if auth_notified then return end
           auth_notified = true
+          -- `dotnet restore --interactive` is NOT enough here: with a warm package
+          -- cache restore never contacts the feed, so the credential provider is
+          -- never invoked and no login happens. `list package --outdated` must
+          -- query the feed, which triggers the provider and the login prompt.
           vim.notify(
             "NuGet: feed auth failed (" .. label .. "). Log in with:\n"
-              .. "  dotnet restore --interactive",
+              .. "  dotnet list package --outdated --interactive",
             vim.log.levels.ERROR)
           return
         end
