@@ -88,6 +88,7 @@
   # the image, and matches imv's background to the active theme.
   environment.sessionVariables.SLK_MEDIA_VIEWER = "/home/martin/.scripts/dsqrd-media-viewer.sh";
 
+  environment.variables.EDITOR = "nvim";
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";
   # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
