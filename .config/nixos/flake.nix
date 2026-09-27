@@ -35,9 +35,8 @@
     dsqrd.url = "git+https://github.com/daphen/dsqrd.git?ref=main";
     slqs.url = "github:daphen/slqs";
     #   - mlqs  (Mail):    Go daemon + vendored QML UI, same daemon/client split
-    # Track our fork: it carries the Exchange meeting-card and internal calendar
-    # UX used by the installed launcher, while continuing to merge daphen upstream.
-    mlqs.url = "github:marsa099/mlqs";
+    # Track upstream directly; the standalone mail CLI lives in ~/.scripts.
+    mlqs.url = "github:daphen/mlqs";
     fastspotify.url = "github:crmne/fastpotify";
   };
 
