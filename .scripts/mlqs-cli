@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Standalone client for the mlqs Unix socket; rebuild only when source changes.
+set -euo pipefail
+source_file="$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")/mlqs-cli-src/main.go"
+cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/mlqs-cli"
+key="$(sha256sum "$source_file" | cut -d ' ' -f 1)-$(uname -sm | tr ' ' '-')"
+binary="$cache_dir/$key"
+if [[ ! -x "$binary" ]]; then
+    mkdir -p "$cache_dir"
+    tmp="$(mktemp "$cache_dir/.build.XXXXXXXX")"
+    trap 'rm -f -- "$tmp"' EXIT
+    if command -v go >/dev/null 2>&1; then
+        CGO_ENABLED=0 go build -o "$tmp" "$source_file"
+    elif command -v nix >/dev/null 2>&1; then
+        CGO_ENABLED=0 nix shell nixpkgs#go --command go build -o "$tmp" "$source_file"
+    else
+        printf 'mlqs-cli: install Go or Nix to build the client\n' >&2
+        exit 1
+    fi
+    chmod 700 "$tmp"
+    mv -f -- "$tmp" "$binary"
+    trap - EXIT
+fi
+exec "$binary" "$@"
