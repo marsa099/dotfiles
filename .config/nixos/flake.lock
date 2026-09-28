@@ -24,11 +24,11 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1789734020,
-        "narHash": "sha256-ys/NDHClE+LnDAhKjazCLIiVlNo0s6dubmbTYjUdrUU=",
+        "lastModified": 1790193379,
+        "narHash": "sha256-jTtd/TuBl34Yb4rf1EIFcDAyNKkihrr0aF2hRcWo98k=",
         "ref": "main",
-        "rev": "24b598ce5bde4f53190a7058c00d25aee0a3a7b9",
-        "revCount": 276,
+        "rev": "786f35e03ba381c380269a2f831805272322faaa",
+        "revCount": 279,
         "type": "git",
         "url": "https://github.com/daphen/dsqrd.git"
       },
