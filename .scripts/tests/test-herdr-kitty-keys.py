@@ -18,12 +18,15 @@ for letter in 'hljke':
     conditional = definitions[-1]
     assert conditional.definition == 'send_key ctrl+shift+' + letter
     query = conditional.options.when_focus_on
-    assert query == 'cmdline:(^|/)herdr$'
-    pattern = query.split(':', 1)[1]
-    assert re.search(pattern, 'herdr')
-    assert re.search(pattern, '/run/current-system/sw/bin/herdr')
-    assert not re.search(pattern, '/bin/bash')
-    assert not re.search(pattern, 'herdr-helper')
+    assert query == 'cmdline:^herdr$ or cmdline:/herdr$'
+    # Exercise Kitty's expression parser too: unquoted regex parentheses are
+    # interpreted as query grouping, even though config parsing accepts them.
+    from kitty.search_query_parser import search
+    def match(location, pattern, candidates):
+        assert location == 'cmdline'
+        return {item for item in candidates if re.search(pattern, item)}
+    candidates = {'herdr', '/run/current-system/sw/bin/herdr', '/bin/bash', 'herdr-helper'}
+    assert search(query, ('cmdline',), candidates, match) == {'herdr', '/run/current-system/sw/bin/herdr'}
     assert any(not d.options.when_focus_on and d.definition for d in definitions[:-1])
 assert any(d.definition == 'open_url_with_hints' for d in maps[parse_shortcut('ctrl+shift+e')])
 assert any(d.definition.startswith('kitty_scrollback_nvim') for d in maps[parse_shortcut('ctrl+shift+h')])
