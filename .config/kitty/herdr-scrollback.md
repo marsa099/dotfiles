@@ -14,7 +14,7 @@ Merge these entries into `~/.config/herdr/config.toml` (do not duplicate `[keys]
 edit_scrollback = []
 
 [[keys.command]]
-key = "prefix+e"
+key = ["prefix+e", "ctrl+shift+e"]
 command = "$HOME/.scripts/herdr-scrollback"
 type = "popup"
 width = "100%"
@@ -23,7 +23,8 @@ description = "Kitty-style color scrollback"
 ```
 
 Run `herdr server reload-config`. No server restart is required. With the existing
-prefix, press **Ctrl+Space, e**. Press **q** or **Escape** to return.
+prefix, press **Ctrl+Space, e**, or use **Ctrl+Shift+E** directly in a dedicated
+Herdr Kitty window. Press **q** or **Escape** to return.
 
 - `j` / `k`, Page Up / Page Down: move through the snapshot.
 - `/text`, `n` / `N`: search.
