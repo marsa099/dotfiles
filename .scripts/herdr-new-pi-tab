@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+"""Prompt in a Herdr popup, then create a named tab and Pi session."""
+import curses
+import json
+import os
+from pathlib import Path
+import shlex
+import subprocess
+import sys
+
+
+def herdr(*args):
+    result = subprocess.run(['herdr', *args], capture_output=True, text=True, timeout=30)
+    if result.returncode:
+        raise RuntimeError(result.stderr.strip() or result.stdout.strip() or 'Herdr command failed')
+    # Some successful mutations (notably pane run) intentionally emit no JSON.
+    if not result.stdout.strip():
+        return {}
+    data = json.loads(result.stdout)
+    if 'error' in data:
+        raise RuntimeError(str(data['error']))
+    return data['result']
+
+
+def prompt_name(screen):
+    curses.curs_set(1)
+    screen.keypad(True)
+    name = ''
+    while True:
+        height, width = screen.getmaxyx()
+        screen.erase()
+        screen.addnstr(0, 1, 'New Pi tab — name:', max(0, width - 2))
+        screen.addnstr(min(2, height - 1), 1, name, max(0, width - 3))
+        if height > 4:
+            screen.addnstr(4, 1, 'Enter: create   Esc: cancel', max(0, width - 2))
+        screen.move(min(2, height - 1), min(1 + len(name), max(0, width - 2)))
+        screen.refresh()
+        key = screen.get_wch()
+        if key in ('\x1b', '\x03'):
+            return None
+        if key in ('\n', '\r', curses.KEY_ENTER):
+            if name.strip():
+                return name.strip()
+        elif key in ('\b', '\x7f', curses.KEY_BACKSPACE):
+            name = name[:-1]
+        elif key == '\x15':
+            name = ''
+        elif isinstance(key, str) and key.isprintable() and len(name) < 120:
+            name += key
+
+
+def create_pi_tab(source, name):
+    """Only act on the newly returned tab/pane IDs, never the focused popup."""
+    cwd = source.get('foreground_cwd') or source.get('cwd')
+    if not cwd or not Path(cwd).is_dir():
+        raise RuntimeError('The original pane working directory is unavailable; nothing created.')
+    created = herdr('tab', 'create', '--workspace', source['workspace_id'],
+                    '--cwd', cwd, '--label', name, '--no-focus')
+    pane_id = created['root_pane']['pane_id']
+    tab_id = created['tab']['tab_id']
+    # shlex.join makes spaces, quotes and shell metacharacters literal name data.
+    # Pi's own --name sets the actual session display name (not merely a Herdr alias).
+    try:
+        herdr('pane', 'run', pane_id, shlex.join(['pi', '--name', name]))
+    except Exception as exc:
+        raise RuntimeError(f'Tab {tab_id} was created, but Pi could not be started: {exc}') from exc
+    herdr('tab', 'focus', tab_id)
+    return created
+
+
+def main():
+    if os.environ.get('HERDR_ENV') != '1':
+        raise RuntimeError('Run this command inside Herdr.')
+    pane_id = os.environ.get('HERDR_ACTIVE_PANE_ID') or os.environ.get('HERDR_PANE_ID')
+    if not pane_id:
+        raise RuntimeError('Missing original Herdr pane ID.')
+    # Resolve the original pane before prompting; the popup has its own pane/cwd.
+    source = herdr('pane', 'get', pane_id)['pane']
+    name = curses.wrapper(prompt_name)
+    if name is not None:
+        create_pi_tab(source, name)
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass
+    except Exception as error:
+        print(f'Could not create Pi tab: {error}', file=sys.stderr)
+        if sys.stdin.isatty():
+            try:
+                input('Press Enter to close. ')
+            except (EOFError, KeyboardInterrupt):
+                pass
+        sys.exit(1)
