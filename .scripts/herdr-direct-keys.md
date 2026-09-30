@@ -3,10 +3,10 @@
 Merge into the existing `[keys]` table in `~/.config/herdr/config.toml`:
 
 ```toml
-previous_workspace = "ctrl+shift+h"
-next_workspace = "ctrl+shift+l"
-previous_agent = ["prefix+shift+a", "ctrl+shift+j"]
-next_agent = ["prefix+a", "ctrl+shift+k"]
+previous_workspace = "ctrl+shift+j"
+next_workspace = "ctrl+shift+k"
+previous_agent = ["prefix+shift+a", "ctrl+shift+h"]
+next_agent = ["prefix+a", "ctrl+shift+l"]
 ```
 
 The scrollback custom command uses `key = ["prefix+e", "ctrl+shift+e"]`.
