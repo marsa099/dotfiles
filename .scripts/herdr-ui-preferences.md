@@ -9,13 +9,14 @@ prompt_new_workspace_name = true
 
 [ui.sidebar.agents]
 rows = [
-  ["state_icon", "machine", { token = "workspace", fg = "#5c6370", bold = false, dim = true }, { token = "tab", fg = "#abb2bf", bold = true, dim = false }],
-  ["agent"],
+  ["state_icon", "machine", { token = "tab", fg = "#abb2bf", bold = true, dim = false }],
+  [{ token = "workspace", fg = "#5c6370", bold = false, dim = true }],
 ]
 ```
 
-The row still reads **space · tab**, but the tab is now bright/bold and the space is
-dimmed. The right-hand label is Herdr's tab name, not the Pi session name. Our
+The first row shows the state icon, machine (when applicable), and bright/bold tab
+name. The second row shows only the dimmed space name; the agent type is hidden.
+The prominent label is Herdr's tab name, not the Pi session name. Our
 `herdr-new-pi-tab` helper gives both the same name at creation. The colors match the
 current One Dark palette; revisit the hex colors if changing themes.
 
