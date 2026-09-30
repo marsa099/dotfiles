@@ -82,15 +82,15 @@
         "nixpkgs": "nixpkgs_4"
       },
       "locked": {
-        "lastModified": 1790193321,
-        "narHash": "sha256-W9S0/FH/qm+Elu3K7ujDnxc8ozwkjGBVF8B608SRWzM=",
-        "owner": "daphen",
+        "lastModified": 1790763132,
+        "narHash": "sha256-LXqHeOE/ZhvSCSExa6Fg0RV1RGjw79c7VtLXKYCk/C8=",
+        "owner": "marsa099",
         "repo": "mlqs",
-        "rev": "07cb56aa8706438949bd7f1f0e28d3221eb3e024",
+        "rev": "8885a398d2fd671dbb750e00dd324d2343a94639",
         "type": "github"
       },
       "original": {
-        "owner": "daphen",
+        "owner": "marsa099",
         "repo": "mlqs",
         "type": "github"
       }

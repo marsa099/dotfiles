@@ -35,8 +35,9 @@
     dsqrd.url = "git+https://github.com/daphen/dsqrd.git?ref=main";
     slqs.url = "github:daphen/slqs";
     #   - mlqs  (Mail):    Go daemon + vendored QML UI, same daemon/client split
-    # Track upstream directly; the standalone mail CLI lives in ~/.scripts.
-    mlqs.url = "github:daphen/mlqs";
+    # Fork until upstream merges shared-mailbox support (daphen/mlqs#23);
+    # the standalone mail CLI lives in ~/.scripts.
+    mlqs.url = "github:marsa099/mlqs";
     fastspotify.url = "github:crmne/fastpotify";
   };
 
