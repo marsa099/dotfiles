@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Herdr passes the ORIGINAL pane ID to custom commands, including popups.
+set -euo pipefail
+pane=${HERDR_ACTIVE_PANE_ID:-${HERDR_PANE_ID:-}}
+if [[ ${HERDR_ENV:-} != 1 || -z $pane ]]; then
+  printf 'Run this pager inside Herdr.\n' >&2
+  exit 1
+fi
+root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+config="$root/.config/kitty/herdr-scrollback.lua"
+command -v nvim >/dev/null
+capture=$(mktemp "${TMPDIR:-/tmp}/herdr-pager.XXXXXXXX.ansi")
+trap 'rm -f -- "$capture"' EXIT
+# Wrapped ANSI preserves colors AND the current viewport (including TUI footers).
+# No shell command is sent to the original pane.
+herdr pane read "$pane" --source recent --lines 100000 --format ansi --raw > "$capture"
+HERDR_SCROLLBACK_FILE="$capture" nvim --noplugin -n -i NONE -u "$config"
