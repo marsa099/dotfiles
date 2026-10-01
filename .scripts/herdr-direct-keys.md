@@ -7,6 +7,7 @@ previous_workspace = "ctrl+shift+j"
 next_workspace = "ctrl+shift+k"
 previous_agent = ["prefix+shift+a", "ctrl+shift+h"]
 next_agent = ["prefix+a", "ctrl+shift+l"]
+copy_mode = ["prefix+[", "ctrl+shift+u", "ctrl+shift+d"]
 ```
 
 The scrollback custom command uses `key = ["prefix+e", "ctrl+shift+e"]`.
@@ -19,6 +20,13 @@ Normal Kitty windows retain their scrolling, layout, URL hints, and Kitty scroll
 bindings; primary-selection paste (S) and opacity controls (A) are restored too.
 This conditional does not detect Herdr subsequently launched inside a normal shell
 window: use the dedicated Herdr launcher for these overrides.
+
+Ctrl+Shift+U/D normally scroll Kitty's own window buffer by page. That buffer does
+not show Herdr's pane history, since Herdr draws as one full-screen TUI. In a
+dedicated Herdr window, U/D now enter Herdr's copy mode instead (same as the
+existing `prefix+[`). Once inside, the real `PageUp`/`PageDown` keys scroll the
+focused pane; `q` or `Escape` exits back to the live view. There is no Herdr action
+that scrolls by page without opening copy mode first.
 
 Ctrl+Shift+E normally invokes Kitty URL hints. Its “No matches found” screen means
 no URLs were found, not a Herdr/Neovim failure. In a dedicated Herdr window the key

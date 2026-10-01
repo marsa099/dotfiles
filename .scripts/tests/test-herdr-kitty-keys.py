@@ -13,7 +13,7 @@ errors = []
 o = load_config(os.environ['TEST_KITTY_CONFIG'], accumulate_bad_lines=errors)
 assert not errors, errors
 maps = o.keyboard_modes[''].keymap
-for letter in 'hljke':
+for letter in 'hljkeud':
     definitions = maps[parse_shortcut('ctrl+shift+' + letter)]
     conditional = definitions[-1]
     assert conditional.definition == 'send_key ctrl+shift+' + letter
@@ -32,7 +32,9 @@ assert any(d.definition == 'open_url_with_hints' for d in maps[parse_shortcut('c
 assert any(d.definition.startswith('kitty_scrollback_nvim') for d in maps[parse_shortcut('ctrl+shift+h')])
 assert any(d.definition == 'paste_from_selection' for d in maps[parse_shortcut('ctrl+shift+s')])
 assert any(d.definition.startswith('set_background_opacity') for d in maps[parse_shortcut('ctrl+shift+a')])
-print('PASS: five conditional forwards; ordinary Kitty mappings retained; S/A restored')
+assert any(d.definition == 'scroll_page_up' for d in maps[parse_shortcut('ctrl+shift+u')])
+assert any(d.definition == 'scroll_page_down' for d in maps[parse_shortcut('ctrl+shift+d')])
+print('PASS: seven conditional forwards; ordinary Kitty mappings retained; S/A/U/D fallbacks kept')
 '''
 subprocess.run(['kitty', '+runpy', code], check=True,
                env=dict(os.environ, TEST_KITTY_CONFIG=str(root / '.config/kitty/kitty.conf')))
