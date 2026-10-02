@@ -7,7 +7,7 @@ previous_workspace = "ctrl+shift+j"
 next_workspace = "ctrl+shift+k"
 previous_agent = ["prefix+shift+a", "ctrl+shift+h"]
 next_agent = ["prefix+a", "ctrl+shift+l"]
-copy_mode = ["prefix+[", "ctrl+shift+u", "ctrl+shift+d"]
+copy_mode = "prefix+["
 ```
 
 The scrollback custom command uses `key = ["prefix+e", "ctrl+shift+e"]`.
@@ -23,10 +23,27 @@ window: use the dedicated Herdr launcher for these overrides.
 
 Ctrl+Shift+U/D normally scroll Kitty's own window buffer by page. That buffer does
 not show Herdr's pane history, since Herdr draws as one full-screen TUI. In a
-dedicated Herdr window, U/D now enter Herdr's copy mode instead (same as the
-existing `prefix+[`). Once inside, the real `PageUp`/`PageDown` keys scroll the
-focused pane; `q` or `Escape` exits back to the live view. There is no Herdr action
-that scrolls by page without opening copy mode first.
+dedicated Herdr window, U/D scroll the focused pane immediately via its socket API,
+without entering copy mode. Add these custom commands to the configuration:
+
+```toml
+[[keys.command]]
+key = "ctrl+shift+u"
+command = "$HOME/.scripts/herdr-scroll-page up"
+type = "shell"
+description = "Scroll pane up one page"
+
+[[keys.command]]
+key = "ctrl+shift+d"
+command = "$HOME/.scripts/herdr-scroll-page down"
+type = "shell"
+description = "Scroll pane down one page"
+```
+
+The helper reads the original pane's scroll metrics and sets a clamped offset,
+with two rows of overlap. Key repeats are serialized per pane. Scroll down to zero
+to return to live output. These direct commands apply in normal terminal mode;
+copy mode retains its own PageUp/PageDown handling.
 
 Ctrl+Shift+E normally invokes Kitty URL hints. Its “No matches found” screen means
 no URLs were found, not a Herdr/Neovim failure. In a dedicated Herdr window the key

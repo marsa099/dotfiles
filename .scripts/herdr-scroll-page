@@ -1,0 +1,58 @@
+#!/usr/bin/env python3
+"""Scroll the original Herdr pane without entering copy mode."""
+import fcntl
+import json
+import os
+from pathlib import Path
+import socket
+import sys
+import tempfile
+
+
+def request(path, method, params):
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
+        connection.settimeout(5)
+        connection.connect(path)
+        connection.sendall((json.dumps({'id': 'scroll-page', 'method': method,
+                                       'params': params}) + '\n').encode())
+        with connection.makefile('r') as response:
+            data = json.loads(response.readline())
+        if 'error' in data:
+            raise RuntimeError(str(data['error']))
+        return data['result']
+
+
+def page_offset(scroll, direction):
+    step = max(1, scroll['viewport_rows'] - 2)
+    return max(0, min(scroll['max_offset_from_bottom'],
+                      scroll['offset_from_bottom'] + direction * step))
+
+
+def main():
+    if os.environ.get('HERDR_ENV') != '1':
+        raise RuntimeError('Run inside Herdr')
+    pane = os.environ.get('HERDR_ACTIVE_PANE_ID') or os.environ.get('HERDR_PANE_ID')
+    path = os.environ.get('HERDR_SOCKET_PATH')
+    if not pane or not path or len(sys.argv) != 2 or sys.argv[1] not in ('up', 'down'):
+        raise RuntimeError('Expected original pane, socket and up/down argument')
+    # Serialize rapid key repeats so read/modify/write updates do not lose pages.
+    import hashlib
+    key = hashlib.sha256((path + pane).encode()).hexdigest()
+    directory = Path(tempfile.gettempdir()) / f'herdr-scroll-{os.getuid()}'
+    directory.mkdir(mode=0o700, exist_ok=True)
+    if directory.is_symlink() or directory.stat().st_uid != os.getuid():
+        raise RuntimeError('Unsafe scroll lock directory')
+    fd = os.open(directory / key, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+    with os.fdopen(fd, 'w') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        info = request(path, 'pane.get', {'pane_id': pane})['pane']
+        offset = page_offset(info['scroll'], 1 if sys.argv[1] == 'up' else -1)
+        request(path, 'pane.scroll', {'pane_id': pane, 'offset_from_bottom': offset})
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except Exception as error:
+        print(f'Herdr page scroll failed: {error}', file=sys.stderr)
+        sys.exit(1)
