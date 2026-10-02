@@ -16,7 +16,7 @@
 #
 # NixOS azure-cli can't install the Python keyring package, so
 # `az devops login` fails. This wrapper reads the PAT from GNOME Keyring
-# (via secret-tool) for devops/repos/pipelines/rest commands.
+# (via secret-tool) for devops/repos/pipelines/artifacts/rest commands.
 #
 # The azure-devops extension prefers MSAL tokens (az login) over PATs.
 # When az login uses a different account than the PAT, the extension picks
@@ -73,7 +73,7 @@ let
 # avoids libicu crash because the nixpkgs build is properly patchelf'd.
 export AZURE_BICEP_USE_BINARY_FROM_PATH=true
 case "$1" in
-    devops|repos|pipelines)
+    devops|repos|pipelines|artifacts)
         # Persistent, isolated config dir — see "Config dir layout" header note.
         az_devops_cfg="''${XDG_CONFIG_HOME:-$HOME/.config}/az-devops"
         mkdir -p "$az_devops_cfg"
