@@ -29,8 +29,10 @@ def page_offset(scroll, direction):
 
 
 def main():
-    if os.environ.get('HERDR_ENV') != '1':
-        raise RuntimeError('Run inside Herdr')
+    # Shell bindings are spawned by the server, outside a managed pane.
+    # They receive HERDR_ACTIVE_PANE_ID and HERDR_SOCKET_PATH, not HERDR_ENV.
+    if os.environ.get('HERDR_ENV') != '1' and not os.environ.get('HERDR_ACTIVE_PANE_ID'):
+        raise RuntimeError('Run inside Herdr or from a Herdr custom command')
     pane = os.environ.get('HERDR_ACTIVE_PANE_ID') or os.environ.get('HERDR_PANE_ID')
     path = os.environ.get('HERDR_SOCKET_PATH')
     if not pane or not path or len(sys.argv) != 2 or sys.argv[1] not in ('up', 'down'):
