@@ -23,11 +23,13 @@ export SLK_UPDATE_CMD="kitty --hold -e $REPO/update-tmqs.sh"
 # quickshell alive without mapping a window; niri-jump-or-exec then can't focus
 # it, so each launch piles up another. Scoped to tmqs by its UI path.
 WIN_PIDS=" $(niri msg --json windows 2>/dev/null | python3 -c 'import json,sys;[print(w.get("pid")) for w in json.load(sys.stdin)]' 2>/dev/null | tr "\n" " ") "
-for p in /proc/[0-9]*; do
+# Query candidates once instead of spawning readlink for every system process.
+# Match argv: Nix's wrapped executable has a truncated .quickshell-wra comm.
+for pid in $(pgrep -f '[q]uickshell' || true); do
+    p="/proc/$pid"
     exe=$(readlink "$p/exe" 2>/dev/null) || continue
     case "$exe" in *quickshell*) ;; *) continue ;; esac
     case "$(tr '\0' ' ' < "$p/cmdline" 2>/dev/null)" in *tmqs/ui*) ;; *) continue ;; esac
-    pid=${p#/proc/}
     case "$WIN_PIDS" in *" $pid "*) ;; *) kill "$pid" 2>/dev/null ;; esac
 done
 
