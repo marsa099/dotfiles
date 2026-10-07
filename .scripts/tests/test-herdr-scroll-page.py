@@ -19,13 +19,15 @@ class PageTests(unittest.TestCase):
              patch.dict(namespace, {'request': request}):
             module['main']()
         request.assert_called_with('/tmp/test.sock', 'pane.scroll',
-                                   {'pane_id': 'w1:p2', 'offset_from_bottom': 42})
+                                   {'pane_id': 'w1:p2', 'offset_from_bottom': 22})
 
     def test_page_directions_and_bounds(self):
         offset = module['page_offset']
         scroll = {'viewport_rows': 44, 'offset_from_bottom': 50, 'max_offset_from_bottom': 100}
-        self.assertEqual(offset(scroll, 1), 92)
-        self.assertEqual(offset(scroll, -1), 8)
+        self.assertEqual(offset(scroll, 1), 72)
+        self.assertEqual(offset(scroll, -1), 28)
+        scroll['viewport_rows'] = 45
+        self.assertEqual(offset(scroll, 1), 72)
         scroll['offset_from_bottom'] = 90
         self.assertEqual(offset(scroll, 1), 100)
         scroll['offset_from_bottom'] = 0

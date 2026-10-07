@@ -31,17 +31,17 @@ without entering copy mode. Add these custom commands to the configuration:
 key = "ctrl+shift+u"
 command = "$HOME/.scripts/herdr-scroll-page up"
 type = "shell"
-description = "Scroll pane up one page"
+description = "Scroll pane up half a page"
 
 [[keys.command]]
 key = "ctrl+shift+d"
 command = "$HOME/.scripts/herdr-scroll-page down"
 type = "shell"
-description = "Scroll pane down one page"
+description = "Scroll pane down half a page"
 ```
 
 The helper reads the original pane's scroll metrics and sets a clamped offset,
-with two rows of overlap. Key repeats are serialized per pane. Scroll down to zero
+by half the viewport height (rounded down, minimum one row). Key repeats are serialized per pane. Scroll down to zero
 to return to live output. These direct commands apply in normal terminal mode;
 copy mode retains its own PageUp/PageDown handling.
 

@@ -23,7 +23,7 @@ def request(path, method, params):
 
 
 def page_offset(scroll, direction):
-    step = max(1, scroll['viewport_rows'] - 2)
+    step = max(1, scroll['viewport_rows'] // 2)
     return max(0, min(scroll['max_offset_from_bottom'],
                       scroll['offset_from_bottom'] + direction * step))
 
