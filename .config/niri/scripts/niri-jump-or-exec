@@ -1,0 +1,101 @@
+#!/usr/bin/env python3
+"""Focus/cycle matching Niri windows, or launch when none are open."""
+import json
+import os
+import re
+import sys
+
+
+def read_state(path):
+    try:
+        with open(path) as state:
+            return state.read().strip()
+    except OSError:
+        return None
+
+
+def choose_window(windows, app_id, tracker_state, cycle_state):
+    if app_id.startswith('title:'):
+        pattern = re.compile(app_id[6:], re.IGNORECASE)
+        matches = [w for w in windows if pattern.search(w.get('title') or '')]
+    elif app_id.startswith('regex:'):
+        pattern = re.compile(app_id[6:])
+        matches = [w for w in windows if pattern.search(w.get('app_id') or '')]
+    else:
+        matches = [w for w in windows if w.get('app_id') == app_id]
+    if not matches:
+        return None
+
+    def timestamp(window):
+        value = window.get('focus_timestamp') or {}
+        return (value.get('secs') or 0, value.get('nanos') or 0)
+
+    matches.sort(key=timestamp, reverse=True)
+    focused = next((w['id'] for w in windows if w.get('is_focused')), None)
+    for index, window in enumerate(matches):
+        if window['id'] == focused:
+            return matches[(index + 1) % len(matches)]['id']
+    for state in (tracker_state, cycle_state):
+        last_id = read_state(state)
+        for window in matches:
+            if str(window['id']) == last_id:
+                return window['id']
+    return matches[0]['id']
+
+
+def get_windows():
+    # Niri's line-delimited IPC protocol avoids starting another niri process.
+    address = os.environ.get('NIRI_SOCKET')
+    if address:
+        import socket
+        with socket.socket(socket.AF_UNIX) as connection:
+            connection.settimeout(2)
+            connection.connect(address)
+            connection.sendall(b'"Windows"\n')
+            with connection.makefile('rb') as response:
+                result = json.loads(response.readline())
+        if 'Ok' not in result:
+            raise ValueError(f'Niri rejected window query: {result}')
+        return result['Ok']['Windows']
+    # Useful outside a compositor session and for mocked regression tests.
+    import subprocess
+    response = subprocess.run(['niri', 'msg', '--json', 'windows'],
+                              capture_output=True, text=True)
+    if response.returncode:
+        raise ValueError(response.stderr.strip() or 'Niri window query failed')
+    return json.loads(response.stdout)
+
+
+def main():
+    if len(sys.argv) != 3 or not all(sys.argv[1:]):
+        print('Usage: niri-jump-or-exec <app-id-or-title-pattern> <command>', file=sys.stderr)
+        return 1
+    app_id, command = sys.argv[1:]
+    tracker_state = f'/tmp/niri-focus-tracker/app-{app_id}'
+    cycle_state = f'/tmp/niri-cycle-{app_id}'
+    try:
+        # One snapshot supplies both the focused window and all matching windows.
+        windows = get_windows()
+        selected = choose_window(windows, app_id, tracker_state, cycle_state)
+        if selected is None:
+            import shlex
+            arguments = shlex.split(command)
+            if not arguments:
+                raise ValueError('Launch command is empty')
+            os.posix_spawnp(arguments[0], arguments, os.environ)
+        else:
+            arguments = ['niri', 'msg', 'action', 'focus-window', '--id', str(selected)]
+            pid = os.posix_spawnp('niri', arguments, os.environ)
+            _, status = os.waitpid(pid, 0)
+            if os.waitstatus_to_exitcode(status):
+                raise ValueError('Niri focus request failed')
+            with open(cycle_state, 'w') as state:
+                state.write(str(selected) + '\n')
+    except (OSError, ValueError, re.error) as error:
+        print(f'niri-jump-or-exec: {error}', file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())
