@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Routes Super+T between the forked teams-for-linux (default) and
+# Routes Super+Shift+T between the forked teams-for-linux (default) and
 # the upstream stock build (pkgs.teams-for-linux-stock).
 #
 # Toggle with `teams-fork on|off`. Both binaries are installed by
@@ -9,6 +9,37 @@
 set -euo pipefail
 
 FLAG="${XDG_CONFIG_HOME:-$HOME/.config}/teams-launcher/use-stock"
+
+# Reopen a running Teams window through its tray, avoiding another Electron
+# startup just to forward a second-instance notification. Discover the bus
+# owner each time: unique names change after Teams restarts. Calls are bounded
+# and any failure falls back to the ordinary launcher below.
+activate_running_teams() {
+    local item service path id
+    command -v busctl >/dev/null && command -v jq >/dev/null || return 1
+    while IFS= read -r item; do
+        [[ "$item" == */* ]] || continue
+        service=${item%%/*}
+        path=/${item#*/}
+        id=$(busctl --user --timeout=500ms --json=short get-property \
+            "$service" "$path" org.kde.StatusNotifierItem Id 2>/dev/null \
+            | jq -r '.data' 2>/dev/null) || continue
+        [[ "$id" == teams-for-linux_status_icon_* ]] || continue
+        if busctl --user --timeout=500ms call "$service" "$path" \
+            org.kde.StatusNotifierItem Activate ii 0 0 >/dev/null 2>&1; then
+            return 0
+        fi
+    done < <(busctl --user --timeout=500ms --json=short get-property \
+        org.kde.StatusNotifierWatcher /StatusNotifierWatcher \
+        org.kde.StatusNotifierWatcher RegisteredStatusNotifierItems 2>/dev/null \
+        | jq -r '.data[]' 2>/dev/null)
+    return 1
+}
+
+# URLs and CLI options must still reach Electron's argument handling.
+if (( $# == 0 )) && activate_running_teams; then
+    exit 0
+fi
 
 if [ -f "$FLAG" ]; then
     exec teams-for-linux-stock "$@"
