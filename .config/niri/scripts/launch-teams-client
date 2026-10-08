@@ -19,9 +19,15 @@ export QML2_IMPORT_PATH="$REPO/ui/vendor${QML2_IMPORT_PATH:+:$QML2_IMPORT_PATH}"
 # In-app update: `U` on the "update available" banner runs this (pull + restart).
 export SLK_UPDATE_CMD="kitty --hold -e $REPO/update-tmqs.sh"
 
-# Reap windowless tmqs UI orphans before launching. A failed config load leaves
-# quickshell alive without mapping a window; niri-jump-or-exec then can't focus
-# it, so each launch piles up another. Scoped to tmqs by its UI path.
+# A closed UI keeps its QML tree loaded. Try reopening it before treating
+# windowless processes as failed-config orphans. Bound the request so a broken
+# instance cannot block ordinary startup; scope it to this exact config path.
+if timeout 1s qs ipc -p "$REPO/ui" call window openWindow >/dev/null 2>&1; then
+    exit 0
+fi
+
+# Reap windowless instances only if they could not answer the reopen request.
+# This preserves recovery from failed config loads and older UI versions.
 WIN_PIDS=" $(niri msg --json windows 2>/dev/null | python3 -c 'import json,sys;[print(w.get("pid")) for w in json.load(sys.stdin)]' 2>/dev/null | tr "\n" " ") "
 # Query candidates once instead of spawning readlink for every system process.
 # Match argv: Nix's wrapped executable has a truncated .quickshell-wra comm.
