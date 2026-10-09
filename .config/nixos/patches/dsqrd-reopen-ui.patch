@@ -1,0 +1,16 @@
+--- a/ui/shell.qml
++++ b/ui/shell.qml
+@@ -10,5 +10,13 @@
+ FloatingWindow {
+     id: win
++
++    // Closing unmaps the surface but keeps the loaded UI available to reopen.
++    onClosed: visible = false
++    IpcHandler {
++        target: "window"
++        function openWindow(): void { win.visible = true }
++    }
++
+     // Bundled OFL serif — the display-title fallback on machines without Sigurd
+     // installed (friends). We ship the file so the family always resolves.
+     FontLoader { source: Qt.resolvedUrl("InstrumentSerif-Regular.ttf") }

@@ -61,6 +61,16 @@
         inherit system;
         config.allowUnfree = true;
       };
+      # Keep Discord tracking upstream, with the same resident-window reopening
+      # used by tmqs. Rewrite the generated client text so its PATH, QML imports,
+      # daemon invocation and UI config all reference the patched package.
+      upstreamDsqrd = dsqrd.packages.${system}.dsqrd;
+      residentDsqrd = upstreamDsqrd.overrideAttrs (old: {
+        patches = (old.patches or [ ]) ++ [ ./patches/dsqrd-reopen-ui.patch ];
+      });
+      residentDsqrdClient = dsqrd.packages.${system}.dsqrd-client.overrideAttrs (old: {
+        text = builtins.replaceStrings [ "${upstreamDsqrd}" ] [ "${residentDsqrd}" ] old.text;
+      });
       # Packages sourced from external flake inputs (not nixpkgs). Declared here
       # because flake inputs can only live in flake.nix; consumed in the same
       # systemPackages list as everything else via specialArgs.
@@ -68,8 +78,8 @@
         claude-code.packages.${system}.default
         helium-browser.packages.${system}.default
         # QML chat clients: daemon + launch wrapper for each (see inputs above).
-        dsqrd.packages.${system}.dsqrd
-        dsqrd.packages.${system}.dsqrd-client
+        residentDsqrd
+        residentDsqrdClient
         slqs.packages.${system}.slqs
         slqs.packages.${system}.slqs-client
         mlqs.packages.${system}.mlqs

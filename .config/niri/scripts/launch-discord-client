@@ -9,9 +9,16 @@ export PATH="/etc/profiles/per-user/$USER/bin:/run/current-system/sw/bin:$PATH"
 # Run in a terminal that stays open (--hold) so the outcome is always readable.
 export SLK_UPDATE_CMD="kitty --hold -e $HOME/.scripts/update-dsqrd"
 
-# Reap windowless dsqrd UI orphans before launching. A failed config load leaves
-# quickshell alive without mapping a window; niri-jump-or-exec then can't focus
-# it, so each launch piled up another. Scoped to dsqrd by its store UI path.
+# Reopen the loaded UI from the currently installed package. An exact config
+# path avoids reviving a stale UI after a Nix upgrade. Failed/older instances
+# still fall through to orphan cleanup and ordinary daemon/client startup.
+DSQRD_BIN=$(readlink -f "$(command -v dsqrd)")
+DSQRD_UI="${DSQRD_BIN%/bin/dsqrd}/share/dsqrd/ui"
+if timeout 1s qs ipc -p "$DSQRD_UI" call window openWindow >/dev/null 2>&1; then
+    exit 0
+fi
+
+# Reap windowless instances only when the reopen request was unavailable.
 WIN_PIDS=" $(niri msg --json windows 2>/dev/null | python3 -c 'import json,sys;[print(w.get("pid")) for w in json.load(sys.stdin)]' 2>/dev/null | tr "\n" " ") "
 # Query candidates once instead of spawning readlink for every system process.
 # Match argv: Nix's wrapped executable has a truncated .quickshell-wra comm.
