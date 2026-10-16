@@ -242,7 +242,7 @@
       trayscale # Tailscale StatusNotifier tray client; rendered by qs-picker's system tray
       libnotify # provides notify-send for sending desktop notifications (received by qs-picker NotifService)
       pass # password manager (pass)
-      terraform
+      unstable.terraform
       spotify-player
       wtype # sends keystrokes for the Niri mailbox selector
       cloc # Count Lines Of Code
