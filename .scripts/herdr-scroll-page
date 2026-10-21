@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Scroll the original Herdr pane without entering copy mode."""
+"""Scroll Pi's transcript or the original Herdr pane without copy mode."""
 import fcntl
 import json
 import os
@@ -48,6 +48,13 @@ def main():
     with os.fdopen(fd, 'w') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         info = request(path, 'pane.get', {'pane_id': pane})['pane']
+        if info.get('agent') == 'pi':
+            # Fullscreen Pi owns its transcript; Herdr's alternate screen has
+            # no scrollback. The matching Pi keybindings scroll its transcript.
+            # pane.send_keys goes directly to the PTY, bypassing Herdr bindings.
+            key = 'ctrl+shift+u' if sys.argv[1] == 'up' else 'ctrl+shift+d'
+            request(path, 'pane.send_keys', {'pane_id': pane, 'keys': [key]})
+            return
         offset = page_offset(info['scroll'], 1 if sys.argv[1] == 'up' else -1)
         request(path, 'pane.scroll', {'pane_id': pane, 'offset_from_bottom': offset})
 
