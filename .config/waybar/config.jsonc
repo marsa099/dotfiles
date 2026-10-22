@@ -6,7 +6,7 @@
     "reload_style_on_change": true,
     "margin-top": 0,
     "margin-bottom": 0,
-    "modules-left": ["group/hardware", "custom/devops"],
+    "modules-left": ["group/hardware"],
     "modules-center": ["custom/claude-focused", "custom/helium-focused", "custom/dnd"],
     "modules-right": ["custom/claude-cost", "custom/claude-pending", "tray", "group/system"],
     "niri/workspaces": {
@@ -162,14 +162,6 @@
    "group/hardware": {
         "orientation": "inherit",
         "modules": ["cpu", "memory", "custom/cpu-temp", "custom/gpu-temp", "custom/screencast", "custom/camera", "pulseaudio#mic"]
-   },
-   "custom/devops": {
-        "exec": "~/.scripts/waybar-devops/waybar-devops",
-        "return-type": "json",
-        "interval": 1,
-        "tooltip": true,
-        "format": "{}",
-        "markup": "pango"
    },
    "custom/claude-focused": {
         "exec": "~/.scripts/waybar-claude-focused",
