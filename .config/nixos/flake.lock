@@ -38,7 +38,7 @@
         "url": "https://github.com/daphen/dsqrd.git"
       }
     },
-    "fastspotify": {
+    "spotifast": {
       "inputs": {
         "nixpkgs": "nixpkgs_3",
         "rust-overlay": "rust-overlay"
@@ -47,13 +47,13 @@
         "lastModified": 1788968938,
         "narHash": "sha256-JCToLwTP5G6cKFkYRJe2QQXozjPoK6toUNWcXdRXmgU=",
         "owner": "crmne",
-        "repo": "fastpotify",
+        "repo": "spotifast",
         "rev": "67b8dfbb22f1d97a0eec359021f25cbcae8e5d69",
         "type": "github"
       },
       "original": {
         "owner": "crmne",
-        "repo": "fastpotify",
+        "repo": "spotifast",
         "type": "github"
       }
     },
@@ -211,7 +211,7 @@
       "inputs": {
         "claude-code": "claude-code",
         "dsqrd": "dsqrd",
-        "fastspotify": "fastspotify",
+        "spotifast": "spotifast",
         "helium-browser": "helium-browser",
         "mlqs": "mlqs",
         "nixpkgs": "nixpkgs_5",
@@ -223,7 +223,7 @@
     "rust-overlay": {
       "inputs": {
         "nixpkgs": [
-          "fastspotify",
+          "spotifast",
           "nixpkgs"
         ]
       },
