@@ -65,6 +65,10 @@
     "flakes"
   ];
 
+  # Build one local derivation at a time; request eight workers per builder.
+  nix.settings.cores = 8;
+  nix.settings.max-jobs = 1;
+
   networking.hostName = "nixos"; # Define your hostname.
 
   # Configure network connections interactively with nmcli or nmtui.
