@@ -50,8 +50,6 @@
 # PATs stored in GNOME Keyring:
 #   cli (code full + build/release read):
 #     secret-tool store --label="Azure DevOps PAT (cli)" service azure-devops type cli
-#   waybar (build/release read):
-#     secret-tool store --label="Azure DevOps PAT (waybar)" service azure-devops type waybar
 
 { pkgs, ... }:
 

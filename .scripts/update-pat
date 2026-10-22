@@ -14,9 +14,6 @@ Targets:
 
   azure cli     Azure DevOps CLI PAT
                   service=azure-devops, type=cli      (system az wrapper — az devops/repos/pipelines/rest)
-
-  azure waybar  Azure DevOps waybar PAT
-                  service=azure-devops, type=waybar   (waybar-devops)
 EOF
     exit 1
 }
@@ -33,7 +30,6 @@ case "$1" in
         [ $# -eq 2 ] || usage
         case "$2" in
             cli)    target="azure-cli" ;;
-            waybar) target="azure-waybar" ;;
             *)      usage ;;
         esac
         ;;
@@ -57,9 +53,6 @@ case "$target" in
         ;;
     azure-cli)
         store "Azure DevOps PAT (cli)"    service azure-devops type cli
-        ;;
-    azure-waybar)
-        store "Azure DevOps PAT (waybar)" service azure-devops type waybar
         ;;
 esac
 
