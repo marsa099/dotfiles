@@ -38,7 +38,7 @@
     # Fork until upstream merges shared-mailbox support (daphen/mlqs#23);
     # the standalone mail CLI lives in ~/.scripts.
     mlqs.url = "github:marsa099/mlqs";
-    fastspotify.url = "github:crmne/fastpotify";
+    spotifast.url = "github:crmne/spotifast";
   };
 
   outputs =
@@ -52,7 +52,7 @@
       dsqrd,
       slqs,
       mlqs,
-      fastspotify,
+      spotifast,
       ...
     }:
     let
@@ -84,7 +84,7 @@
         slqs.packages.${system}.slqs-client
         mlqs.packages.${system}.mlqs
         mlqs.packages.${system}.mlqs-client
-        fastspotify.packages.${system}.default
+        spotifast.packages.${system}.default
       ];
     in
     {
